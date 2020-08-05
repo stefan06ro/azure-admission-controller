@@ -1,0 +1,60 @@
+version: 2.1
+
+orbs:
+  architect: giantswarm/architect@0.10.1
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - architect/go-build:
+          name: build-azure-admission-controller
+          context: architect
+          binary: azure-admission-controller
+          filters:
+            # Do this on every commit and when a new tag is created.
+            tags:
+              only: /^v.*/
+
+      - architect/push-to-docker:
+          name: push-azure-admission-controller-to-quay
+          context: architect
+          image: "quay.io/giantswarm/azure-admission-controller"
+          username_envar: "QUAY_USERNAME"
+          password_envar: "QUAY_PASSWORD"
+          requires:
+            - build-azure-admission-controller
+          # Do this on every commit and when a new tag is created.
+          filters:
+            tags:
+              only: /^v.*/
+
+      - architect/push-to-app-catalog:
+          name: push-azure-admission-controller-to-control-plane-app-catalog
+          context: architect
+          app_catalog: "control-plane-catalog"
+          app_catalog_test: "control-plane-test-catalog"
+          chart: "azure-admission-controller"
+          requires:
+            - push-azure-admission-controller-to-quay
+          filters:
+            # Do this on every commit and when a new tag is created.
+            tags:
+              only: /^v.*/
+
+      - architect/push-to-app-collection:
+          name: push-azure-admission-controller-to-azure-app-collection
+          context: architect
+          app_name: "azure-admission-controller"
+          app_collection_repo: "azure-app-collection"
+          unique: "true"
+          requires:
+            - push-azure-admission-controller-to-control-plane-app-catalog
+          filters:
+            # Only do this when a new tag is created.
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+

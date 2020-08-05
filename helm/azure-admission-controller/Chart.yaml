@@ -1,0 +1,6 @@
+apiVersion: v1
+name: azure-admission-controller
+description: A Helm chart for Kubernetes
+home: https://github.com/giantswarm/azure-admission-controller
+version: [[ .Version ]]
+appVersion: [[ .AppVersion ]]

@@ -1,0 +1,7 @@
+image:
+  name: "giantswarm/azure-admission-controller"
+  tag: "[[ .Version ]]"
+
+project:
+  branch: "[[ .Branch ]]"
+  commit: "[[ .SHA ]]"
