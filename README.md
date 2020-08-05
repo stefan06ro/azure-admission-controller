@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/giantswarm/azure-admission-controller.svg?style=svg)](https://circleci.com/gh/giantswarm/admission-controller)
+[![CircleCI](https://circleci.com/gh/giantswarm/azure-admission-controller.svg?style=svg)](https://circleci.com/gh/giantswarm/azure-admission-controller)
 
 # Azure Admission Controller
 
