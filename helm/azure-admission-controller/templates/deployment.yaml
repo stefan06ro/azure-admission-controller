@@ -28,14 +28,10 @@ spec:
       containers:
         - name: {{ include "name" . }}
           image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
-          env:
-            - name: DEFAULT_AWS_AZS
-              value: {{ join "," .Values.Installation.V1.Provider.AWS.AvailabilityZones }}
           args:
             - ./azure-admission-controller
             - --tls-cert-file=/certs/ca.crt
             - --tls-key-file=/certs/tls.key
-            - --availability-zones=$(DEFAULT_AWS_AZS)
           volumeMounts:
           - name: {{ include "name" . }}-certificates
             mountPath: "/certs"
