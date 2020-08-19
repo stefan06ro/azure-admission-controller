@@ -74,9 +74,10 @@ func upgradeAllowed(g8sclient versioned.Interface, oldVersion semver.Version, ne
 				}
 				// Look for a release with higher major or higher minor than the oldVersion and is LT the newVersion
 				if release.GT(oldVersion) && release.LT(newVersion) &&
-					(oldVersion.Major != release.Major || oldVersion.Minor != release.Minor) {
-					// Skipped one release.
-					return false, microerror.Maskf(invalidOperationError, "Updraging from %s to %s is not allowed (skipped %s)", oldVersion, newVersion, release)
+					(oldVersion.Major != release.Major || oldVersion.Minor != release.Minor) &&
+					(newVersion.Major != release.Major || newVersion.Minor != release.Minor) {
+					// Skipped one major or minor release.
+					return false, microerror.Maskf(invalidOperationError, "Upgrading from %s to %s is not allowed (skipped %s)", oldVersion, newVersion, release)
 				}
 			}
 		}

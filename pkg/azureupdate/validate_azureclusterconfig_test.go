@@ -18,7 +18,7 @@ import (
 )
 
 func TestAzureClusterConfigValidate(t *testing.T) {
-	releases := []string{"11.3.0", "11.3.1", "11.4.0", "12.0.0"}
+	releases := []string{"11.3.0", "11.3.1", "11.4.0", "12.0.0", "12.0.1", "12.1.0"}
 
 	testCases := []struct {
 		name         string
@@ -179,6 +179,26 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.3",
 			newVersion:   "11.4.0",
 			conditions:   []string{"Creating"},
+			allowed:      false,
+			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name: "case 15",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "11.4.0",
+			newVersion:   "12.0.1",
+			allowed:      true,
+			errorMatcher: nil,
+		},
+		{
+			name: "case 16",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "11.4.0",
+			newVersion:   "12.1.0",
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
