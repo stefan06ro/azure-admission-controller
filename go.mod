@@ -9,7 +9,7 @@ require (
 	github.com/giantswarm/apiextensions v0.4.20
 	github.com/giantswarm/k8sclient/v3 v3.1.2
 	github.com/giantswarm/microerror v0.2.1
-	github.com/giantswarm/micrologger v0.3.1
+	github.com/giantswarm/micrologger v0.3.3
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/tools v0.0.0-20200706234117-b22de6825cf7 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
