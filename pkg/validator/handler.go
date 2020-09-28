@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +16,7 @@ import (
 )
 
 type Validator interface {
-	Validate(review *v1beta1.AdmissionRequest) (bool, error)
+	Validate(ctx context.Context, review *v1beta1.AdmissionRequest) (bool, error)
 	Log(keyVals ...interface{})
 }
 
@@ -47,7 +48,7 @@ func Handler(validator Validator) http.HandlerFunc {
 			return
 		}
 
-		allowed, err := validator.Validate(review.Request)
+		allowed, err := validator.Validate(request.Context(), review.Request)
 		if err != nil {
 			writeResponse(validator, writer, errorResponse(review.Request.UID, microerror.Mask(err)))
 			return

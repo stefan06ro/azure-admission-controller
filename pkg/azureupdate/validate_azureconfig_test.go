@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	providerv1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
+	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -236,7 +236,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(getAdmissionRequest(tc.oldVersion, tc.newVersion, tc.conditions))
+			allowed, err := admit.Validate(tc.ctx, getAdmissionRequest(tc.oldVersion, tc.newVersion, tc.conditions))
 
 			// Check if the error is the expected one.
 			switch {

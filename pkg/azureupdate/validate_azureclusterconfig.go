@@ -1,13 +1,14 @@
 package azureupdate
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/blang/semver"
-	corev1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/core/v1alpha1"
-	infrastructurev1alpha2 "github.com/giantswarm/apiextensions/pkg/apis/infrastructure/v1alpha2"
-	releasev1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/release/v1alpha1"
-	"github.com/giantswarm/k8sclient/v3/pkg/k8sclient"
+	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
+	infrastructurev1alpha2 "github.com/giantswarm/apiextensions/v2/pkg/apis/infrastructure/v1alpha2"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -59,7 +60,7 @@ func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*
 	return validator, nil
 }
 
-func (a *AzureClusterConfigValidator) Validate(request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
 	AzureClusterConfigNewCR := &corev1alpha1.AzureClusterConfig{}
 	AzureClusterConfigOldCR := &corev1alpha1.AzureClusterConfig{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, AzureClusterConfigNewCR); err != nil {
@@ -82,7 +83,7 @@ func (a *AzureClusterConfigValidator) Validate(request *v1beta1.AdmissionRequest
 		// The AzureClusterConfig CR doesn't have an indication of the fact that an update is in progress.
 		// I need to use the corresponding AzureConfig CR for this check.
 		acName := AzureClusterConfigOldCR.Spec.Guest.ID
-		ac, err := a.k8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").Get(acName, v1.GetOptions{})
+		ac, err := a.k8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").Get(ctx, acName, v1.GetOptions{})
 		if err != nil {
 			return false, microerror.Maskf(invalidOperationError, "Unable to find AzureConfig %s. Can't reliably tell if the cluster upgrade is safe or not. Error was %s", acName, err)
 		}
@@ -92,7 +93,7 @@ func (a *AzureClusterConfigValidator) Validate(request *v1beta1.AdmissionRequest
 			return false, microerror.Maskf(invalidOperationError, "cluster has condition: %s", status)
 		}
 
-		return upgradeAllowed(a.k8sClient.G8sClient(), oldVersion, newVersion)
+		return upgradeAllowed(ctx, a.k8sClient.G8sClient(), oldVersion, newVersion)
 	}
 
 	return true, nil

@@ -1,13 +1,14 @@
 package azureupdate
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/blang/semver"
-	infrastructurev1alpha2 "github.com/giantswarm/apiextensions/pkg/apis/infrastructure/v1alpha2"
-	"github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
-	releasev1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/release/v1alpha1"
-	"github.com/giantswarm/k8sclient/v3/pkg/k8sclient"
+	infrastructurev1alpha2 "github.com/giantswarm/apiextensions/v2/pkg/apis/infrastructure/v1alpha2"
+	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -64,7 +65,7 @@ func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigVal
 	return admitter, nil
 }
 
-func (a *AzureConfigValidator) Validate(request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
 	azureConfigNewCR := &v1alpha1.AzureConfig{}
 	azureConfigOldCR := &v1alpha1.AzureConfig{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureConfigNewCR); err != nil {
@@ -90,7 +91,7 @@ func (a *AzureConfigValidator) Validate(request *v1beta1.AdmissionRequest) (bool
 			return false, microerror.Maskf(invalidOperationError, "cluster has condition: %s", status)
 		}
 
-		return upgradeAllowed(a.k8sClient.G8sClient(), oldVersion, newVersion)
+		return upgradeAllowed(ctx, a.k8sClient.G8sClient(), oldVersion, newVersion)
 	}
 
 	return true, nil

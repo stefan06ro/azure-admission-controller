@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	corev1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/core/v1alpha1"
-	providerv1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
+	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
+	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -229,12 +229,12 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			// Create AzureConfigs.
-			ac, err := fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").Create(&providerv1alpha1.AzureConfig{
+			ac, err := fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").Create(tc.ctx, &providerv1alpha1.AzureConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: controlPlaneName,
 				},
 				Spec: providerv1alpha1.AzureConfigSpec{},
-			})
+			}, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -245,13 +245,13 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			ac.Status.Cluster.Conditions = conditions
-			_, err = fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").UpdateStatus(ac)
+			_, err = fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").UpdateStatus(tc.ctx, ac, metav1.UpdateOptions{})
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
+			allowed, err := admit.Validate(tc.ctx, getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {

@@ -1,15 +1,17 @@
 package azureupdate
 
 import (
+	"context"
+
 	"github.com/blang/semver"
-	"github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
+	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func availableReleases(g8sclient versioned.Interface) ([]*semver.Version, error) {
-	releaseList, err := g8sclient.ReleaseV1alpha1().Releases().List(v1.ListOptions{})
+func availableReleases(ctx context.Context, g8sclient versioned.Interface) ([]*semver.Version, error) {
+	releaseList, err := g8sclient.ReleaseV1alpha1().Releases().List(ctx, v1.ListOptions{})
 	if err != nil {
 		return []*semver.Version{}, microerror.Mask(err)
 	}
@@ -49,9 +51,9 @@ func included(releases []*semver.Version, release semver.Version) bool {
 	return false
 }
 
-func upgradeAllowed(g8sclient versioned.Interface, oldVersion semver.Version, newVersion semver.Version) (bool, error) {
+func upgradeAllowed(ctx context.Context, g8sclient versioned.Interface, oldVersion semver.Version, newVersion semver.Version) (bool, error) {
 	if !oldVersion.Equals(newVersion) {
-		availableReleases, err := availableReleases(g8sclient)
+		availableReleases, err := availableReleases(ctx, g8sclient)
 		if err != nil {
 			return false, err
 		}
