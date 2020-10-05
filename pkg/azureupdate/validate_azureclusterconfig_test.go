@@ -280,8 +280,8 @@ func getClusterConfigAdmissionRequest(oldVersion string, newVersion string) *v1b
 			Kind:    "AzureClusterUpgrade",
 		},
 		Resource: metav1.GroupVersionResource{
-			Version:  "provider.giantswarm.io/v1alpha1",
-			Resource: "azureconfigs",
+			Version:  "core.giantswarm.io/v1alpha1",
+			Resource: "azureclusterconfigs",
 		},
 		Operation: v1beta1.Update,
 		Object: runtime.RawExtension{

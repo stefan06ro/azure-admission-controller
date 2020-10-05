@@ -2,18 +2,13 @@ package azureupdate
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/blang/semver"
-	infrastructurev1alpha2 "github.com/giantswarm/apiextensions/v2/pkg/apis/infrastructure/v1alpha2"
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	restclient "k8s.io/client-go/rest"
-	apiv1alpha2 "sigs.k8s.io/cluster-api/api/v1alpha2"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
@@ -24,7 +19,8 @@ type AzureConfigValidator struct {
 }
 
 type AzureConfigValidatorConfig struct {
-	Logger micrologger.Logger
+	K8sClient k8sclient.Interface
+	Logger    micrologger.Logger
 }
 
 const (
@@ -34,31 +30,8 @@ const (
 )
 
 func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigValidator, error) {
-	var k8sClient k8sclient.Interface
-	{
-		restConfig, err := restclient.InClusterConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load key kubeconfig: %v", err)
-		}
-		c := k8sclient.ClientsConfig{
-			SchemeBuilder: k8sclient.SchemeBuilder{
-				apiv1alpha2.AddToScheme,
-				infrastructurev1alpha2.AddToScheme,
-				releasev1alpha1.AddToScheme,
-			},
-			Logger: config.Logger,
-
-			RestConfig: restConfig,
-		}
-
-		k8sClient, err = k8sclient.NewClients(c)
-		if err != nil {
-			return nil, microerror.Mask(err)
-		}
-	}
-
 	admitter := &AzureConfigValidator{
-		k8sClient: k8sClient,
+		k8sClient: config.K8sClient,
 		logger:    config.Logger,
 	}
 

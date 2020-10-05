@@ -24,6 +24,12 @@ rules:
       - azureconfigs
     verbs:
       - "*"
+  - apiGroups:
+      - exp.infrastructure.cluster.x-k8s.io
+    resources:
+      - azuremachinepool
+    verbs:
+      - "*"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
