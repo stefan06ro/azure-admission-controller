@@ -24,3 +24,8 @@ require (
 	sigs.k8s.io/cluster-api-provider-azure v0.4.7
 	sigs.k8s.io/controller-runtime v0.6.3
 )
+
+replace (
+	sigs.k8s.io/cluster-api v0.3.9 => github.com/giantswarm/cluster-api v0.3.9-gs
+	sigs.k8s.io/cluster-api-provider-azure v0.4.7 => github.com/giantswarm/cluster-api-provider-azure v0.4.7-gs
+)
