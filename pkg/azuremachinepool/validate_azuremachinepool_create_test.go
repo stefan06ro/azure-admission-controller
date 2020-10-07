@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachinePoolCreateValidate(t *testing.T) {
@@ -82,7 +81,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
-			fakeK8sClient := unittest.FakeK8sClient()
 			stubbedSKUs := map[string]compute.ResourceSku{
 				"Standard_A2_v2": {
 					Name: to.StringPtr("Standard_A2_v2"),
@@ -180,9 +178,8 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			admit := &CreateValidator{
-				k8sClient: fakeK8sClient,
-				logger:    newLogger,
-				vmcaps:    vmcaps,
+				logger: newLogger,
+				vmcaps: vmcaps,
 			}
 
 			// Run admission request to validate AzureConfig updates.
