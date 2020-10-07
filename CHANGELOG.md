@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add missing schemes to controller client.
+
 ## [1.6.1] - 2020-10-07
+
+### Changed
+
+- Validate parameters when building objects.
+- Remove unnecesary k8sclients.
 
 ## [1.6.0] - 2020-10-07
 
