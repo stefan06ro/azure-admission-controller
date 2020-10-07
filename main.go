@@ -115,7 +115,8 @@ func mainError() error {
 	var azureClusterConfigValidator *azureupdate.AzureClusterConfigValidator
 	{
 		azureClusterConfigValidatorConfig := azureupdate.AzureClusterConfigValidatorConfig{
-			Logger: newLogger,
+			CtrlClient: ctrlClient,
+			Logger:     newLogger,
 		}
 		azureClusterConfigValidator, err = azureupdate.NewAzureClusterConfigValidator(azureClusterConfigValidatorConfig)
 		if err != nil {
