@@ -31,6 +31,13 @@ const (
 )
 
 func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigValidator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Logger == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
+	}
+
 	admitter := &AzureConfigValidator{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,

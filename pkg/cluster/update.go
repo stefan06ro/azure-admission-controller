@@ -26,6 +26,13 @@ type UpdateValidatorConfig struct {
 }
 
 func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Logger == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
+	}
+
 	v := &UpdateValidator{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,

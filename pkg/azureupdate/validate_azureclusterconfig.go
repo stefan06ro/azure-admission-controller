@@ -27,12 +27,19 @@ type AzureClusterConfigValidatorConfig struct {
 }
 
 func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*AzureClusterConfigValidator, error) {
-	validator := &AzureClusterConfigValidator{
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Logger == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
+	}
+
+	azureClusterValidator := &AzureClusterConfigValidator{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 	}
 
-	return validator, nil
+	return azureClusterValidator, nil
 }
 
 func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
