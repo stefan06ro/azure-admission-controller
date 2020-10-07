@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
 var (
@@ -64,7 +64,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "12.0.0",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 3",
@@ -97,7 +97,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsParsingFailed,
+			errorMatcher: errors.IsParsingFailed,
 		},
 		{
 			name: "case 6",
@@ -108,7 +108,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.3.1",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsParsingFailed,
+			errorMatcher: errors.IsParsingFailed,
 		},
 		{
 			name: "case 7",
@@ -119,7 +119,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.4.0",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 8",
@@ -130,7 +130,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.3.1",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 9",
@@ -141,7 +141,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.3.0",
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 10",
@@ -163,7 +163,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.5.0", // does not exist
 			conditions:   []string{},
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 12",
@@ -196,7 +196,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.4.1",
 			conditions:   []string{conditionCreating},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 15",
@@ -207,7 +207,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			newVersion:   "11.4.1",
 			conditions:   []string{conditionUpdating},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
 
@@ -223,14 +223,18 @@ func TestAzureConfigValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
-			fakeK8sClient := unittest.FakeK8sClient()
+			fakeCtrlClient, err := getFakeCtrlClient()
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
 			admit := &AzureConfigValidator{
-				k8sClient: fakeK8sClient,
-				logger:    newLogger,
+				ctrlClient: fakeCtrlClient,
+				logger:     newLogger,
 			}
 
 			// Create needed releases.
-			err = ensureReleases(fakeK8sClient.G8sClient(), tc.releases)
+			err = ensureReleases(fakeCtrlClient, tc.releases)
 			if err != nil {
 				t.Fatal(err)
 			}

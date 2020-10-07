@@ -8,13 +8,20 @@ import (
 
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	expcapiv1alpha3 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
 func TestAzureClusterConfigValidate(t *testing.T) {
@@ -58,7 +65,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.0",
 			newVersion:   "12.0.0",
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 3",
@@ -88,7 +95,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.1",
 			newVersion:   "",
 			allowed:      false,
-			errorMatcher: IsParsingFailed,
+			errorMatcher: errors.IsParsingFailed,
 		},
 		{
 			name: "case 6",
@@ -98,7 +105,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "",
 			newVersion:   "11.3.1",
 			allowed:      false,
-			errorMatcher: IsParsingFailed,
+			errorMatcher: errors.IsParsingFailed,
 		},
 		{
 			name: "case 7",
@@ -108,7 +115,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 8",
@@ -118,7 +125,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 9",
@@ -128,7 +135,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 10",
@@ -148,7 +155,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
 			allowed:      false,
-			errorMatcher: IsInvalidReleaseError,
+			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
 			name: "case 12",
@@ -169,7 +176,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			newVersion:   "11.4.0",
 			conditions:   []string{"Updating"},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 14",
@@ -180,7 +187,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			newVersion:   "11.4.0",
 			conditions:   []string{"Creating"},
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name: "case 15",
@@ -200,7 +207,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.4.0",
 			newVersion:   "12.1.0",
 			allowed:      false,
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
 
@@ -216,25 +223,63 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
-			fakeK8sClient := unittest.FakeK8sClient()
+
+			scheme := runtime.NewScheme()
+			err = v1.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = corev1alpha1.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = expcapiv1alpha3.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = expcapzv1alpha3.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = capiv1alpha3.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = capzv1alpha3.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = providerv1alpha1.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+			err = releasev1alpha1.AddToScheme(scheme)
+			if err != nil {
+				panic(err)
+			}
+
+			ctrlClient := fake.NewFakeClientWithScheme(scheme)
+
 			admit := &AzureClusterConfigValidator{
-				k8sClient: fakeK8sClient,
-				logger:    newLogger,
+				ctrlClient: ctrlClient,
+				logger:     newLogger,
 			}
 
 			// Create needed releases.
-			err = ensureReleases(fakeK8sClient.G8sClient(), tc.releases)
+			err = ensureReleases(ctrlClient, tc.releases)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Create AzureConfigs.
-			ac, err := fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").Create(tc.ctx, &providerv1alpha1.AzureConfig{
+			ac := &providerv1alpha1.AzureConfig{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: controlPlaneName,
+					Name:      controlPlaneName,
+					Namespace: controlPlaneNameSpace,
 				},
 				Spec: providerv1alpha1.AzureConfigSpec{},
-			}, metav1.CreateOptions{})
+			}
+			err = ctrlClient.Create(tc.ctx, ac)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -245,7 +290,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			ac.Status.Cluster.Conditions = conditions
-			_, err = fakeK8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("default").UpdateStatus(tc.ctx, ac, metav1.UpdateOptions{})
+			err = ctrlClient.Update(tc.ctx, ac)
 			if err != nil {
 				t.Fatal(err)
 			}
