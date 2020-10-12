@@ -3,7 +3,7 @@ module github.com/giantswarm/azure-admission-controller
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v46.4.0+incompatible
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/blang/semver v3.5.1+incompatible
@@ -20,8 +20,8 @@ require (
 	k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
-	sigs.k8s.io/cluster-api v0.3.9
-	sigs.k8s.io/cluster-api-provider-azure v0.4.7
+	sigs.k8s.io/cluster-api v0.3.10
+	sigs.k8s.io/cluster-api-provider-azure v0.4.9
 	sigs.k8s.io/controller-runtime v0.6.3
 )
 
