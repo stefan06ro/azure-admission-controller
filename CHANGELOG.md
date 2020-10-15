@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add mutating webhook to set storage account type in the AzureMachinePool CR if unset.
+
+### Changed
+
+- Block changing node pool instance type from one that supports premium storage to one that does not.
+
 ## [1.6.2] - 2020-10-07
 
 ### Fixed

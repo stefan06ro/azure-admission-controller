@@ -38,21 +38,21 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	for i, instanceType := range unsupportedInstanceType {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr),
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking disabled", i*3+1, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &fa),
+			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      true,
 			errorMatcher: nil,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking nil", i*3+2, instanceType),
-			nodePool:     azureMPRawObject(instanceType, nil),
+			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      true,
 			errorMatcher: nil,
 		})
@@ -63,7 +63,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 		instanceType := "this_is_a_random_name"
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases), instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr),
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: vmcapabilities.IsSkuNotFoundError,
 		})

@@ -54,6 +54,11 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Mask(err)
 	}
 
+	err = checkStorageAccountTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
 	return true, nil
 }
 

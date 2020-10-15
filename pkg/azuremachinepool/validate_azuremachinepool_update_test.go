@@ -12,6 +12,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -27,6 +28,8 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		"Standard_D4_v3",
 		"Standard_D8_v3",
 	}
+	premiumStorageInstanceType := "Standard_D4s_v3"
+	standardStorageInstanceType := "Standard_D4_v3"
 	type testCase struct {
 		name         string
 		oldNodePool  []byte
@@ -38,71 +41,92 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: AcceleratedNetworking is enabled in CR and we don't change it or the instance type",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: AcceleratedNetworking is disabled in CR and we don't change it or the instance type",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 2: Enabled and try disabling it, keeping same instance type",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: Enabled, try updating to new instance type that supports it",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
-			newNodePool:  azureMPRawObject(supportedInstanceType[1], &tr),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[1], &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Enabled, try updating to new instance type that does NOT supports it",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
-			newNodePool:  azureMPRawObject(unsupportedInstanceType[0], &tr),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(unsupportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 5: Disabled and try enabling it",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 6: changed from nil to true",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 7: changed from true to nil",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 8: changed from nil to false",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 9: changed from false to nil",
-			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa),
-			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil),
+			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS)),
+			allowed:      false,
+			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name:         "case 10: changed from premium to standard storage",
+			oldNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			allowed:      false,
+			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name:         "case 11: changed from standard to premium storage",
+			oldNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			allowed:      true,
+			errorMatcher: nil,
+		},
+		{
+			name:         "case 12: change storage account type",
+			oldNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesPremiumLRS)),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
@@ -136,6 +160,31 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 							Name:  to.StringPtr("MemoryGB"),
 							Value: to.StringPtr("16"),
 						},
+						{
+							Name:  to.StringPtr("PremiumIO"),
+							Value: to.StringPtr("False"),
+						},
+					},
+				},
+				"Standard_D4s_v3": {
+					Name: to.StringPtr("Standard_D4s_v3"),
+					Capabilities: &[]compute.ResourceSkuCapabilities{
+						{
+							Name:  to.StringPtr("AcceleratedNetworkingEnabled"),
+							Value: to.StringPtr("True"),
+						},
+						{
+							Name:  to.StringPtr("vCPUs"),
+							Value: to.StringPtr("4"),
+						},
+						{
+							Name:  to.StringPtr("MemoryGB"),
+							Value: to.StringPtr("16"),
+						},
+						{
+							Name:  to.StringPtr("PremiumIO"),
+							Value: to.StringPtr("True"),
+						},
 					},
 				},
 				"Standard_D8_v3": {
@@ -153,6 +202,10 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 							Name:  to.StringPtr("MemoryGB"),
 							Value: to.StringPtr("16"),
 						},
+						{
+							Name:  to.StringPtr("PremiumIO"),
+							Value: to.StringPtr("False"),
+						},
 					},
 				},
 				"Standard_D16_v3": {
@@ -169,6 +222,10 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 						{
 							Name:  to.StringPtr("MemoryGB"),
 							Value: to.StringPtr("16"),
+						},
+						{
+							Name:  to.StringPtr("PremiumIO"),
+							Value: to.StringPtr("False"),
 						},
 					},
 				},
@@ -230,7 +287,7 @@ func getUpdateAdmissionRequest(oldMP []byte, newMP []byte) *v1beta1.AdmissionReq
 	return req
 }
 
-func azureMPRawObject(vmSize string, acceleratedNetworkingEnabled *bool) []byte {
+func azureMPRawObject(vmSize string, acceleratedNetworkingEnabled *bool, storageAccountType string) []byte {
 	mp := v1alpha3.AzureMachinePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachinePool",
@@ -250,7 +307,12 @@ func azureMPRawObject(vmSize string, acceleratedNetworkingEnabled *bool) []byte 
 		Spec: v1alpha3.AzureMachinePoolSpec{
 			Location: "westeurope",
 			Template: v1alpha3.AzureMachineTemplate{
-				VMSize:                vmSize,
+				VMSize: vmSize,
+				OSDisk: capzv1alpha3.OSDisk{
+					ManagedDisk: capzv1alpha3.ManagedDisk{
+						StorageAccountType: storageAccountType,
+					},
+				},
 				AcceleratedNetworking: acceleratedNetworkingEnabled,
 			},
 		},

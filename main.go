@@ -27,6 +27,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/pkg/azureupdate"
 	"github.com/giantswarm/azure-admission-controller/pkg/cluster"
+	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -126,6 +127,18 @@ func mainError() error {
 		}
 	}
 
+	var azureMachinePoolCreateMutator *azuremachinepool.CreateMutator
+	{
+		createMutatorConfig := azuremachinepool.CreateMutatorConfig{
+			Logger: newLogger,
+			VMcaps: vmcaps,
+		}
+		azureMachinePoolCreateMutator, err = azuremachinepool.NewCreateMutator(createMutatorConfig)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var azureMachinePoolCreateValidator *azuremachinepool.CreateValidator
 	{
 		createValidatorConfig := azuremachinepool.CreateValidatorConfig{
@@ -188,13 +201,17 @@ func mainError() error {
 
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
-	handler.Handle("/azureconfig/update", validator.Handler(azureConfigValidator))
-	handler.Handle("/azureclusterconfig/update", validator.Handler(azureClusterConfigValidator))
-	handler.Handle("/azurecluster/update", validator.Handler(azureClusterUpdateValidator))
-	handler.Handle("/azuremachine/update", validator.Handler(azureMachineUpdateValidator))
-	handler.Handle("/azuremachinepool/create", validator.Handler(azureMachinePoolCreateValidator))
-	handler.Handle("/azuremachinepool/update", validator.Handler(azureMachinePoolUpdateValidator))
-	handler.Handle("/cluster/update", validator.Handler(clusterUpdateValidator))
+	// Mutators.
+	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
+
+	// Validators.
+	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
+	handler.Handle("/validate/azureclusterconfig/update", validator.Handler(azureClusterConfigValidator))
+	handler.Handle("/validate/azurecluster/update", validator.Handler(azureClusterUpdateValidator))
+	handler.Handle("/validate/azuremachine/update", validator.Handler(azureMachineUpdateValidator))
+	handler.Handle("/validate/azuremachinepool/create", validator.Handler(azureMachinePoolCreateValidator))
+	handler.Handle("/validate/azuremachinepool/update", validator.Handler(azureMachinePoolUpdateValidator))
+	handler.Handle("/validate/cluster/update", validator.Handler(clusterUpdateValidator))
 	handler.HandleFunc("/healthz", healthCheck)
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))
