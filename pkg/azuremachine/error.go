@@ -12,3 +12,12 @@ var invalidConfigError = &microerror.Error{
 func IsInvalidConfig(err error) bool {
 	return microerror.Cause(err) == invalidConfigError
 }
+
+var invalidOperationError = &microerror.Error{
+	Kind: "invalidOperationError",
+}
+
+// IsInvalidOperationError asserts invalidOperationError.
+func IsInvalidOperationError(err error) bool {
+	return microerror.Cause(err) == invalidOperationError
+}

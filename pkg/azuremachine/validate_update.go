@@ -42,20 +42,25 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 }
 
 func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
-	AzureMachineNewCR := &capzv1alpha3.AzureMachine{}
-	AzureMachineOldCR := &capzv1alpha3.AzureMachine{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, AzureMachineNewCR); err != nil {
+	azureMachineNewCR := &capzv1alpha3.AzureMachine{}
+	azureMachineOldCR := &capzv1alpha3.AzureMachine{}
+	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMachineNewCR); err != nil {
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
-	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, AzureMachineOldCR); err != nil {
+	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureMachineOldCR); err != nil {
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
 
-	oldClusterVersion, err := semverhelper.GetSemverFromLabels(AzureMachineOldCR.Labels)
+	err := checkSSHKeyIsEmpty(ctx, azureMachineNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureMachineOldCR.Labels)
 	if err != nil {
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
 	}
-	newClusterVersion, err := semverhelper.GetSemverFromLabels(AzureMachineNewCR.Labels)
+	newClusterVersion, err := semverhelper.GetSemverFromLabels(azureMachineNewCR.Labels)
 	if err != nil {
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}

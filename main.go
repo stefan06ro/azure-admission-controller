@@ -175,6 +175,17 @@ func mainError() error {
 		}
 	}
 
+	var azureMachineCreateValidator *azuremachine.CreateValidator
+	{
+		c := azuremachine.CreateValidatorConfig{
+			Logger: newLogger,
+		}
+		azureMachineCreateValidator, err = azuremachine.NewCreateValidator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var azureMachineUpdateValidator *azuremachine.UpdateValidator
 	{
 		c := azuremachine.UpdateValidatorConfig{
@@ -208,6 +219,7 @@ func mainError() error {
 	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
 	handler.Handle("/validate/azureclusterconfig/update", validator.Handler(azureClusterConfigValidator))
 	handler.Handle("/validate/azurecluster/update", validator.Handler(azureClusterUpdateValidator))
+	handler.Handle("/validate/azuremachine/create", validator.Handler(azureMachineCreateValidator))
 	handler.Handle("/validate/azuremachine/update", validator.Handler(azureMachineUpdateValidator))
 	handler.Handle("/validate/azuremachinepool/create", validator.Handler(azureMachinePoolCreateValidator))
 	handler.Handle("/validate/azuremachinepool/update", validator.Handler(azureMachinePoolUpdateValidator))
