@@ -12,6 +12,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 )
@@ -38,21 +39,21 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	for i, instanceType := range unsupportedInstanceType {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS)),
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking disabled", i*3+1, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS)),
+			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			allowed:      true,
 			errorMatcher: nil,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking nil", i*3+2, instanceType),
-			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS)),
+			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			allowed:      true,
 			errorMatcher: nil,
 		})
@@ -62,10 +63,30 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	{
 		instanceType := "this_is_a_random_name"
 		testCases = append(testCases, testCase{
-			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases), instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS)),
+			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases)-1, instanceType),
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			allowed:      false,
 			errorMatcher: vmcapabilities.IsSkuNotFoundError,
+		})
+	}
+
+	{
+		testCases = append(testCases, testCase{
+			name: fmt.Sprintf("case %d: data disks already set", len(testCases)),
+			nodePool: azureMPRawObject("Standard_A2_v2", &tr, string(compute.StorageAccountTypesStandardLRS), []capzv1alpha3.DataDisk{
+				{
+					NameSuffix: "docker",
+					DiskSizeGB: 50,
+					Lun:        to.Int32Ptr(21),
+				},
+				{
+					NameSuffix: "kubelet",
+					DiskSizeGB: 50,
+					Lun:        to.Int32Ptr(22),
+				},
+			}),
+			allowed:      false,
+			errorMatcher: IsInvalidOperationError,
 		})
 	}
 

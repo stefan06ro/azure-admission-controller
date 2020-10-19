@@ -73,6 +73,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Mask(err)
 	}
 
+	err = checkDataDisks(ctx, azureMPNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
 	return true, nil
 }
 

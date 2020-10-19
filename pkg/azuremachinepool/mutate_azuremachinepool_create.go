@@ -60,6 +60,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
+	patch, err = m.ensureDataDisks(ctx, azureMPCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
 	return result, nil
 }
 
@@ -94,4 +102,12 @@ func (m *CreateMutator) ensureStorageAccountType(ctx context.Context, mpCR *expc
 	}
 
 	return nil, nil
+}
+
+func (m *CreateMutator) ensureDataDisks(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
+	if len(mpCR.Spec.Template.DataDisks) > 0 {
+		return nil, nil
+	}
+
+	return mutator.PatchAdd("/spec/template/dataDisks", desiredDataDisks), nil
 }

@@ -30,7 +30,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     fmt.Sprintf("case 0: unset storage account type with premium VM"),
-			nodePool: azureMPRawObject("Standard_D4s_v3", &tr, ""),
+			nodePool: azureMPRawObject("Standard_D4s_v3", &tr, "", desiredDataDisks),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -41,13 +41,25 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 0: unset storage account type with standard VM"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, ""),
+			name:     fmt.Sprintf("case 1: unset storage account type with standard VM"),
+			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "", desiredDataDisks),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
 					Path:      "/spec/template/osDisk/managedDisk/storageAccountType",
 					Value:     "Standard_LRS",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 2: set data disks"),
+			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", nil),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/template/dataDisks",
+					Value:     desiredDataDisks,
 				},
 			},
 			errorMatcher: nil,
