@@ -225,7 +225,7 @@ func mainError() error {
 	handler := http.NewServeMux()
 	// Mutators.
 	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
-	handler.Handle("/validate/cluster/update", mutator.Handler(clusterUpdateMutator))
+	handler.Handle("/mutate/cluster/update", mutator.Handler(clusterUpdateMutator))
 
 	// Validators.
 	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
