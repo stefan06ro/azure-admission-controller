@@ -19,7 +19,7 @@ type UpdateMutator struct {
 	logger micrologger.Logger
 }
 
-func NewUpdateMutator (config UpdateMutatorConfig) (*UpdateMutator, error) {
+func NewUpdateMutator(config UpdateMutatorConfig) (*UpdateMutator, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}

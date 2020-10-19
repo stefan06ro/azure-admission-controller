@@ -200,7 +200,7 @@ func mainError() error {
 
 	var clusterUpdateMutator *cluster.UpdateMutator
 	{
-		c:= cluster.UpdateMutatorConfig{
+		c := cluster.UpdateMutatorConfig{
 			Logger: newLogger,
 		}
 		clusterUpdateMutator, err = cluster.NewUpdateMutator(c)
