@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 
+	"github.com/blang/semver"
 	aeV3conditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/microerror"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -39,7 +40,15 @@ func (m *UpdateMutator) ensureUpdateCondition(ctx context.Context, oldCluster *c
 		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}
 
-	if newClusterVersion.GT(oldClusterVersion) {
+	nodepoolsReleaseVersion := semver.Version{
+		Major: 13,
+		Minor: 0,
+		Patch: 0,
+	}
+
+	// set Upgrading condition when upgrading to a new release, only if new release is newer than
+	// or equal to 13.0.1 which is handling Upgrading condition
+	if newClusterVersion.GT(oldClusterVersion) && newClusterVersion.GTE(nodepoolsReleaseVersion) {
 		upgradingCondition := capiconditions.TrueCondition(aeV3conditions.UpgradingCondition)
 		patch = mutator.PatchAdd("/status/conditions/-/", *upgradingCondition)
 	}
