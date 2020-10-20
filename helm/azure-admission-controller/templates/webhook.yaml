@@ -39,6 +39,7 @@ webhooks:
     - apiGroups: ["cluster.x-k8s.io"]
       resources:
         - "clusters"
+        - "clusters/status"
       apiVersions:
         - "v1alpha3"
       operations:
@@ -57,6 +58,7 @@ webhooks:
     - apiGroups: ["cluster.x-k8s.io"]
       resources:
         - "clusters"
+        - "clusters/status"
       apiVersions:
         - "v1alpha3"
       operations:

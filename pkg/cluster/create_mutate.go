@@ -3,11 +3,14 @@ package cluster
 import (
 	"context"
 
+	"github.com/blang/semver"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -44,12 +47,26 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	defaultStatusPatch, err := m.getDefaultStatusPatch(ctx)
+	newClusterVersion, err := semverhelper.GetSemverFromLabels(newCluster.Labels)
 	if err != nil {
-		return []mutator.PatchOperation{}, microerror.Mask(err)
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}
 
-	result = append(result, *defaultStatusPatch)
+	nodepoolsReleaseVersion := semver.Version{
+		Major: 13,
+		Minor: 0,
+		Patch: 0,
+	}
+
+	if newClusterVersion.GTE(nodepoolsReleaseVersion) {
+		defaultStatusPatch, err := m.getDefaultStatusPatch(ctx)
+		if err != nil {
+			return []mutator.PatchOperation{}, microerror.Mask(err)
+		}
+
+		result = append(result, *defaultStatusPatch)
+	}
+	
 	return result, nil
 }
 
