@@ -50,7 +50,7 @@ func (m *UpdateMutator) ensureUpdateCondition(ctx context.Context, oldCluster *c
 	// or equal to 13.0.1 which is handling Upgrading condition
 	if newClusterVersion.GT(oldClusterVersion) && newClusterVersion.GTE(nodepoolsReleaseVersion) {
 		upgradingCondition := capiconditions.TrueCondition(aeV3conditions.UpgradingCondition)
-		patch = mutator.PatchAdd("/status/conditions/-/", *upgradingCondition)
+		patch = mutator.PatchAdd("/status/conditions/-", []capiv1alpha3.Condition{*upgradingCondition})
 	}
 
 	return patch, nil
