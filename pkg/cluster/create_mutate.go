@@ -44,14 +44,12 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	patches, err := m.ensureConditions(ctx, newCluster)
+	defaultStatusPatch, err := m.getDefaultStatusPatch(ctx)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
-	if len(patches) > 0 {
-		result = append(result, patches...)
-	}
 
+	result = append(result, *defaultStatusPatch)
 	return result, nil
 }
 
