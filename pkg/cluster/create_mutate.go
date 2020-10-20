@@ -66,7 +66,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 
 		result = append(result, *defaultStatusPatch)
 	}
-	
+
 	return result, nil
 }
 
