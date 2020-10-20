@@ -198,6 +198,17 @@ func mainError() error {
 		}
 	}
 
+	var clusterCreateMutator *cluster.CreateMutator
+	{
+		c := cluster.CreateMutatorConfig{
+			Logger: newLogger,
+		}
+		clusterCreateMutator, err = cluster.NewCreateMutator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var clusterUpdateMutator *cluster.UpdateMutator
 	{
 		c := cluster.UpdateMutatorConfig{
@@ -225,6 +236,7 @@ func mainError() error {
 	handler := http.NewServeMux()
 	// Mutators.
 	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
+	handler.Handle("/mutate/cluster/create", mutator.Handler(clusterCreateMutator))
 	handler.Handle("/mutate/cluster/update", mutator.Handler(clusterUpdateMutator))
 
 	// Validators.
