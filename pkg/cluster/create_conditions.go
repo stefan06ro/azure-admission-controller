@@ -32,7 +32,7 @@ func (m *CreateMutator) ensureCreatingCondition(ctx context.Context, newCluster 
 
 	var patch *mutator.PatchOperation
 	creatingCondition := capiconditions.TrueCondition(aeV3conditions.CreatingCondition)
-	patch = mutator.PatchAdd("/status/conditions/-", []capiv1alpha3.Condition{*creatingCondition})
+	patch = mutator.PatchAdd("/status/conditions", []capiv1alpha3.Condition{*creatingCondition})
 	m.Log(ctx, "level", "debug", "message", "set Creating condition")
 
 	return patch, nil
