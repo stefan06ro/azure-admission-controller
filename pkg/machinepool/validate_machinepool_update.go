@@ -2,7 +2,7 @@ package machinepool
 
 import (
 	"context"
-	"reflect"
+	"sort"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -55,8 +55,17 @@ func (a *UpdateValidator) Log(keyVals ...interface{}) {
 }
 
 func checkAvailabilityZonesUnchanged(ctx context.Context, oldMP *v1alpha3.MachinePool, newMP *v1alpha3.MachinePool) error {
-	if !reflect.DeepEqual(oldMP.Spec.FailureDomains, newMP.Spec.FailureDomains) {
+	if len(oldMP.Spec.FailureDomains) != len(newMP.Spec.FailureDomains) {
 		return microerror.Maskf(invalidOperationError, "Changing FailureDomains (availability zones) is not allowed.")
+	}
+
+	sort.Strings(oldMP.Spec.FailureDomains)
+	sort.Strings(newMP.Spec.FailureDomains)
+
+	for i := 0; i < len(oldMP.Spec.FailureDomains); i++ {
+		if oldMP.Spec.FailureDomains[i] != newMP.Spec.FailureDomains[i] {
+			return microerror.Maskf(invalidOperationError, "Changing FailureDomains (availability zones) is not allowed.")
+		}
 	}
 
 	return nil

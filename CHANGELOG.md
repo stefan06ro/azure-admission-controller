@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Compare `FailureDomains` field manually when updating instead of relying on `reflect.DeepEqual` which may have issues when the slice is nil or empty.
+
 ## [1.9.0] - 2020-10-21
 
 ### Added
