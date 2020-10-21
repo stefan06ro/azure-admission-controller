@@ -100,6 +100,22 @@ func (v *VMSKU) Memory(ctx context.Context, location string, vmType string) (int
 	return 0, microerror.Mask(invalidUpstreamResponseError)
 }
 
+func (v *VMSKU) SupportedAZs(ctx context.Context, location string, vmType string) ([]string, error) {
+	sku, err := v.getSKU(ctx, location, vmType)
+	if err != nil {
+		return []string{}, nil
+	}
+
+	var azs []string
+	for _, l := range *sku.LocationInfo {
+		if l.Zones != nil {
+			azs = append(azs, *l.Zones...)
+		}
+	}
+
+	return azs, nil
+}
+
 func (v *VMSKU) getCapability(ctx context.Context, location string, vmType string, name string) (*string, error) {
 	if name == "" {
 		return nil, microerror.Maskf(invalidRequestError, "name can't be empty")

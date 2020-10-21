@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ensure failureDomains in MachinePool are supported by the AzureMachinePool VM type in the current location.
+
 ## [1.8.0] - 2020-10-20
 
 ### Added

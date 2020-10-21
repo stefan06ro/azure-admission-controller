@@ -182,3 +182,39 @@ webhooks:
           - UPDATE
     sideEffects: None
     admissionReviewVersions: ["v1", "v1beta1"]
+  - name: validate.machinepools.create.{{ include "resource.default.name" . }}.giantswarm.io
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        name: {{ include "resource.default.name" . }}
+        namespace: {{ include "resource.default.namespace" . }}
+        path: /validate/machinepool/create
+      caBundle: Cg==
+    rules:
+      - apiGroups: ["exp.cluster.x-k8s.io"]
+        resources:
+          - "machinepools"
+        apiVersions:
+          - "v1alpha3"
+        operations:
+          - CREATE
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
+  - name: validate.machinepools.update.{{ include "resource.default.name" . }}.giantswarm.io
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        name: {{ include "resource.default.name" . }}
+        namespace: {{ include "resource.default.namespace" . }}
+        path: /validate/machinepool/update
+      caBundle: Cg==
+    rules:
+      - apiGroups: ["exp.cluster.x-k8s.io"]
+        resources:
+          - "machinepools"
+        apiVersions:
+          - "v1alpha3"
+        operations:
+          - UPDATE
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]

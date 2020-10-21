@@ -27,7 +27,7 @@ rules:
   - apiGroups:
       - exp.infrastructure.cluster.x-k8s.io
     resources:
-      - azuremachinepool
+      - azuremachinepools
     verbs:
       - "*"
   - apiGroups:
@@ -41,6 +41,12 @@ rules:
     resources:
       - azuremachines
       - azureclusters
+    verbs:
+      - "*"
+  - apiGroups:
+      - exp.cluster.x-k8s.io
+    resources:
+      - machinepools
     verbs:
       - "*"
 ---
