@@ -118,6 +118,17 @@ func mainError() error {
 		}
 	}
 
+	var azureClusterCreateMutator *azurecluster.CreateMutator
+	{
+		c := azurecluster.CreateMutatorConfig{
+			Logger: newLogger,
+		}
+		azureClusterCreateMutator, err = azurecluster.NewCreateMutator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var azureClusterConfigValidator *azureupdate.AzureClusterConfigValidator
 	{
 		azureClusterConfigValidatorConfig := azureupdate.AzureClusterConfigValidatorConfig{
@@ -125,6 +136,17 @@ func mainError() error {
 			Logger:     newLogger,
 		}
 		azureClusterConfigValidator, err = azureupdate.NewAzureClusterConfigValidator(azureClusterConfigValidatorConfig)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	var azureMachineCreateMutator *azuremachine.CreateMutator
+	{
+		createMutatorConfig := azuremachine.CreateMutatorConfig{
+			Logger: newLogger,
+		}
+		azureMachineCreateMutator, err = azuremachine.NewCreateMutator(createMutatorConfig)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -201,6 +223,17 @@ func mainError() error {
 		}
 	}
 
+	var clusterCreateMutator *cluster.CreateMutator
+	{
+		c := cluster.CreateMutatorConfig{
+			Logger: newLogger,
+		}
+		clusterCreateMutator, err = cluster.NewCreateMutator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var clusterUpdateValidator *cluster.UpdateValidator
 	{
 		c := cluster.UpdateValidatorConfig{
@@ -208,6 +241,17 @@ func mainError() error {
 			Logger:     newLogger,
 		}
 		clusterUpdateValidator, err = cluster.NewUpdateValidator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	var machinePoolCreateMutator *machinepool.CreateMutator
+	{
+		c := machinepool.CreateMutatorConfig{
+			Logger: newLogger,
+		}
+		machinePoolCreateMutator, err = machinepool.NewCreateMutator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -240,7 +284,11 @@ func mainError() error {
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
 	// Mutators.
+	handler.Handle("/mutate/azuremachine/create", mutator.Handler(azureMachineCreateMutator))
 	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
+	handler.Handle("/mutate/azurecluster/create", mutator.Handler(azureClusterCreateMutator))
+	handler.Handle("/mutate/cluster/create", mutator.Handler(clusterCreateMutator))
+	handler.Handle("/mutate/machinepool/create", mutator.Handler(machinePoolCreateMutator))
 
 	// Validators.
 	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))

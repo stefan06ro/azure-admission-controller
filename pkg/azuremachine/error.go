@@ -21,3 +21,12 @@ var invalidOperationError = &microerror.Error{
 func IsInvalidOperationError(err error) bool {
 	return microerror.Cause(err) == invalidOperationError
 }
+
+var parsingFailedError = &microerror.Error{
+	Kind: "parsingFailedError",
+}
+
+// IsParsingFailed asserts parsingFailedError.
+func IsParsingFailed(err error) bool {
+	return microerror.Cause(err) == parsingFailedError
+}

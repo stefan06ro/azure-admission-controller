@@ -12,3 +12,12 @@ var invalidConfigError = &microerror.Error{
 func IsInvalidConfig(err error) bool {
 	return microerror.Cause(err) == invalidConfigError
 }
+
+var parsingFailedError = &microerror.Error{
+	Kind: "parsingFailedError",
+}
+
+// IsParsingFailed asserts parsingFailedError.
+func IsParsingFailed(err error) bool {
+	return microerror.Cause(err) == parsingFailedError
+}
