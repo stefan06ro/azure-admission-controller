@@ -9,9 +9,8 @@ import (
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/giantswarm/azure-admission-controller/internal/conditions"
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
-	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
-	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -51,16 +50,19 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
+	// Validate release version
+	_, err := a.validateRelease(ctx, clusterOldCR, clusterNewCR)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
-	}
-	newClusterVersion, err := semverhelper.GetSemverFromLabels(clusterNewCR.Labels)
-	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return false, microerror.Mask(err)
 	}
 
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	// Validate conditions modifications
+	err = conditions.ValidateClusterConditions(clusterOldCR, clusterNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	return true, nil
 }
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {
