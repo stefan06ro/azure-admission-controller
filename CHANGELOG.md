@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AzureCluster, AzureMachine, AzureMachinePool, Cluster and MachinePools CR's
   are ensured to have normalized form of giantswarm.io/organization label
   value via mutating webhook on CREATE.
+- Ensure default value and immutability for `AzureCluster.ControlPlaneEndpoint`, `Cluster.ControlPlaneEndpoint` and `Cluster.ClusterNetwork fields`.
 
 ### Changed
 

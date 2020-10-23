@@ -53,6 +53,7 @@ spec:
             - ./azure-admission-controller
             - --tls-cert-file=/certs/ca.crt
             - --tls-key-file=/certs/tls.key
+            - --base-domain={{ .Values.Installation.V1.Guest.Kubernetes.API.EndpointBase }}
           volumeMounts:
           - name: {{ include "name" . }}-certificates
             mountPath: "/certs"

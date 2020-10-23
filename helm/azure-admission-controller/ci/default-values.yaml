@@ -1,5 +1,9 @@
 Installation:
   V1:
+    Guest:
+      Kubernetes:
+        API:
+          EndpointBase: k8s.test.westeurope.azure.gigantic.io
     Registry:
       Domain: quay.io
     Secret:

@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -51,6 +52,16 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
+	err := validateClusterNetworkUnchanged(*clusterOldCR, *clusterNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = validateControlPlaneEndpointUnchanged(*clusterOldCR, *clusterNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
 	if err != nil {
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
@@ -65,4 +76,36 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
+}
+
+func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.Cluster) error {
+	// Was nil and stayed nil. Not good but not changed so ok from this validator point of view.
+	if old.Spec.ClusterNetwork == nil && new.Spec.ClusterNetwork == nil {
+		return nil
+	}
+
+	// Was nil or became nil.
+	if old.Spec.ClusterNetwork == nil && new.Spec.ClusterNetwork != nil ||
+		old.Spec.ClusterNetwork != nil && new.Spec.ClusterNetwork == nil {
+		return microerror.Maskf(errors.InvalidOperationError, "ClusterNetwork can't be changed.")
+	}
+
+	// Check APIServerPort and ServiceDomain is unchanged.
+	if *old.Spec.ClusterNetwork.APIServerPort != *new.Spec.ClusterNetwork.APIServerPort ||
+		old.Spec.ClusterNetwork.ServiceDomain != new.Spec.ClusterNetwork.ServiceDomain {
+		return microerror.Maskf(errors.InvalidOperationError, "ClusterNetwork can't be changed.")
+	}
+
+	// Check Services have not blanked out.
+	if old.Spec.ClusterNetwork.Services == nil && new.Spec.ClusterNetwork.Services != nil ||
+		old.Spec.ClusterNetwork.Services != nil && new.Spec.ClusterNetwork.Services == nil {
+		return microerror.Maskf(errors.InvalidOperationError, "ClusterNetwork can't be changed.")
+	}
+
+	// Check Services didn't change.
+	if !reflect.DeepEqual(*old.Spec.ClusterNetwork.Services, *new.Spec.ClusterNetwork.Services) {
+		return microerror.Maskf(errors.InvalidOperationError, "ClusterNetwork can't be changed.")
+	}
+
+	return nil
 }
