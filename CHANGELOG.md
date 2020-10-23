@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Added
+### Added
 
 - Ensure default value and immutability for `AzureCluster.ControlPlaneEndpoint`, `Cluster.ControlPlaneEndpoint` and `Cluster.ClusterNetwork fields`.
 
