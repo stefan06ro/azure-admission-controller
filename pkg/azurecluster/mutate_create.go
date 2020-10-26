@@ -9,7 +9,6 @@ import (
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
-	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
@@ -62,14 +61,6 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err = m.ensureControlPlaneEndpointPort(ctx, azureClusterCR)
-	if err != nil {
-		return []mutator.PatchOperation{}, microerror.Mask(err)
-	}
-	if patch != nil {
-		result = append(result, *patch)
-	}
-
-	patch, err = generic.EnsureOrganizationLabelNormalized(ctx, azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
