@@ -13,6 +13,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -52,7 +53,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	err := validateClusterNetworkUnchanged(*clusterOldCR, *clusterNewCR)
+	err := generic.ValidateOrganizationLabelUnchanged(clusterOldCR, clusterNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = validateClusterNetworkUnchanged(*clusterOldCR, *clusterNewCR)
 	if err != nil {
 		return false, microerror.Mask(err)
 	}

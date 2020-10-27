@@ -20,6 +20,15 @@ func IsInvalidReleaseError(err error) bool {
 	return microerror.Cause(err) == InvalidReleaseError
 }
 
+var NotFoundError = &microerror.Error{
+	Kind: "notFoundError",
+}
+
+// IsNotFoundError asserts NotFoundError.
+func IsNotFoundError(err error) bool {
+	return microerror.Cause(err) == NotFoundError
+}
+
 var ParsingFailedError = &microerror.Error{
 	Kind: "ParsingFailedError",
 }

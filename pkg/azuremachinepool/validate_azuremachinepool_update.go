@@ -9,6 +9,7 @@ import (
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -48,7 +49,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	err := checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	err := generic.ValidateOrganizationLabelUnchanged(azureMPOldCR, azureMPNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
 		return false, microerror.Mask(err)
 	}

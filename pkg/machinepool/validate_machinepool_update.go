@@ -9,6 +9,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -42,7 +43,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
-	err := checkAvailabilityZonesUnchanged(ctx, machinePoolOldCR, machinePoolNewCR)
+	err := generic.ValidateOrganizationLabelUnchanged(machinePoolOldCR, machinePoolNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = checkAvailabilityZonesUnchanged(ctx, machinePoolOldCR, machinePoolNewCR)
 	if err != nil {
 		return false, microerror.Mask(err)
 	}

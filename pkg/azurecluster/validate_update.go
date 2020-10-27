@@ -12,6 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -51,7 +52,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
-	err := validateControlPlaneEndpointUnchanged(*azureClusterOldCR, *azureClusterNewCR)
+	err := generic.ValidateOrganizationLabelUnchanged(azureClusterOldCR, azureClusterNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = validateControlPlaneEndpointUnchanged(*azureClusterOldCR, *azureClusterNewCR)
 	if err != nil {
 		return false, microerror.Mask(err)
 	}
