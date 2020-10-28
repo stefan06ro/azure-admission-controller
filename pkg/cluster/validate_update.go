@@ -102,6 +102,11 @@ func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.
 		return microerror.Maskf(errors.InvalidOperationError, "ClusterNetwork can't be changed.")
 	}
 
+	// Was nil and stayed nil. Not good but not changed so ok from this validator point of view.
+	if old.Spec.ClusterNetwork.Services == nil && new.Spec.ClusterNetwork.Services == nil {
+		return nil
+	}
+
 	// Check Services have not blanked out.
 	if old.Spec.ClusterNetwork.Services == nil && new.Spec.ClusterNetwork.Services != nil ||
 		old.Spec.ClusterNetwork.Services != nil && new.Spec.ClusterNetwork.Services == nil {
