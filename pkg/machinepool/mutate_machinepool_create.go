@@ -6,7 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
@@ -39,9 +39,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	machinePoolCR := &capiv1alpha3.Cluster{}
+	machinePoolCR := &capiexp.MachinePool{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, machinePoolCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse MachinePool CR: %v", err)
+	}
+
+	defaultSpecValues := m.setDefaultSpecValues(ctx, machinePoolCR)
+	if defaultSpecValues != nil {
+		result = append(result, defaultSpecValues...)
 	}
 
 	return result, nil
