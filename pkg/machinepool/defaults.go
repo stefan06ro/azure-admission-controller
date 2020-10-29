@@ -27,7 +27,7 @@ func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *c
 // setDefaultReplicaValue checks if Spec.Replicas has been set, and if it is
 // not, it sets its value to 1.
 func (m *CreateMutator) setDefaultReplicaValue(ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
-	var currentValue string
+	currentValue := ""
 	if machinePool.Spec.Replicas == nil {
 		currentValue = "nil"
 		const defaultReplicas = "1"
