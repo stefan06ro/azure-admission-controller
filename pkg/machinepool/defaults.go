@@ -3,7 +3,6 @@ package machinepool
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
@@ -27,19 +26,14 @@ func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *c
 // setDefaultReplicaValue checks if Spec.Replicas has been set, and if it is
 // not, it sets its value to 1.
 func (m *CreateMutator) setDefaultReplicaValue(ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
-	currentValue := ""
+	m.logger.LogCtx(ctx,
+		"level", "debug",
+		"message", fmt.Sprintf("setting default MachinePool.Spec.Replica value, current value %s", machinePool.Spec.Replicas))
 	if machinePool.Spec.Replicas == nil {
-		currentValue = "nil"
 		const defaultReplicas = "1"
 		m.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %s", defaultReplicas))
 		return mutator.PatchAdd("/spec/replicas", defaultReplicas)
-	} else {
-		currentValue = strconv.Itoa(int(*machinePool.Spec.Replicas))
 	}
-
-	m.logger.LogCtx(ctx,
-		"level", "debug",
-		"message", fmt.Sprintf("setting default MachinePool.Spec.Replica value, value was %s", currentValue))
 
 	return nil
 }
