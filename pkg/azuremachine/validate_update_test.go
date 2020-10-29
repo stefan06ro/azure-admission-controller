@@ -19,7 +19,6 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 		name         string
 		oldAM        []byte
 		newAM        []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -28,14 +27,12 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			name:         "Case 0 - empty ssh key",
 			oldAM:        azureMachineRawObject(""),
 			newAM:        azureMachineRawObject(""),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
 			oldAM:        azureMachineRawObject(""),
 			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm"),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 	}
@@ -75,7 +72,7 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(ctx, getUpdateAdmissionRequest(tc.oldAM, tc.newAM))
+			err = admit.Validate(ctx, getUpdateAdmissionRequest(tc.oldAM, tc.newAM))
 
 			// Check if the error is the expected one.
 			switch {
@@ -87,11 +84,6 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

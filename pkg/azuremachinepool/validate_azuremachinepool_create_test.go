@@ -32,7 +32,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
 		nodePool     []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -42,21 +41,18 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
 			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking disabled", i*3+1, instanceType),
 			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking nil", i*3+2, instanceType),
 			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		})
 	}
@@ -67,7 +63,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases)-1, instanceType),
 			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: vmcapabilities.IsSkuNotFoundError,
 		})
 	}
@@ -87,7 +82,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					Lun:        to.Int32Ptr(22),
 				},
 			}),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		})
 	}
@@ -224,7 +218,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(ctx, getCreateAdmissionRequest(tc.nodePool))
+			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.nodePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -236,11 +230,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

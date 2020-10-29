@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Simplify `Validator` interface to only return `error`, dropping the `bool`.
+
 ### Added
 
 - Validate that the Organization label contains an existing Organization.

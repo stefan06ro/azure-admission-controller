@@ -16,7 +16,7 @@ import (
 )
 
 type Validator interface {
-	Validate(ctx context.Context, review *v1beta1.AdmissionRequest) (bool, error)
+	Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error
 	Log(keyVals ...interface{})
 }
 
@@ -48,14 +48,14 @@ func Handler(validator Validator) http.HandlerFunc {
 			return
 		}
 
-		allowed, err := validator.Validate(request.Context(), review.Request)
+		err = validator.Validate(request.Context(), review.Request)
 		if err != nil {
 			writeResponse(validator, writer, errorResponse(review.Request.UID, microerror.Mask(err)))
 			return
 		}
 
 		writeResponse(validator, writer, &v1beta1.AdmissionResponse{
-			Allowed: allowed,
+			Allowed: true,
 			UID:     review.Request.UID,
 		})
 	}

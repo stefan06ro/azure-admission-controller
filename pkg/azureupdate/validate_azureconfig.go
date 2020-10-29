@@ -46,36 +46,36 @@ func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigVal
 	return admitter, nil
 }
 
-func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	azureConfigNewCR := &v1alpha1.AzureConfig{}
 	azureConfigOldCR := &v1alpha1.AzureConfig{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureConfigNewCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
 	}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureConfigOldCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
 	}
 
 	oldVersion, err := semverhelper.GetSemverFromLabels(azureConfigOldCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
 	}
 	newVersion, err := semverhelper.GetSemverFromLabels(azureConfigNewCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}
 
 	if !oldVersion.Equals(newVersion) {
 		// If tenant cluster is already upgrading, we can't change the version any more.
 		upgrading, status := clusterIsUpgrading(azureConfigOldCR)
 		if upgrading {
-			return false, microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
+			return microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
 		}
 
 		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *AzureConfigValidator) Log(keyVals ...interface{}) {

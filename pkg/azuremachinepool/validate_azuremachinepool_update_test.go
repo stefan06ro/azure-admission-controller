@@ -34,7 +34,6 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		name         string
 		oldNodePool  []byte
 		newNodePool  []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -43,91 +42,78 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			name:         "case 0: AcceleratedNetworking is enabled in CR and we don't change it or the instance type",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: AcceleratedNetworking is disabled in CR and we don't change it or the instance type",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 2: Enabled and try disabling it, keeping same instance type",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: Enabled, try updating to new instance type that supports it",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[1], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Enabled, try updating to new instance type that does NOT supports it",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(unsupportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 5: Disabled and try enabling it",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 6: changed from nil to true",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 7: changed from true to nil",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 8: changed from nil to false",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 9: changed from false to nil",
 			oldNodePool:  azureMPRawObject(supportedInstanceType[0], &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(supportedInstanceType[0], nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 10: changed from premium to standard storage",
 			oldNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 11: changed from standard to premium storage",
 			oldNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 12: change storage account type",
 			oldNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
 			newNodePool:  azureMPRawObject(premiumStorageInstanceType, nil, string(compute.StorageAccountTypesPremiumLRS), desiredDataDisks),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
@@ -145,7 +131,6 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 					Lun:        to.Int32Ptr(22),
 				},
 			}),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 	}
@@ -263,7 +248,7 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
+			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -275,11 +260,6 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

@@ -39,52 +39,52 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 	return admitter, nil
 }
 
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	azureMPNewCR := &expcapzv1alpha3.AzureMachinePool{}
 	azureMPOldCR := &expcapzv1alpha3.AzureMachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMPNewCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureMPOldCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
 	err := generic.ValidateOrganizationLabelUnchanged(azureMPOldCR, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = a.checkAcceleratedNetworkingUpdateIsValid(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = a.checkInstanceTypeChangeIsValid(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = a.checkStorageAccountTypeUnchanged(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkSSHKeyIsEmpty(ctx, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkDataDisks(ctx, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *UpdateValidator) checkAcceleratedNetworkingUpdateIsValid(ctx context.Context, azureMPOldCR *expcapzv1alpha3.AzureMachinePool, azureMPNewCR *expcapzv1alpha3.AzureMachinePool) error {
