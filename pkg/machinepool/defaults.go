@@ -11,10 +11,10 @@ import (
 
 // setDefaultSpecValues checks if some optional field is not set, and sets
 // default values defined by upstream Cluster API.
-func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
+func setDefaultSpecValues(m mutator.Mutator, ctx context.Context, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
 
-	defaultSpecReplicas := m.setDefaultReplicaValue(ctx, machinePool)
+	defaultSpecReplicas := setDefaultReplicaValue(m, ctx, machinePool)
 	if defaultSpecReplicas != nil {
 		patches = append(patches, *defaultSpecReplicas)
 	}
@@ -24,10 +24,10 @@ func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *c
 
 // setDefaultReplicaValue checks if Spec.Replicas has been set, and if it is
 // not, it sets its value to 1.
-func (m *CreateMutator) setDefaultReplicaValue(ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
+func setDefaultReplicaValue(m mutator.Mutator, ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
 	if machinePool.Spec.Replicas == nil {
 		const defaultReplicas int64 = 1
-		m.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %d", defaultReplicas))
+		m.Log(ctx, "level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %d", defaultReplicas))
 		return mutator.PatchAdd("/spec/replicas", defaultReplicas)
 	}
 
