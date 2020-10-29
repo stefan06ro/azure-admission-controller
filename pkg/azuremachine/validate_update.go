@@ -42,33 +42,33 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 	return v, nil
 }
 
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	azureMachineNewCR := &capzv1alpha3.AzureMachine{}
 	azureMachineOldCR := &capzv1alpha3.AzureMachine{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMachineNewCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureMachineOldCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
 
 	err := checkSSHKeyIsEmpty(ctx, azureMachineNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = generic.ValidateOrganizationLabelUnchanged(azureMachineOldCR, azureMachineNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureMachineOldCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
 	}
 	newClusterVersion, err := semverhelper.GetSemverFromLabels(azureMachineNewCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}
 
 	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)

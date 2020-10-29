@@ -46,28 +46,28 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return v, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	clusterCR := &capiv1alpha3.Cluster{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, clusterCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
 	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, clusterCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = validateClusterNetwork(*clusterCR, a.baseDomain)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = validateControlPlaneEndpoint(*clusterCR, a.baseDomain)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *CreateValidator) Log(keyVals ...interface{}) {

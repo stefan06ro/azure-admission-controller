@@ -12,29 +12,29 @@ import (
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
-func Validate(ctx context.Context, ctrlCLient client.Client, oldVersion semver.Version, newVersion semver.Version) (bool, error) {
+func Validate(ctx context.Context, ctrlCLient client.Client, oldVersion semver.Version, newVersion semver.Version) error {
 	if oldVersion.Equals(newVersion) {
-		return true, nil
+		return nil
 	}
 
 	availableReleases, err := availableReleases(ctx, ctrlCLient)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Check if old and new versions are valid.
 	if !included(availableReleases, newVersion) {
-		return false, microerror.Maskf(errors.InvalidReleaseError, "release %s was not found in this installation", newVersion)
+		return microerror.Maskf(errors.InvalidReleaseError, "release %s was not found in this installation", newVersion)
 	}
 
 	// Downgrades are not allowed.
 	if newVersion.LT(oldVersion) {
-		return false, microerror.Maskf(errors.InvalidOperationError, "downgrading is not allowed (attempted to downgrade from %s to %s)", oldVersion, newVersion)
+		return microerror.Maskf(errors.InvalidOperationError, "downgrading is not allowed (attempted to downgrade from %s to %s)", oldVersion, newVersion)
 	}
 
 	// Check if either version is an alpha one.
 	if isAlphaRelease(oldVersion.String()) || isAlphaRelease(newVersion.String()) {
-		return false, microerror.Maskf(errors.InvalidOperationError, "It is not possible to upgrade to or from an alpha release")
+		return microerror.Maskf(errors.InvalidOperationError, "It is not possible to upgrade to or from an alpha release")
 	}
 
 	if oldVersion.Major != newVersion.Major || oldVersion.Minor != newVersion.Minor {
@@ -48,12 +48,12 @@ func Validate(ctx context.Context, ctrlCLient client.Client, oldVersion semver.V
 				(oldVersion.Major != release.Major || oldVersion.Minor != release.Minor) &&
 				(newVersion.Major != release.Major || newVersion.Minor != release.Minor) {
 				// Skipped one major or minor release.
-				return false, microerror.Maskf(errors.InvalidOperationError, "Upgrading from %s to %s is not allowed (skipped %s)", oldVersion, newVersion, release)
+				return microerror.Maskf(errors.InvalidOperationError, "Upgrading from %s to %s is not allowed (skipped %s)", oldVersion, newVersion, release)
 			}
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
 func availableReleases(ctx context.Context, ctrlClient client.Client) ([]*semver.Version, error) {

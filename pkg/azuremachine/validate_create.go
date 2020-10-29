@@ -40,23 +40,23 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return v, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	cr := &capzv1alpha3.AzureMachine{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, cr); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
 
 	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, cr)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkSSHKeyIsEmpty(ctx, cr)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *CreateValidator) Log(keyVals ...interface{}) {

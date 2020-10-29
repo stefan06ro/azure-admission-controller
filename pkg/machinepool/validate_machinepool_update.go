@@ -33,27 +33,27 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 	return admitter, nil
 }
 
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	machinePoolNewCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 	machinePoolOldCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, machinePoolOldCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
 	err := generic.ValidateOrganizationLabelUnchanged(machinePoolOldCR, machinePoolNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkAvailabilityZonesUnchanged(ctx, machinePoolOldCR, machinePoolNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {

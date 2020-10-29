@@ -20,7 +20,6 @@ func TestClusterUpdateValidate(t *testing.T) {
 		name         string
 		oldCluster   []byte
 		newCluster   []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -39,28 +38,24 @@ func TestClusterUpdateValidate(t *testing.T) {
 			name:         "case 0: unchanged ControlPlaneEndpoint",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
 			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: host changed",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
 			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 2: port changed",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
 			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: clusterNetwork deleted",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
 			newCluster:   clusterRawObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -80,7 +75,6 @@ func TestClusterUpdateValidate(t *testing.T) {
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
 			),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -100,7 +94,6 @@ func TestClusterUpdateValidate(t *testing.T) {
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
 			),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -116,7 +109,6 @@ func TestClusterUpdateValidate(t *testing.T) {
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
 			),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
@@ -138,7 +130,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldCluster, tc.newCluster))
+			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldCluster, tc.newCluster))
 
 			// Check if the error is the expected one.
 			switch {
@@ -150,11 +142,6 @@ func TestClusterUpdateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

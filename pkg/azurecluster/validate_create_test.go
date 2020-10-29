@@ -19,7 +19,6 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
 		azureCluster []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -27,25 +26,21 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
 			azureCluster: azureClusterRawObject("ab123", "", 0),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 1: Invalid Port",
 			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 80),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 2: Invalid Host",
 			azureCluster: azureClusterRawObject("ab123", "api.gigantic.io", 443),
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: Valid values",
 			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 	}
@@ -86,7 +81,7 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(ctx, getCreateAdmissionRequest(tc.azureCluster))
+			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.azureCluster))
 
 			// Check if the error is the expected one.
 			switch {
@@ -98,11 +93,6 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

@@ -32,7 +32,6 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 		name         string
 		machinePool  []byte
 		vmType       string
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -41,42 +40,36 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			name:         "case 0: instance type supporting [1,2,3], requested [1]",
 			machinePool:  machinePoolRawObject([]string{"1"}),
 			vmType:       "Standard_A2_v2",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: instance type supporting [1,2], requested [3]",
 			machinePool:  machinePoolRawObject([]string{"3"}),
 			vmType:       "Standard_A4_v2",
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 2: instance type supporting [1,2], requested [2,3]",
 			machinePool:  machinePoolRawObject([]string{"2", "3"}),
 			vmType:       "Standard_A4_v2",
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: instance type supporting [], requested [1]",
 			machinePool:  machinePoolRawObject([]string{"1"}),
 			vmType:       "Standard_A8_v2",
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "case 4: instance type supporting [], requested []",
 			machinePool:  machinePoolRawObject([]string{}),
 			vmType:       "Standard_A8_v2",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 5: AzureMachinePool does not exist",
 			machinePool:  machinePoolRawObject([]string{}),
 			vmType:       "",
-			allowed:      false,
 			errorMatcher: IsAzureMachinePoolNotFound,
 		},
 	}
@@ -216,7 +209,7 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(ctx, getCreateAdmissionRequest(tc.machinePool))
+			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.machinePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -228,11 +221,6 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

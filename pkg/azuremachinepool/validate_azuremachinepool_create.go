@@ -46,43 +46,43 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return admitter, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	azureMPNewCR := &expcapzv1alpha3.AzureMachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMPNewCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
 	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkAcceleratedNetworking(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkStorageAccountTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkSSHKeyIsEmpty(ctx, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
 	err = checkDataDisks(ctx, azureMPNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *CreateValidator) Log(keyVals ...interface{}) {
