@@ -148,7 +148,7 @@ func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwor
 				"cluster-operator.giantswarm.io/version": "",
 				"cluster.x-k8s.io/cluster-name":          clusterName,
 				"giantswarm.io/cluster":                  clusterName,
-				"giantswarm.io/organization":             "org-giantswarm",
+				"giantswarm.io/organization":             "giantswarm",
 				"release.giantswarm.io/version":          "13.0.0-alpha3",
 			},
 		},

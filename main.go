@@ -13,6 +13,7 @@ import (
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -67,6 +68,7 @@ func mainError() error {
 				corev1alpha1.AddToScheme,
 				releasev1alpha1.AddToScheme,
 				expcapzv1alpha3.AddToScheme,
+				securityv1alpha1.AddToScheme,
 			},
 			Logger: newLogger,
 
@@ -168,8 +170,9 @@ func mainError() error {
 	var azureMachinePoolCreateValidator *azuremachinepool.CreateValidator
 	{
 		createValidatorConfig := azuremachinepool.CreateValidatorConfig{
-			Logger: newLogger,
-			VMcaps: vmcaps,
+			CtrlClient: ctrlClient,
+			Logger:     newLogger,
+			VMcaps:     vmcaps,
 		}
 		azureMachinePoolCreateValidator, err = azuremachinepool.NewCreateValidator(createValidatorConfig)
 		if err != nil {
@@ -193,6 +196,7 @@ func mainError() error {
 	{
 		c := azurecluster.CreateValidatorConfig{
 			BaseDomain: cfg.BaseDomain,
+			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
 		azureClusterCreateValidator, err = azurecluster.NewCreateValidator(c)
@@ -216,7 +220,8 @@ func mainError() error {
 	var azureMachineCreateValidator *azuremachine.CreateValidator
 	{
 		c := azuremachine.CreateValidatorConfig{
-			Logger: newLogger,
+			CtrlClient: ctrlClient,
+			Logger:     newLogger,
 		}
 		azureMachineCreateValidator, err = azuremachine.NewCreateValidator(c)
 		if err != nil {

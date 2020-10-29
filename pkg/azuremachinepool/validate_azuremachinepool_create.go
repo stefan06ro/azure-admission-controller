@@ -7,22 +7,29 @@ import (
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
 type CreateValidator struct {
-	logger micrologger.Logger
-	vmcaps *vmcapabilities.VMSKU
+	ctrlClient client.Client
+	logger     micrologger.Logger
+	vmcaps     *vmcapabilities.VMSKU
 }
 
 type CreateValidatorConfig struct {
-	Logger micrologger.Logger
-	VMcaps *vmcapabilities.VMSKU
+	CtrlClient client.Client
+	Logger     micrologger.Logger
+	VMcaps     *vmcapabilities.VMSKU
 }
 
 func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
@@ -31,8 +38,9 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	}
 
 	admitter := &CreateValidator{
-		logger: config.Logger,
-		vmcaps: config.VMcaps,
+		ctrlClient: config.CtrlClient,
+		logger:     config.Logger,
+		vmcaps:     config.VMcaps,
 	}
 
 	return admitter, nil
@@ -44,7 +52,12 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return false, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	err := checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, azureMPNewCR)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
 	if err != nil {
 		return false, microerror.Mask(err)
 	}

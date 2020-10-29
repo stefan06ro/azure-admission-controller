@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -15,6 +16,7 @@ import (
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachinePoolCreateValidate(t *testing.T) {
@@ -102,6 +104,23 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
+
+			ctx := context.Background()
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
+			// Create default GiantSwarm organization.
+			organization := &securityv1alpha1.Organization{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "giantswarm",
+				},
+				Spec: securityv1alpha1.OrganizationSpec{},
+			}
+			err = ctrlClient.Create(ctx, organization)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			stubbedSKUs := map[string]compute.ResourceSku{
 				"Standard_A2_v2": {
 					Name: to.StringPtr("Standard_A2_v2"),
@@ -199,12 +218,13 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			admit := &CreateValidator{
-				logger: newLogger,
-				vmcaps: vmcaps,
+				ctrlClient: ctrlClient,
+				logger:     newLogger,
+				vmcaps:     vmcaps,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(context.Background(), getCreateAdmissionRequest(tc.nodePool))
+			allowed, err := admit.Validate(ctx, getCreateAdmissionRequest(tc.nodePool))
 
 			// Check if the error is the expected one.
 			switch {
