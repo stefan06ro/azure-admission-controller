@@ -90,7 +90,7 @@ webhooks:
       path: /mutate/machinepool/create
     caBundle: Cg==
   rules:
-    - apiGroups: ["exp.cluster.x-k8s.io/v1alpha3"]
+    - apiGroups: ["exp.cluster.x-k8s.io"]
       resources:
         - "machinepools"
       apiVersions:
