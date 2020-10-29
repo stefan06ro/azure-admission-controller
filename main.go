@@ -289,6 +289,17 @@ func mainError() error {
 		}
 	}
 
+	var machinePoolUpdateMutator *machinepool.UpdateMutator
+	{
+		c := machinepool.UpdateMutatorConfig{
+			Logger: newLogger,
+		}
+		machinePoolUpdateMutator, err = machinepool.NewUpdateMutator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var machinePoolCreateValidator *machinepool.CreateValidator
 	{
 		c := machinepool.CreateValidatorConfig{
@@ -321,6 +332,7 @@ func mainError() error {
 	handler.Handle("/mutate/azurecluster/create", mutator.Handler(azureClusterCreateMutator))
 	handler.Handle("/mutate/cluster/create", mutator.Handler(clusterCreateMutator))
 	handler.Handle("/mutate/machinepool/create", mutator.Handler(machinePoolCreateMutator))
+	handler.Handle("/mutate/machinepool/update", mutator.Handler(machinePoolUpdateMutator))
 
 	// Validators.
 	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
