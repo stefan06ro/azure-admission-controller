@@ -33,7 +33,6 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 
 func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRequest) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
-	m.logger.LogCtx(ctx, "level", "debug", "message", "mutating MachinePool create")
 
 	if request.DryRun != nil && *request.DryRun {
 		m.logger.LogCtx(ctx, "level", "debug", "message", "Dry run is not supported. Request processing stopped.")

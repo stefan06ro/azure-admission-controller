@@ -13,7 +13,6 @@ import (
 // default values defined by upstream Cluster API.
 func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
-	m.logger.LogCtx(ctx, "level", "debug", "message", "setting default MachinePool.Spec values")
 
 	defaultSpecReplicas := m.setDefaultReplicaValue(ctx, machinePool)
 	if defaultSpecReplicas != nil {
@@ -26,9 +25,6 @@ func (m *CreateMutator) setDefaultSpecValues(ctx context.Context, machinePool *c
 // setDefaultReplicaValue checks if Spec.Replicas has been set, and if it is
 // not, it sets its value to 1.
 func (m *CreateMutator) setDefaultReplicaValue(ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
-	m.logger.LogCtx(ctx,
-		"level", "debug",
-		"message", fmt.Sprintf("setting default MachinePool.Spec.Replica value, current value %s", machinePool.Spec.Replicas))
 	if machinePool.Spec.Replicas == nil {
 		const defaultReplicas = "1"
 		m.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %s", defaultReplicas))
