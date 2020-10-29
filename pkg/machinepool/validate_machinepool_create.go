@@ -48,6 +48,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 }
 
 func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
+	a.logger.LogCtx(ctx, "level", "debug", "message", "validating MachinePool create")
 	machinePoolNewCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
 		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
