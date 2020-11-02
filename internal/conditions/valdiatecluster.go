@@ -1,6 +1,7 @@
 package conditions
 
 import (
+	"github.com/blang/semver"
 	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
@@ -84,16 +85,36 @@ func ValidateUpgradingCondition(oldClusterCR *capi.Cluster, newClusterCR *capi.C
 			errorMessage := "Could not parse error message, expected serialized JSON for type %T"
 			return microerror.Maskf(errors.InvalidUpgradingConditionMessageFormatError, errorMessage, message)
 		}
+		lastSavedReleaseVersion, err := semver.New(message.ReleaseVersion)
+		if err != nil {
+			return microerror.Mask(err)
+		}
 
-		releaseVersion := newClusterCR.GetLabels()[label.ReleaseVersion]
-		if message.ReleaseVersion != releaseVersion {
-			errorMessage := "Release version that is set in the Upgrading condition message " +
-				"must match the release version that is set in the CR's " +
-				"'release.giantswarm.io/version' label, expected %s, got %s"
+		releaseVersionString := newClusterCR.GetLabels()[label.ReleaseVersion]
+		desiredReleaseVersion, err := semver.New(releaseVersionString)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		// The release version that is saved in the condition represents the
+		// release version with which the cluster was created, or release
+		// version to which the cluster was successfully upgraded the last
+		// time. Therefore, the release version set in label
+		// 'release.giantswarm.io/version', which represents the desired
+		// cluster version, must be either (1) same as the release version that
+		// is saved in condition, which is the state after cluster creation or
+		// cluster upgrade, or (2) greater than the release version that is
+		// saved in condition, which is state when the upgrade has been
+		// initiated.
+		if !desiredReleaseVersion.GTE(*lastSavedReleaseVersion) {
+			errorMessage := "Release version that is set in the CR's" +
+				"'release.giantswarm.io/version' label must be greater " +
+				"than or equal to the release version that is set in the " +
+				"Upgrading condition message, expected %s>=%s"
 			return microerror.Maskf(
 				errors.InvalidReleaseVersionInUpgradingConditionMessageError,
 				errorMessage,
-				releaseVersion, message.ReleaseVersion)
+				releaseVersionString, message.ReleaseVersion)
 		}
 	}
 
