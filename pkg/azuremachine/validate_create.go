@@ -16,11 +16,13 @@ import (
 
 type CreateValidator struct {
 	ctrlClient client.Client
+	location   string
 	logger     micrologger.Logger
 }
 
 type CreateValidatorConfig struct {
 	CtrlClient client.Client
+	Location   string
 	Logger     micrologger.Logger
 }
 
@@ -31,9 +33,13 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
+	}
 
 	v := &CreateValidator{
 		ctrlClient: config.CtrlClient,
+		location:   config.Location,
 		logger:     config.Logger,
 	}
 
@@ -52,6 +58,11 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	}
 
 	err = checkSSHKeyIsEmpty(ctx, cr)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateLocation(*cr, a.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}

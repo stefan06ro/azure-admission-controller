@@ -35,6 +35,12 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		},
+		{
+			name:         "Case 2 - location changed",
+			oldAM:        azureMachineRawObject("", "westeurope"),
+			newAM:        azureMachineRawObject("", "westpoland"),
+			errorMatcher: IsInvalidOperationError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -66,7 +72,7 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateValidator{
+			admit := &UpdateValidator{
 				ctrlClient: ctrlClient,
 				logger:     newLogger,
 			}

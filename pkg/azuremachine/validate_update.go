@@ -62,6 +62,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
+	err = validateLocationUnchanged(*azureMachineOldCR, *azureMachineNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureMachineOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")

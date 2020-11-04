@@ -40,6 +40,12 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 			newAzureCluster: azureClusterRawObject("ab123", "api.ab123.test.westeurope.azure.gigantic.io", 80, "westeurope"),
 			errorMatcher:    errors.IsInvalidOperationError,
 		},
+		{
+			name:            "case 3: location changed",
+			oldAzureCluster: azureClusterRawObject("ab123", "api.ab123.test.westeurope.azure.gigantic.io", 443, "westeurope"),
+			newAzureCluster: azureClusterRawObject("ab123", "api.ab123.test.westeurope.azure.gigantic.io", 443, "westpoland"),
+			errorMatcher:    errors.IsInvalidOperationError,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -32,6 +32,11 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		},
+		{
+			name:         "Case 2 - invalid location",
+			azureMachine: azureMachineRawObject("", "westpoland"),
+			errorMatcher: IsInvalidOperationError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -65,6 +70,7 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 
 			admit := &CreateValidator{
 				ctrlClient: ctrlClient,
+				location:   "westeurope",
 				logger:     newLogger,
 			}
 

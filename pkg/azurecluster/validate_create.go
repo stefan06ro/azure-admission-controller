@@ -17,12 +17,14 @@ import (
 type CreateValidator struct {
 	baseDomain string
 	ctrlClient client.Client
+	location   string
 	logger     micrologger.Logger
 }
 
 type CreateValidatorConfig struct {
 	BaseDomain string
 	CtrlClient client.Client
+	Location   string
 	Logger     micrologger.Logger
 }
 
@@ -36,10 +38,14 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
+	}
 
 	v := &CreateValidator{
 		baseDomain: config.BaseDomain,
 		ctrlClient: config.CtrlClient,
+		location:   config.Location,
 		logger:     config.Logger,
 	}
 
@@ -58,6 +64,11 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	}
 
 	err = validateControlPlaneEndpoint(*azureClusterCR, a.baseDomain)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateLocation(*azureClusterCR, a.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}

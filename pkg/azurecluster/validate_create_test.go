@@ -43,6 +43,11 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, "westeurope"),
 			errorMatcher: nil,
 		},
+		{
+			name:         "case 4: Invalid region",
+			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, "westpoland"),
+			errorMatcher: errors.IsInvalidOperationError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -77,6 +82,7 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 			admit := &CreateValidator{
 				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				ctrlClient: ctrlClient,
+				location:   "westeurope",
 				logger:     newLogger,
 			}
 
