@@ -7,7 +7,7 @@ import (
 	providerv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
-func azureMachineRawObject(sshKey string) []byte {
+func azureMachineRawObject(sshKey string, location string) []byte {
 	mp := providerv1alpha3.AzureMachine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachine",
@@ -37,7 +37,7 @@ func azureMachineRawObject(sshKey string) []byte {
 					ThirdPartyImage: false,
 				},
 			},
-			Location: "westeurope",
+			Location: location,
 			OSDisk: providerv1alpha3.OSDisk{
 				OSType:     "Linux",
 				DiskSizeGB: 50,

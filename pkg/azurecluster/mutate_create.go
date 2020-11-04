@@ -15,11 +15,13 @@ import (
 
 type CreateMutator struct {
 	baseDomain string
+	location   string
 	logger     micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
 	BaseDomain string
+	Location   string
 	Logger     micrologger.Logger
 }
 
@@ -30,9 +32,13 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
+	}
 
 	v := &CreateMutator{
 		baseDomain: config.BaseDomain,
+		location:   config.Location,
 		logger:     config.Logger,
 	}
 
@@ -68,6 +74,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
+	patch, err = m.ensureLocation(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
 	return result, nil
 }
 
@@ -90,6 +104,14 @@ func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clus
 func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Port == 0 {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/port", key.ControlPlaneEndpointPort), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureLocation(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	if azureCluster.Spec.Location == "" {
+		return mutator.PatchAdd("/spec/location", m.location), nil
 	}
 
 	return nil, nil

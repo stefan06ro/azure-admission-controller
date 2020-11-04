@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Validate that the Organization label contains an existing Organization.
 - Set default value for `MachinePool.Spec.Replicas` to 1.
+- Set AzureMachine's and AzureCluster's location field on create if empty.
 
 ## [1.12.0] - 2020-10-27
 

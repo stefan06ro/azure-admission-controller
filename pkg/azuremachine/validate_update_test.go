@@ -25,14 +25,14 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			oldAM:        azureMachineRawObject(""),
-			newAM:        azureMachineRawObject(""),
+			oldAM:        azureMachineRawObject("", "westeurope"),
+			newAM:        azureMachineRawObject("", "westeurope"),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			oldAM:        azureMachineRawObject(""),
-			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm"),
+			oldAM:        azureMachineRawObject("", "westeurope"),
+			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		},
 	}

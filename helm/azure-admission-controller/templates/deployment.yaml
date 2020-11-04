@@ -54,6 +54,7 @@ spec:
             - --tls-cert-file=/certs/ca.crt
             - --tls-key-file=/certs/tls.key
             - --base-domain={{ .Values.Installation.V1.Guest.Kubernetes.API.EndpointBase }}
+            - --location={{ .Values.Installation.V1.Provider.Azure.Location }}
           volumeMounts:
           - name: {{ include "name" . }}-certificates
             mountPath: "/certs"

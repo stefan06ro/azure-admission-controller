@@ -29,7 +29,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         fmt.Sprintf("case 0: ControlPlaneEndpoint left empty"),
-			azureCluster: azureClusterRawObject("ab132", "", 0),
+			azureCluster: azureClusterRawObject("ab132", "", 0, "westeurope"),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -46,7 +46,25 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         fmt.Sprintf("case 1: ControlPlaneEndpoint has a value"),
-			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123),
+			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, "westeurope"),
+			patches:      []mutator.PatchOperation{},
+			errorMatcher: nil,
+		},
+		{
+			name:         fmt.Sprintf("case 2: Location empty"),
+			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, ""),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/location",
+					Value:     "westeurope",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:         fmt.Sprintf("case 3: Location has value"),
+			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, "westeurope"),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
@@ -67,6 +85,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 
 			admit := &CreateMutator{
 				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				location:   "westeurope",
 				logger:     newLogger,
 			}
 
@@ -111,7 +130,7 @@ func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	return req
 }
 
-func azureClusterRawObject(clusterName string, controlPlaneEndpointHost string, controlPlaneEndpointPort int32) []byte {
+func azureClusterRawObject(clusterName string, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, location string) []byte {
 	mp := capzv1alpha3.AzureCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureCluster",
@@ -130,7 +149,7 @@ func azureClusterRawObject(clusterName string, controlPlaneEndpointHost string, 
 		},
 		Spec: capzv1alpha3.AzureClusterSpec{
 			ResourceGroup: clusterName,
-			Location:      "westeurope",
+			Location:      location,
 			ControlPlaneEndpoint: v1alpha3.APIEndpoint{
 				Host: controlPlaneEndpointHost,
 				Port: controlPlaneEndpointPort,

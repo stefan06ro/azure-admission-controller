@@ -2,35 +2,45 @@ package azuremachine
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"testing"
 
-	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
+	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func TestAzureMachineCreateValidate(t *testing.T) {
+func TestAzureMachineCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
 		azureMachine []byte
+		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
-			name:         "Case 0 - empty ssh key",
-			azureMachine: azureMachineRawObject("", "westeurope"),
+			name:         fmt.Sprintf("case 0: Location empty"),
+			azureMachine: azureMachineRawObject("ab132", ""),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/location",
+					Value:     "westeurope",
+				},
+			},
 			errorMatcher: nil,
 		},
 		{
-			name:         "Case 1 - not empty ssh key",
-			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
-			errorMatcher: IsInvalidOperationError,
+			name:         fmt.Sprintf("case 1: Location has value"),
+			azureMachine: azureMachineRawObject("ab132", "westeurope"),
+			patches:      []mutator.PatchOperation{},
+			errorMatcher: nil,
 		},
 	}
 
@@ -47,29 +57,13 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 				}
 			}
 
-			ctx := context.Background()
-			fakeK8sClient := unittest.FakeK8sClient()
-			ctrlClient := fakeK8sClient.CtrlClient()
-
-			// Create default GiantSwarm organization.
-			organization := &securityv1alpha1.Organization{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "giantswarm",
-				},
-				Spec: securityv1alpha1.OrganizationSpec{},
-			}
-			err = ctrlClient.Create(ctx, organization)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			admit := &CreateValidator{
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			admit := &CreateMutator{
+				location: "westeurope",
+				logger:   newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.azureMachine))
+			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.azureMachine))
 
 			// Check if the error is the expected one.
 			switch {
@@ -82,15 +76,22 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
 			}
+
+			// Check if the validation result is the expected one.
+			if len(tc.patches) != 0 || len(patches) != 0 {
+				if !reflect.DeepEqual(tc.patches, patches) {
+					t.Fatalf("Patches mismatch: expected %v, got %v", tc.patches, patches)
+				}
+			}
 		})
 	}
 }
 
-func getCreateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
+func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	req := &v1beta1.AdmissionRequest{
 		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
+			Version:  "infrastructure.cluster.x-k8s.io/v1alpha3",
+			Resource: "azuremachine",
 		},
 		Operation: v1beta1.Create,
 		Object: runtime.RawExtension{

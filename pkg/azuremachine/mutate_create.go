@@ -6,26 +6,32 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
-	logger micrologger.Logger
+	location string
+	logger   micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
-	Logger micrologger.Logger
+	Location string
+	Logger   micrologger.Logger
 }
 
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
+	}
 
 	m := &CreateMutator{
-		logger: config.Logger,
+		location: config.Location,
+		logger:   config.Logger,
 	}
 
 	return m, nil
@@ -39,9 +45,17 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	azureMachineCR := &capiv1alpha3.Cluster{}
+	azureMachineCR := &v1alpha3.AzureMachine{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMachineCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse AzureMachine CR: %v", err)
+	}
+
+	patch, err := m.ensureLocation(ctx, azureMachineCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
 	}
 
 	return result, nil
@@ -53,4 +67,12 @@ func (m *CreateMutator) Log(keyVals ...interface{}) {
 
 func (m *CreateMutator) Resource() string {
 	return "azuremachine"
+}
+
+func (m *CreateMutator) ensureLocation(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
+	if azureMachine.Spec.Location == "" {
+		return mutator.PatchAdd("/spec/location", m.location), nil
+	}
+
+	return nil, nil
 }

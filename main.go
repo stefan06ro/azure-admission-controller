@@ -124,6 +124,7 @@ func mainError() error {
 	{
 		conf := azurecluster.CreateMutatorConfig{
 			BaseDomain: cfg.BaseDomain,
+			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
 		azureClusterCreateMutator, err = azurecluster.NewCreateMutator(conf)
@@ -147,7 +148,8 @@ func mainError() error {
 	var azureMachineCreateMutator *azuremachine.CreateMutator
 	{
 		createMutatorConfig := azuremachine.CreateMutatorConfig{
-			Logger: newLogger,
+			Location: cfg.Location,
+			Logger:   newLogger,
 		}
 		azureMachineCreateMutator, err = azuremachine.NewCreateMutator(createMutatorConfig)
 		if err != nil {

@@ -24,6 +24,7 @@ func Parse() (Config, error) {
 	kingpin.Flag("tls-key-file", "File containing the private key for HTTPS").Required().StringVar(&result.KeyFile)
 	kingpin.Flag("address", "The address to listen on").Default(defaultAddress).StringVar(&result.Address)
 	kingpin.Flag("base-domain", "The base domain of the installation").Required().StringVar(&result.BaseDomain)
+	kingpin.Flag("location", "The azure region of the installation").Required().StringVar(&result.Location)
 
 	kingpin.Parse()
 	return result, nil
