@@ -16,12 +16,14 @@ import (
 
 type CreateValidator struct {
 	ctrlClient client.Client
+	location   string
 	logger     micrologger.Logger
 	vmcaps     *vmcapabilities.VMSKU
 }
 
 type CreateValidatorConfig struct {
 	CtrlClient client.Client
+	Location   string
 	Logger     micrologger.Logger
 	VMcaps     *vmcapabilities.VMSKU
 }
@@ -29,6 +31,9 @@ type CreateValidatorConfig struct {
 func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -39,6 +44,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 
 	admitter := &CreateValidator{
 		ctrlClient: config.CtrlClient,
+		location:   config.Location,
 		logger:     config.Logger,
 		vmcaps:     config.VMcaps,
 	}
@@ -78,6 +84,11 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	}
 
 	err = checkDataDisks(ctx, azureMPNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = checkLocation(*azureMPNewCR, a.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}

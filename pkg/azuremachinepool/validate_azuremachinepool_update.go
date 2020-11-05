@@ -84,6 +84,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
+	err = checkLocationUnchanged(*azureMPOldCR, *azureMPNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
 	return nil
 }
 

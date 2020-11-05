@@ -174,6 +174,7 @@ func mainError() error {
 	{
 		createValidatorConfig := azuremachinepool.CreateValidatorConfig{
 			CtrlClient: ctrlClient,
+			Location:   cfg.Location,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}

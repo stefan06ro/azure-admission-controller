@@ -133,6 +133,12 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			}, "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		},
+		{
+			name:         "case 14: changed location",
+			oldNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "westeurope"),
+			newNodePool:  azureMPRawObject(standardStorageInstanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "northeastitaly"),
+			errorMatcher: IsInvalidOperationError,
+		},
 	}
 
 	for _, tc := range testCases {
