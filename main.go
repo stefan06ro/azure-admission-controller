@@ -228,6 +228,7 @@ func mainError() error {
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
+			VMcaps:     vmcaps,
 		}
 		azureMachineCreateValidator, err = azuremachine.NewCreateValidator(c)
 		if err != nil {

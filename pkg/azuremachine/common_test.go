@@ -7,7 +7,7 @@ import (
 	providerv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
-func azureMachineRawObject(sshKey string, location string) []byte {
+func azureMachineRawObject(sshKey string, location string, failureDomain *string) []byte {
 	mp := providerv1alpha3.AzureMachine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachine",
@@ -28,6 +28,7 @@ func azureMachineRawObject(sshKey string, location string) []byte {
 		},
 		Spec: providerv1alpha3.AzureMachineSpec{
 			AvailabilityZone: providerv1alpha3.AvailabilityZone{},
+			FailureDomain:    failureDomain,
 			Image: &providerv1alpha3.Image{
 				Marketplace: &providerv1alpha3.AzureMarketplaceImage{
 					Publisher:       "kinvolk",

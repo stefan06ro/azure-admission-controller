@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -25,20 +26,26 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope"),
-			newAM:        azureMachineRawObject("", "westeurope"),
+			oldAM:        azureMachineRawObject("", "westeurope", nil),
+			newAM:        azureMachineRawObject("", "westeurope", nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope"),
-			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
+			oldAM:        azureMachineRawObject("", "westeurope", nil),
+			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 2 - location changed",
-			oldAM:        azureMachineRawObject("", "westeurope"),
-			newAM:        azureMachineRawObject("", "westpoland"),
+			oldAM:        azureMachineRawObject("", "westeurope", nil),
+			newAM:        azureMachineRawObject("", "westpoland", nil),
+			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name:         "Case 3 - failure domain changed",
+			oldAM:        azureMachineRawObject("", "westeurope", to.StringPtr("1")),
+			newAM:        azureMachineRawObject("", "westpoland", to.StringPtr("2")),
 			errorMatcher: IsInvalidOperationError,
 		},
 	}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -11,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -24,18 +27,28 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			azureMachine: azureMachineRawObject("", "westeurope"),
+			azureMachine: azureMachineRawObject("", "westeurope", nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope"),
+			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 2 - invalid location",
-			azureMachine: azureMachineRawObject("", "westpoland"),
+			azureMachine: azureMachineRawObject("", "westpoland", nil),
 			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name:         "Case 3 - invalid failure domain",
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("2")),
+			errorMatcher: IsInvalidOperationError,
+		},
+		{
+			name:         "Case 4 - valid failure domain",
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("1")),
+			errorMatcher: nil,
 		},
 	}
 
@@ -68,10 +81,50 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			stubbedSKUs := map[string]compute.ResourceSku{
+				"Standard_D4s_v3": {
+					Name: to.StringPtr("Standard_D4s_v3"),
+					Capabilities: &[]compute.ResourceSkuCapabilities{
+						{
+							Name:  to.StringPtr("AcceleratedNetworkingEnabled"),
+							Value: to.StringPtr("False"),
+						},
+						{
+							Name:  to.StringPtr("vCPUs"),
+							Value: to.StringPtr("4"),
+						},
+						{
+							Name:  to.StringPtr("MemoryGB"),
+							Value: to.StringPtr("16"),
+						},
+						{
+							Name:  to.StringPtr("PremiumIO"),
+							Value: to.StringPtr("True"),
+						},
+					},
+					LocationInfo: &[]compute.ResourceSkuLocationInfo{
+						{
+							Zones: &[]string{
+								"1",
+							},
+						},
+					},
+				},
+			}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
+			})
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
 			admit := &CreateValidator{
 				ctrlClient: ctrlClient,
 				location:   "westeurope",
 				logger:     newLogger,
+				vmcaps:     vmcaps,
 			}
 
 			// Run admission request to validate AzureConfig updates.
@@ -106,4 +159,16 @@ func getCreateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	}
 
 	return req
+}
+
+type StubAPI struct {
+	stubbedSKUs map[string]compute.ResourceSku
+}
+
+func NewStubAPI(stubbedSKUs map[string]compute.ResourceSku) vmcapabilities.API {
+	return &StubAPI{stubbedSKUs: stubbedSKUs}
+}
+
+func (s *StubAPI) List(ctx context.Context, filter string) (map[string]compute.ResourceSku, error) {
+	return s.stubbedSKUs, nil
 }

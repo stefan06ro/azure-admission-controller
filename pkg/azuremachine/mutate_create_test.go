@@ -26,7 +26,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         fmt.Sprintf("case 0: Location empty"),
-			azureMachine: azureMachineRawObject("ab132", ""),
+			azureMachine: azureMachineRawObject("ab132", "", nil),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -38,7 +38,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 		},
 		{
 			name:         fmt.Sprintf("case 1: Location has value"),
-			azureMachine: azureMachineRawObject("ab132", "westeurope"),
+			azureMachine: azureMachineRawObject("ab132", "westeurope", nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
