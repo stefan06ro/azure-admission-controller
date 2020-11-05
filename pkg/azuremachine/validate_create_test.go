@@ -50,6 +50,16 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("1")),
 			errorMatcher: nil,
 		},
+		{
+			name:         "Case 5 - empty failure domain",
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("")),
+			errorMatcher: nil,
+		},
+		{
+			name:         "Case 6 - nil failure domain",
+			azureMachine: azureMachineRawObject("", "westeurope", nil),
+			errorMatcher: nil,
+		},
 	}
 
 	for _, tc := range testCases {

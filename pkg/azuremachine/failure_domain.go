@@ -10,7 +10,7 @@ import (
 
 func validateFailureDomain(azureMachine capzv1alpha3.AzureMachine, supportedAZs []string) error {
 	// No failure domain specified.
-	if azureMachine.Spec.FailureDomain == nil {
+	if azureMachine.Spec.FailureDomain == nil || *azureMachine.Spec.FailureDomain == "" {
 		return nil
 	}
 
