@@ -160,8 +160,9 @@ func mainError() error {
 	var azureMachinePoolCreateMutator *azuremachinepool.CreateMutator
 	{
 		createMutatorConfig := azuremachinepool.CreateMutatorConfig{
-			Logger: newLogger,
-			VMcaps: vmcaps,
+			Location: cfg.Location,
+			Logger:   newLogger,
+			VMcaps:   vmcaps,
 		}
 		azureMachinePoolCreateMutator, err = azuremachinepool.NewCreateMutator(createMutatorConfig)
 		if err != nil {

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set AzureMachine's and AzureCluster's location field on create if empty.
 - Validate AzureMachine's and AzureCluster's location matches the installation location.
 - Validate AzureMachine's and AzureCluster's location never changes.
+- Set AzureMachinePool's location field on create if empty.
 
 ## [1.12.0] - 2020-10-27
 
