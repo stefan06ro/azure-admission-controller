@@ -16,11 +16,11 @@ import (
 
 func ValidateOrganizationLabelUnchanged(old, new metav1.Object) error {
 	if _, exists := old.GetLabels()[label.Organization]; !exists {
-		return microerror.Maskf(errors.NotFoundError, "old CR doesn't contain Organization label %#q", label.Organization)
+		return microerror.Maskf(errors.NotFoundError, "meta CR doesn't contain Organization label %#q", label.Organization)
 	}
 
 	if _, exists := new.GetLabels()[label.Organization]; !exists {
-		return microerror.Maskf(errors.NotFoundError, "new CR doesn't contain Organization label %#q", label.Organization)
+		return microerror.Maskf(errors.NotFoundError, "patches CR doesn't contain Organization label %#q", label.Organization)
 	}
 
 	if old.GetLabels()[label.Organization] != new.GetLabels()[label.Organization] {

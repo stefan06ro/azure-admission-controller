@@ -13,13 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Validate that the Organization label contains an existing Organization.
+- Validate that the `Organization` label contains an existing `Organization`.
 - Set default value for `MachinePool.Spec.Replicas` to 1.
-- Set AzureMachine's, AzureCluster's, and AzureMachinePool's location field on create if empty.
-- Validate AzureMachine's, AzureCluster's, and AzureMachinePool's location matches the installation location.
-- Validate AzureMachine's, AzureCluster's, and AzureMachinePool's location never changes.
-- Validate FailureDomain for AzureMachine is a valid and supported one.
-- Validate FailureDomain for AzureMachine never changes.
+- Set `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` field on create if empty.
+- Validate `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` matches the installation's `location`.
+- Validate `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` never changes.
+- Validate `FailureDomain` for `AzureMachine` is a valid and supported one.
+- Validate `FailureDomain` for `AzureMachine` never changes.
+- Set `release.giantswarm.io/version` label on `MachinePool` and `AzureMachinePool` on create if empty. 
 
 ## [1.12.0] - 2020-10-27
 

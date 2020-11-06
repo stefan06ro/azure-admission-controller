@@ -8,24 +8,31 @@ import (
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
-	location string
-	logger   micrologger.Logger
-	vmcaps   *vmcapabilities.VMSKU
+	ctrlClient client.Client
+	location   string
+	logger     micrologger.Logger
+	vmcaps     *vmcapabilities.VMSKU
 }
 
 type CreateMutatorConfig struct {
-	Location string
-	Logger   micrologger.Logger
-	VMcaps   *vmcapabilities.VMSKU
+	CtrlClient client.Client
+	Location   string
+	Logger     micrologger.Logger
+	VMcaps     *vmcapabilities.VMSKU
 }
 
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
@@ -37,9 +44,10 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	}
 
 	m := &CreateMutator{
-		location: config.Location,
-		logger:   config.Logger,
-		vmcaps:   config.VMcaps,
+		ctrlClient: config.CtrlClient,
+		location:   config.Location,
+		logger:     config.Logger,
+		vmcaps:     config.VMcaps,
 	}
 
 	return m, nil
@@ -75,6 +83,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err = m.ensureDataDisks(ctx, azureMPCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.EnsureReleaseVersionLabel(ctx, m.ctrlClient, azureMPCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
