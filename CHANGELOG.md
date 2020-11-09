@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` never changes.
 - Validate `FailureDomain` for `AzureMachine` is a valid and supported one.
 - Validate `FailureDomain` for `AzureMachine` never changes.
-- Set `release.giantswarm.io/version` label on `MachinePool`, `AzureMachinePool`, and `Spark` CRs on create if empty. 
+- Set `release.giantswarm.io/version` label on `MachinePool`, `AzureMachinePool`, and `Spark` CRs on create if empty.
+- Set `AzureMachinePool`'s and `MachinePool`'s operators versions on create if missing.
 
 ## [1.12.0] - 2020-10-27
 

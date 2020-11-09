@@ -3,6 +3,7 @@ package machinepool
 import (
 	"context"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -58,6 +59,22 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err := generic.EnsureReleaseVersionLabel(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta())
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.EnsureComponentVersionLabel(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta(), label.AzureOperatorVersion)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.EnsureComponentVersionLabel(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta(), label.ClusterOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
