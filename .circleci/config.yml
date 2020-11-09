@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@0.14.0
+  architect: giantswarm/architect@0.17.0
 
 
 workflows:
@@ -58,3 +58,16 @@ workflows:
             tags:
               only: /^v.*/
 
+      - architect/integration-test:
+          context: architect
+          name: admission-integration-test
+          install-app-platform: true
+          test-dir: "integration/test/organization"
+          test-timeout: "10m"
+          filters:
+            # Do not trigger the job on merge to master.
+            branches:
+              ignore:
+                - master
+          requires:
+            - push-azure-admission-controller-to-control-plane-app-catalog
