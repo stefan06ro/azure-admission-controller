@@ -9,6 +9,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 )
 
 func TestMachinePoolUpdateValidate(t *testing.T) {
@@ -22,14 +24,14 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: FailureDomains unchanged",
-			oldNodePool:  machinePoolRawObject([]string{"1", "2"}),
-			newNodePool:  machinePoolRawObject([]string{"1", "2"}),
+			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1", "2"})),
+			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1", "2"})),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: FailureDomains changed",
-			oldNodePool:  machinePoolRawObject([]string{"1"}),
-			newNodePool:  machinePoolRawObject([]string{"2"}),
+			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1"})),
+			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"2"})),
 			errorMatcher: IsInvalidOperationError,
 		},
 	}
