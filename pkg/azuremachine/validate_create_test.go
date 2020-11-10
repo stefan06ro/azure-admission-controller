@@ -27,37 +27,37 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			azureMachine: azureMachineRawObject("", "westeurope", nil),
+			azureMachine: azureMachineRawObject("", "westeurope", nil, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil),
+			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 2 - invalid location",
-			azureMachine: azureMachineRawObject("", "westpoland", nil),
+			azureMachine: azureMachineRawObject("", "westpoland", nil, nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 3 - invalid failure domain",
-			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("2")),
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("2"), nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 4 - valid failure domain",
-			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("1")),
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("1"), nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 5 - empty failure domain",
-			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("")),
+			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr(""), nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 6 - nil failure domain",
-			azureMachine: azureMachineRawObject("", "westeurope", nil),
+			azureMachine: azureMachineRawObject("", "westeurope", nil, nil),
 			errorMatcher: nil,
 		},
 	}

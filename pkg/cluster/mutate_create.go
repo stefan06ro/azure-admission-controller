@@ -4,23 +4,28 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
 	baseDomain string
+	ctrlClient client.Client
 	logger     micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
 	BaseDomain string
+	CtrlClient client.Client
 	Logger     micrologger.Logger
 }
 
@@ -28,12 +33,16 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.BaseDomain == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.BaseDomain must not be empty", config)
 	}
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
 	v := &CreateMutator{
 		baseDomain: config.BaseDomain,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 	}
 
@@ -70,6 +79,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err = m.ensureControlPlaneEndpointPort(ctx, clusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.CopyComponentVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, clusterCR.GetObjectMeta(), label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

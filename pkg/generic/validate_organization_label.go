@@ -20,7 +20,7 @@ func ValidateOrganizationLabelUnchanged(old, new metav1.Object) error {
 	}
 
 	if _, exists := new.GetLabels()[label.Organization]; !exists {
-		return microerror.Maskf(errors.NotFoundError, "patches CR doesn't contain Organization label %#q", label.Organization)
+		return microerror.Maskf(errors.NotFoundError, "patch CR doesn't contain Organization label %#q", label.Organization)
 	}
 
 	if old.GetLabels()[label.Organization] != new.GetLabels()[label.Organization] {

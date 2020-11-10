@@ -22,6 +22,15 @@ func Name(name string) BuilderOption {
 	}
 }
 
+func Labels(labels map[string]string) BuilderOption {
+	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+		for k, v := range labels {
+			azureCluster.Labels[k] = v
+		}
+		return azureCluster
+	}
+}
+
 func Location(location string) BuilderOption {
 	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
 		azureCluster.Spec.Location = location
@@ -52,7 +61,7 @@ func BuildAzureCluster(opts ...BuilderOption) *capzv1alpha3.AzureCluster {
 				capiv1alpha3.ClusterLabelName: clusterName,
 				label.Cluster:                 clusterName,
 				label.Organization:            "giantswarm",
-				label.ReleaseVersion:          "13.0.0-alpha3",
+				label.ReleaseVersion:          "13.0.0-alpha4",
 			},
 		},
 		Spec: capzv1alpha3.AzureClusterSpec{

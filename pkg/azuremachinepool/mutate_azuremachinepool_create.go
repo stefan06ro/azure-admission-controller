@@ -99,7 +99,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = generic.EnsureComponentVersionLabel(ctx, m.ctrlClient, azureMPCR.GetObjectMeta(), label.AzureOperatorVersion)
+	patch, err = generic.CopyComponentVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMPCR.GetObjectMeta(), label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
