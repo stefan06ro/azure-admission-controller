@@ -4,10 +4,12 @@ import (
 	"context"
 	"reflect"
 
+	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/conditions"
@@ -126,6 +128,27 @@ func (a *UpdateValidator) validateRelease(ctx context.Context, clusterOldCR *cap
 	newClusterVersion, err := semverhelper.GetSemverFromLabels(clusterNewCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+	}
+
+	if !newClusterVersion.Equals(oldClusterVersion) {
+		// Upgrade is triggered, let's check if we allow it
+		var setCondition capiv1alpha3.ConditionType
+		var message string
+		forbidden := false
+
+		if capiconditions.IsTrue(clusterOldCR, aeconditions.CreatingCondition) {
+			setCondition = aeconditions.CreatingCondition
+			message = "cluster is currently being created"
+			forbidden = true
+		} else if capiconditions.IsTrue(clusterOldCR, aeconditions.UpgradingCondition) {
+			setCondition = aeconditions.UpgradingCondition
+			message = "cluster is already being upgraded"
+			forbidden = true
+		}
+
+		if forbidden {
+			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, %s", setCondition, message)
+		}
 	}
 
 	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
