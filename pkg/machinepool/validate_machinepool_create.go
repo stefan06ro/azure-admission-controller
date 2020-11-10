@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -46,18 +47,23 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return admitter, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	machinePoolNewCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
-	err := a.checkAvailabilityZones(ctx, machinePoolNewCR)
+	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, machinePoolNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	err = a.checkAvailabilityZones(ctx, machinePoolNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	return nil
 }
 
 func (a *CreateValidator) Log(keyVals ...interface{}) {

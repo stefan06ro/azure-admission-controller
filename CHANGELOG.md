@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Simplify `Validator` interface to only return `error`, dropping the `bool`.
+
+### Added
+
+- Validate that the `Organization` label contains an existing `Organization`.
+- Set default value for `MachinePool.Spec.Replicas` to 1.
+- Set `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` field on create if empty.
+- Validate `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` matches the installation's `location`.
+- Validate `AzureMachine`'s, `AzureCluster`'s, and `AzureMachinePool`'s `location` never changes.
+- Validate `FailureDomain` for `AzureMachine` is a valid and supported one.
+- Validate `FailureDomain` for `AzureMachine` never changes.
+- Set `release.giantswarm.io/version` label on `MachinePool`, `AzureMachinePool`, and `Spark` CRs on create if empty.
+- Set `AzureMachinePool`'s and `MachinePool`'s operators versions on create if missing.
+
+## [1.12.0] - 2020-10-27
+
+### Added
+
+- Prevent Organization label value change on CR updates.
+
+### Removed
+
+- Removed Organization label value normalization on CR creation.
+
+## [1.11.0] - 2020-10-23
+
+### Added
+
+- Ensure default value and immutability for `AzureCluster.ControlPlaneEndpoint`, `Cluster.ControlPlaneEndpoint` and `Cluster.ClusterNetwork fields`.
+
 ## [1.10.0] - 2020-10-23
 
 ### Added
@@ -111,7 +143,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.9.1...v1.10.0
 [1.9.1]: https://github.com/giantswarm/azure-admission-controller/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.8.0...v1.9.0

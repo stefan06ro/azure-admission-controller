@@ -30,7 +30,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     fmt.Sprintf("case 0: unset storage account type with premium VM"),
-			nodePool: azureMPRawObject("Standard_D4s_v3", &tr, "", desiredDataDisks),
+			nodePool: azureMPRawObject("Standard_D4s_v3", &tr, "", desiredDataDisks, "westeurope"),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -42,7 +42,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     fmt.Sprintf("case 1: unset storage account type with standard VM"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "", desiredDataDisks),
+			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "", desiredDataDisks, "westeurope"),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -54,12 +54,24 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     fmt.Sprintf("case 2: set data disks"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", nil),
+			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", nil, "westeurope"),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
 					Path:      "/spec/template/dataDisks",
 					Value:     desiredDataDisks,
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 3: set location"),
+			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", desiredDataDisks, ""),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/location",
+					Value:     "westeurope",
 				},
 			},
 			errorMatcher: nil,
@@ -132,8 +144,9 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			}
 
 			admit := &CreateMutator{
-				logger: newLogger,
-				vmcaps: vmcaps,
+				location: "westeurope",
+				logger:   newLogger,
+				vmcaps:   vmcaps,
 			}
 
 			// Run admission request to validate AzureConfig updates.

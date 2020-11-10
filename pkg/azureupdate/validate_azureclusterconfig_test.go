@@ -34,7 +34,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 		oldVersion   string
 		newVersion   string
 		conditions   []string
-		allowed      bool
 		errorMatcher func(err error) bool
 	}{
 		{
@@ -44,7 +43,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -54,7 +52,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -64,7 +61,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "12.0.0",
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -74,7 +70,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.0",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -84,7 +79,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.4.0",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -94,7 +88,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "",
-			allowed:      false,
 			errorMatcher: errors.IsParsingFailed,
 		},
 		{
@@ -104,7 +97,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "",
 			newVersion:   "11.3.1",
-			allowed:      false,
 			errorMatcher: errors.IsParsingFailed,
 		},
 		{
@@ -114,7 +106,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     []string{"invalid"},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
-			allowed:      false,
 			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
@@ -124,7 +115,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     []string{"invalid"},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
-			allowed:      false,
 			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
@@ -134,7 +124,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -144,7 +133,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.0.0", // does not exist
 			newVersion:   "11.3.0", // exists
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -154,7 +142,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
-			allowed:      false,
 			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
@@ -164,7 +151,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.5.0", // does not exist
 			newVersion:   "11.5.0", // does not exist
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -175,7 +161,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.3",
 			newVersion:   "11.4.0",
 			conditions:   []string{"Updating"},
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -186,7 +171,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.3",
 			newVersion:   "11.4.0",
 			conditions:   []string{"Creating"},
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
@@ -196,7 +180,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "12.0.1",
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
@@ -206,7 +189,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "12.1.0",
-			allowed:      false,
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
@@ -296,7 +278,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(tc.ctx, getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
+			err = admit.Validate(tc.ctx, getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {
@@ -308,11 +290,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

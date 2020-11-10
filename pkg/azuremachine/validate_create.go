@@ -7,43 +7,84 @@ import (
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
 type CreateValidator struct {
-	logger micrologger.Logger
+	ctrlClient client.Client
+	location   string
+	logger     micrologger.Logger
+	vmcaps     *vmcapabilities.VMSKU
 }
 
 type CreateValidatorConfig struct {
-	Logger micrologger.Logger
+	CtrlClient client.Client
+	Location   string
+	Logger     micrologger.Logger
+	VMcaps     *vmcapabilities.VMSKU
 }
 
 func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.Location == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
+	}
+	if config.VMcaps == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.VMcaps must not be empty", config)
+	}
 
 	v := &CreateValidator{
-		logger: config.Logger,
+		ctrlClient: config.CtrlClient,
+		location:   config.Location,
+		logger:     config.Logger,
+		vmcaps:     config.VMcaps,
 	}
 
 	return v, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	cr := &capzv1alpha3.AzureMachine{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, cr); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
 
-	err := checkSSHKeyIsEmpty(ctx, cr)
+	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, cr)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	err = checkSSHKeyIsEmpty(ctx, cr)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateLocation(*cr, a.location)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	supportedAZs, err := a.vmcaps.SupportedAZs(ctx, cr.Spec.Location, cr.Spec.VMSize)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateFailureDomain(*cr, supportedAZs)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	return nil
 }
 
 func (a *CreateValidator) Log(keyVals ...interface{}) {

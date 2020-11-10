@@ -42,23 +42,23 @@ func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*
 	return azureClusterValidator, nil
 }
 
-func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	AzureClusterConfigNewCR := &corev1alpha1.AzureClusterConfig{}
 	AzureClusterConfigOldCR := &corev1alpha1.AzureClusterConfig{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, AzureClusterConfigNewCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
 	}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, AzureClusterConfigOldCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
 	}
 
 	oldVersion, err := getSemver(AzureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (before edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (before edit)")
 	}
 	newVersion, err := getSemver(AzureClusterConfigNewCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (after edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (after edit)")
 	}
 
 	if !oldVersion.Equals(newVersion) {
@@ -68,18 +68,18 @@ func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1b
 		ac := &v1alpha1.AzureConfig{}
 		err := a.ctrlClient.Get(ctx, client.ObjectKey{Name: acName, Namespace: AzureClusterConfigNewCR.Namespace}, ac)
 		if err != nil {
-			return false, microerror.Maskf(errors.InvalidOperationError, "Unable to find AzureConfig %s. Can't reliably tell if the cluster upgrade is safe or not. Error was %s", acName, err)
+			return microerror.Maskf(errors.InvalidOperationError, "Unable to find AzureConfig %s. Can't reliably tell if the cluster upgrade is safe or not. Error was %s", acName, err)
 		}
 
 		upgrading, status := clusterIsUpgrading(ac)
 		if upgrading {
-			return false, microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
+			return microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
 		}
 
 		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (a *AzureClusterConfigValidator) Log(keyVals ...interface{}) {

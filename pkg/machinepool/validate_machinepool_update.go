@@ -9,6 +9,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -32,22 +33,27 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 	return admitter, nil
 }
 
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	machinePoolNewCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 	machinePoolOldCR := &v1alpha3.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, machinePoolOldCR); err != nil {
-		return false, microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
+		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
-	err := checkAvailabilityZonesUnchanged(ctx, machinePoolOldCR, machinePoolNewCR)
+	err := generic.ValidateOrganizationLabelUnchanged(machinePoolOldCR, machinePoolNewCR)
 	if err != nil {
-		return false, microerror.Mask(err)
+		return microerror.Mask(err)
 	}
 
-	return true, nil
+	err = checkAvailabilityZonesUnchanged(ctx, machinePoolOldCR, machinePoolNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	return nil
 }
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {

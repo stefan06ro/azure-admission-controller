@@ -72,7 +72,7 @@ webhooks:
       path: /mutate/cluster/create
     caBundle: Cg==
   rules:
-    - apiGroups: ["infrastructure.cluster.x-k8s.io"]
+    - apiGroups: ["cluster.x-k8s.io"]
       resources:
         - "clusters"
       apiVersions:
@@ -90,11 +90,47 @@ webhooks:
       path: /mutate/machinepool/create
     caBundle: Cg==
   rules:
-    - apiGroups: ["exp.infrastructure.cluster.x-k8s.io"]
+    - apiGroups: ["exp.cluster.x-k8s.io"]
       resources:
         - "machinepools"
       apiVersions:
         - "v1alpha3"
+      operations:
+        - CREATE
+  sideEffects: None
+  admissionReviewVersions: ["v1", "v1beta1"]
+- name: mutate.machinepools.update.{{ include "resource.default.name" . }}.giantswarm.io
+  failurePolicy: Fail
+  clientConfig:
+    service:
+      name: {{ include "resource.default.name" . }}
+      namespace: {{ include "resource.default.namespace" . }}
+      path: /mutate/machinepool/update
+    caBundle: Cg==
+  rules:
+    - apiGroups: ["exp.cluster.x-k8s.io"]
+      resources:
+        - "machinepools"
+      apiVersions:
+        - "v1alpha3"
+      operations:
+        - UPDATE
+  sideEffects: None
+  admissionReviewVersions: ["v1", "v1beta1"]
+- name: mutate.sparks.create.{{ include "resource.default.name" . }}.giantswarm.io
+  failurePolicy: Fail
+  clientConfig:
+    service:
+      name: {{ include "resource.default.name" . }}
+      namespace: {{ include "resource.default.namespace" . }}
+      path: /mutate/spark/create
+    caBundle: Cg==
+  rules:
+    - apiGroups: ["core.giantswarm.io"]
+      resources:
+        - "sparks"
+      apiVersions:
+        - "v1alpha1"
       operations:
         - CREATE
   sideEffects: None
@@ -182,6 +218,24 @@ webhooks:
           - UPDATE
     sideEffects: None
     admissionReviewVersions: ["v1", "v1beta1"]
+  - name: validate.azureclusters.create.{{ include "resource.default.name" . }}.giantswarm.io
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        name: {{ include "resource.default.name" . }}
+        namespace: {{ include "resource.default.namespace" . }}
+        path: /validate/azurecluster/create
+      caBundle: Cg==
+    rules:
+      - apiGroups: ["infrastructure.cluster.x-k8s.io"]
+        resources:
+          - "azureclusters"
+        apiVersions:
+          - "v1alpha3"
+        operations:
+          - CREATE
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
   - name: validate.azureclusters.update.{{ include "resource.default.name" . }}.giantswarm.io
     failurePolicy: Fail
     clientConfig:
@@ -234,6 +288,24 @@ webhooks:
           - "v1alpha3"
         operations:
           - UPDATE
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
+  - name: validate.cluster.create.{{ include "resource.default.name" . }}.giantswarm.io
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        name: {{ include "resource.default.name" . }}
+        namespace: {{ include "resource.default.namespace" . }}
+        path: /validate/cluster/create
+      caBundle: Cg==
+    rules:
+      - apiGroups: ["cluster.x-k8s.io"]
+        resources:
+          - "clusters"
+        apiVersions:
+          - "v1alpha3"
+        operations:
+          - CREATE
     sideEffects: None
     admissionReviewVersions: ["v1", "v1beta1"]
   - name: validate.cluster.update.{{ include "resource.default.name" . }}.giantswarm.io

@@ -3,7 +3,7 @@
 #    devctl gen makefile
 #
 
-APPLICATION    := $(shell basename $(shell go list .))
+APPLICATION    := $(shell go list . | cut -d '/' -f 3)
 BUILDTIMESTAMP := $(shell date -u '+%FT%TZ')
 GITSHA1        := $(shell git rev-parse --verify HEAD)
 OS             := $(shell go env GOOS)
@@ -11,8 +11,7 @@ SOURCES        := $(shell find . -name '*.go')
 VERSION        := $(shell architect project version)
 LDFLAGS        ?= -w -linkmode 'auto' -extldflags '-static' \
   -X '$(shell go list .)/pkg/project.buildTimestamp=${BUILDTIMESTAMP}' \
-  -X '$(shell go list .)/pkg/project.gitSHA=${GITSHA1}' \
-  -X '$(shell go list .)/pkg/project.version=${VERSION}'
+  -X '$(shell go list .)/pkg/project.gitSHA=${GITSHA1}'
 .DEFAULT_GOAL := build
 
 .PHONY: build build-darwin build-linux
@@ -40,7 +39,7 @@ $(APPLICATION)-linux: $(APPLICATION)-v$(VERSION)-linux-amd64
 
 $(APPLICATION)-v$(VERSION)-%-amd64: $(SOURCES)
 	@echo "====> $@"
-	GOOS=$* GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ .
+	CGO_ENABLED=0 GOOS=$* GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ .
 
 .PHONY: install
 ## install: install the application
@@ -84,6 +83,18 @@ test:
 build-docker: build-linux
 	@echo "====> $@"
 	docker build -t ${APPLICATION}:${VERSION} .
+
+.PHONY: lint-chart
+## lint-chart: runs ct against the default chart
+lint-chart: IMAGE := giantswarm/helm-chart-testing:v3.0.0-rc.1
+lint-chart:
+	@echo "====> $@"
+	rm -rf /tmp/$(APPLICATION)-test
+	mkdir -p /tmp/$(APPLICATION)-test/helm
+	cp -a ./helm/$(APPLICATION) /tmp/$(APPLICATION)-test/helm/
+	architect helm template --dir /tmp/$(APPLICATION)-test/helm/$(APPLICATION)
+	docker run -it --rm -v /tmp/$(APPLICATION)-test:/wd --workdir=/wd --name ct $(IMAGE) ct lint --validate-maintainers=false --charts="helm/$(APPLICATION)"
+	rm -rf /tmp/$(APPLICATION)-test
 
 .PHONY: help
 ## help: prints this help message

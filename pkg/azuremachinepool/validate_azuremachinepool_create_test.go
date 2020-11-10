@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -15,6 +16,7 @@ import (
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachinePoolCreateValidate(t *testing.T) {
@@ -30,7 +32,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
 		nodePool     []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -39,22 +40,19 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	for i, instanceType := range unsupportedInstanceType {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking disabled", i*3+1, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
+			nodePool:     azureMPRawObject(instanceType, &fa, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "westeurope"),
 			errorMatcher: nil,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking nil", i*3+2, instanceType),
-			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      true,
+			nodePool:     azureMPRawObject(instanceType, nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "westeurope"),
 			errorMatcher: nil,
 		})
 	}
@@ -63,9 +61,8 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	{
 		instanceType := "this_is_a_random_name"
 		testCases = append(testCases, testCase{
-			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases)-1, instanceType),
-			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks),
-			allowed:      false,
+			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases), instanceType),
+			nodePool:     azureMPRawObject(instanceType, &tr, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "westeurope"),
 			errorMatcher: vmcapabilities.IsSkuNotFoundError,
 		})
 	}
@@ -84,11 +81,16 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					DiskSizeGB: 50,
 					Lun:        to.Int32Ptr(22),
 				},
-			}),
-			allowed:      false,
+			}, "westeurope"),
 			errorMatcher: IsInvalidOperationError,
 		})
 	}
+
+	testCases = append(testCases, testCase{
+		name:         fmt.Sprintf("case %d: invalid location", len(testCases)-1),
+		nodePool:     azureMPRawObject("Standard_A2_v2", nil, string(compute.StorageAccountTypesStandardLRS), desiredDataDisks, "eastgalicia"),
+		errorMatcher: IsInvalidOperationError,
+	})
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -102,6 +104,23 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
+
+			ctx := context.Background()
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
+			// Create default GiantSwarm organization.
+			organization := &securityv1alpha1.Organization{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "giantswarm",
+				},
+				Spec: securityv1alpha1.OrganizationSpec{},
+			}
+			err = ctrlClient.Create(ctx, organization)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			stubbedSKUs := map[string]compute.ResourceSku{
 				"Standard_A2_v2": {
 					Name: to.StringPtr("Standard_A2_v2"),
@@ -199,12 +218,14 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			admit := &CreateValidator{
-				logger: newLogger,
-				vmcaps: vmcaps,
+				ctrlClient: ctrlClient,
+				location:   "westeurope",
+				logger:     newLogger,
+				vmcaps:     vmcaps,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(context.Background(), getCreateAdmissionRequest(tc.nodePool))
+			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.nodePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -216,11 +237,6 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

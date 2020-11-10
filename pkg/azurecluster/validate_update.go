@@ -12,6 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
@@ -41,23 +42,38 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 	return v, nil
 }
 
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) (bool, error) {
+func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
 	azureClusterNewCR := &capzv1alpha3.AzureCluster{}
 	azureClusterOldCR := &capzv1alpha3.AzureCluster{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureClusterNewCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureClusterOldCR); err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
+	}
+
+	err := generic.ValidateOrganizationLabelUnchanged(azureClusterOldCR, azureClusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateControlPlaneEndpointUnchanged(*azureClusterOldCR, *azureClusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = validateLocationUnchanged(*azureClusterOldCR, *azureClusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterOldCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
 	}
 	newClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterNewCR.Labels)
 	if err != nil {
-		return false, microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
 	}
 
 	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)

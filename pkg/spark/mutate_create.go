@@ -1,32 +1,40 @@
-package cluster
+package spark
 
 import (
 	"context"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
-	logger micrologger.Logger
+	ctrlClient client.Client
+	logger     micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
-	Logger micrologger.Logger
+	CtrlClient client.Client
+	Logger     micrologger.Logger
 }
 
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
 	m := &CreateMutator{
-		logger: config.Logger,
+		ctrlClient: config.CtrlClient,
+		logger:     config.Logger,
 	}
 
 	return m, nil
@@ -40,12 +48,12 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	clusterCR := &capiv1alpha3.Cluster{}
-	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, clusterCR); err != nil {
-		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse Cluster CR: %v", err)
+	sparkCR := &v1alpha1.Spark{}
+	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, sparkCR); err != nil {
+		return []mutator.PatchOperation{}, microerror.Maskf(errors.ParsingFailedError, "unable to parse Spark CR: %v", err)
 	}
 
-	patch, err := generic.EnsureOrganizationLabelNormalized(ctx, clusterCR)
+	patch, err := generic.EnsureReleaseVersionLabel(ctx, m.ctrlClient, sparkCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -61,5 +69,5 @@ func (m *CreateMutator) Log(keyVals ...interface{}) {
 }
 
 func (m *CreateMutator) Resource() string {
-	return "cluster"
+	return "spark"
 }

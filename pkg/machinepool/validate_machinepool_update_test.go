@@ -16,7 +16,6 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 		name         string
 		oldNodePool  []byte
 		newNodePool  []byte
-		allowed      bool
 		errorMatcher func(err error) bool
 	}
 
@@ -25,14 +24,12 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			name:         "case 0: FailureDomains unchanged",
 			oldNodePool:  machinePoolRawObject([]string{"1", "2"}),
 			newNodePool:  machinePoolRawObject([]string{"1", "2"}),
-			allowed:      true,
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: FailureDomains changed",
 			oldNodePool:  machinePoolRawObject([]string{"1"}),
 			newNodePool:  machinePoolRawObject([]string{"2"}),
-			allowed:      false,
 			errorMatcher: IsInvalidOperationError,
 		},
 	}
@@ -55,7 +52,7 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			allowed, err := admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
+			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -67,11 +64,6 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 				t.Fatalf("expected %#v got %#v", "error", nil)
 			case !tc.errorMatcher(err):
 				t.Fatalf("unexpected error: %#v", err)
-			}
-
-			// Check if the validation result is the expected one.
-			if tc.allowed != allowed {
-				t.Fatalf("expected %v to be equal to %v", tc.allowed, allowed)
 			}
 		})
 	}

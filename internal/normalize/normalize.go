@@ -5,7 +5,9 @@ import (
 	"unicode"
 )
 
-const maxDNSLabelLength = 63
+const (
+	maxDNSLabelLength = 63
+)
 
 // AsDNSLabelName normalizes input string to be valid DNS label name so that it
 // can be used as Kubernetes object identifier such as namespace name.
@@ -14,6 +16,8 @@ const maxDNSLabelLength = 63
 //		 non-allowed characters.
 //
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+//
+// Source: https://github.com/giantswarm/azure-operator/blob/master/pkg/normalize/normalize.go
 func AsDNSLabelName(v string) string {
 	var xs []rune
 
@@ -23,7 +27,7 @@ func AsDNSLabelName(v string) string {
 		if x == '-' || unicode.IsDigit(x) || ('a' <= x && x <= 'z') {
 			xs = append(xs, x)
 		} else if len(xs) > 0 && xs[len(xs)-1] != '-' {
-			// If not, append dash and coalesce consequtive ones.
+			// If not, append dash and coalesce consecutive ones.
 			xs = append(xs, '-')
 		}
 	}
