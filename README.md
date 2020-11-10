@@ -12,6 +12,10 @@ The certificates for the webhook are created with CertManager and injected throu
 
 Team Celestial
 
+## CRs and fields managed
+
+See [docs/mutating.md](https://github.com/giantswarm/azure-admission-controller/blob/master/docs/mutating.md) and [docs/validating.md](https://github.com/giantswarm/azure-admission-controller/blob/master/docs/validating.md)
+
 ### Local Development
 
 Testing the azure-admission-controller in a kind cluster on your local machine:
