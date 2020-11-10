@@ -17,6 +17,7 @@ rules:
     resources:
       - releases
     verbs:
+      - "get"
       - "list"
   - apiGroups:
       - security.giantswarm.io

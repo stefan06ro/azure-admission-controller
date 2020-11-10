@@ -1,0 +1,40 @@
+package release
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	"github.com/giantswarm/microerror"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
+)
+
+func GetComponentVersionsFromRelease(ctx context.Context, ctrlClient client.Client, releaseVersion string) (map[string]string, error) {
+	// Release CR always starts with a "v".
+	if !strings.HasPrefix(releaseVersion, "v") {
+		releaseVersion = fmt.Sprintf("v%s", releaseVersion)
+	}
+
+	// Retrieve the `Release` CR.
+	release := &releasev1alpha1.Release{}
+	{
+		err := ctrlClient.Get(ctx, client.ObjectKey{Name: releaseVersion, Namespace: "default"}, release)
+		if apierrors.IsNotFound(err) {
+			return nil, microerror.Maskf(errors.InvalidOperationError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
+		} else if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
+	ret := map[string]string{}
+	// Search the desired component.
+	for _, component := range release.Spec.Components {
+		ret[component.Name] = component.Version
+	}
+
+	return ret, nil
+}

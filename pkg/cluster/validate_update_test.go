@@ -36,31 +36,31 @@ func TestClusterUpdateValidate(t *testing.T) {
 	var testCases = []testCase{
 		{
 			name:         "case 0: unchanged ControlPlaneEndpoint",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
+			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: host changed",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443),
+			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443, nil),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 2: port changed",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80),
+			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80, nil),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: clusterNetwork deleted",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
-			newCluster:   clusterRawObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443),
+			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterRawObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:       "case 4: clusterNetwork.APIServerPort changed",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
+			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterRawObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
@@ -74,12 +74,13 @@ func TestClusterUpdateValidate(t *testing.T) {
 				},
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
+				nil,
 			),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:       "case 5: clusterNetwork.ServiceDomain changed",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
+			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterRawObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
@@ -93,12 +94,13 @@ func TestClusterUpdateValidate(t *testing.T) {
 				},
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
+				nil,
 			),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:       "case 6: clusterNetwork.Services deleted",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443),
+			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterRawObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
@@ -108,6 +110,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 				},
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
 				443,
+				nil,
 			),
 			errorMatcher: errors.IsInvalidOperationError,
 		},

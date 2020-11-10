@@ -26,26 +26,26 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope", nil),
-			newAM:        azureMachineRawObject("", "westeurope", nil),
+			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
+			newAM:        azureMachineRawObject("", "westeurope", nil, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope", nil),
-			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil),
+			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
+			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 2 - location changed",
-			oldAM:        azureMachineRawObject("", "westeurope", nil),
-			newAM:        azureMachineRawObject("", "westpoland", nil),
+			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
+			newAM:        azureMachineRawObject("", "westpoland", nil, nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 		{
 			name:         "Case 3 - failure domain changed",
-			oldAM:        azureMachineRawObject("", "westeurope", to.StringPtr("1")),
-			newAM:        azureMachineRawObject("", "westpoland", to.StringPtr("2")),
+			oldAM:        azureMachineRawObject("", "westeurope", to.StringPtr("1"), nil),
+			newAM:        azureMachineRawObject("", "westpoland", to.StringPtr("2"), nil),
 			errorMatcher: IsInvalidOperationError,
 		},
 	}

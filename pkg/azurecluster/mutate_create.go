@@ -3,24 +3,29 @@ package azurecluster
 import (
 	"context"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
 	baseDomain string
+	ctrlClient client.Client
 	location   string
 	logger     micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
 	BaseDomain string
+	CtrlClient client.Client
 	Location   string
 	Logger     micrologger.Logger
 }
@@ -28,6 +33,9 @@ type CreateMutatorConfig struct {
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.BaseDomain == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.BaseDomain must not be empty", config)
+	}
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -38,6 +46,7 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 
 	v := &CreateMutator{
 		baseDomain: config.BaseDomain,
+		ctrlClient: config.CtrlClient,
 		location:   config.Location,
 		logger:     config.Logger,
 	}
@@ -75,6 +84,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err = m.ensureLocation(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

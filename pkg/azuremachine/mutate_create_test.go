@@ -6,13 +6,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachineCreateMutate(t *testing.T) {
@@ -26,7 +29,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         fmt.Sprintf("case 0: Location empty"),
-			azureMachine: azureMachineRawObject("ab132", "", nil),
+			azureMachine: azureMachineRawObject("ab132", "", nil, nil),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -38,8 +41,20 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 		},
 		{
 			name:         fmt.Sprintf("case 1: Location has value"),
-			azureMachine: azureMachineRawObject("ab132", "westeurope", nil),
+			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, nil),
 			patches:      []mutator.PatchOperation{},
+			errorMatcher: nil,
+		},
+		{
+			name:         fmt.Sprintf("case 2: Azure Operator version label empty"),
+			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, map[string]string{label.AzureOperatorVersion: ""}),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/metadata/labels/azure-operator.giantswarm.io~1version",
+					Value:     "5.0.0",
+				},
+			},
 			errorMatcher: nil,
 		},
 	}
@@ -57,9 +72,29 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 				}
 			}
 
+			ctx := context.Background()
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
+			// Cluster with both operator annotations.
+			ab123 := &capzv1alpha3.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ab123",
+					Namespace: "default",
+					Labels: map[string]string{
+						"azure-operator.giantswarm.io/version": "5.0.0",
+					},
+				},
+			}
+			err = ctrlClient.Create(ctx, ab123)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			admit := &CreateMutator{
-				location: "westeurope",
-				logger:   newLogger,
+				ctrlClient: ctrlClient,
+				location:   "westeurope",
+				logger:     newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.

@@ -3,35 +3,44 @@ package azuremachine
 import (
 	"context"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type CreateMutator struct {
-	location string
-	logger   micrologger.Logger
+	ctrlClient client.Client
+	location   string
+	logger     micrologger.Logger
 }
 
 type CreateMutatorConfig struct {
-	Location string
-	Logger   micrologger.Logger
+	CtrlClient client.Client
+	Location   string
+	Logger     micrologger.Logger
 }
 
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
 
 	m := &CreateMutator{
-		location: config.Location,
-		logger:   config.Logger,
+		ctrlClient: config.CtrlClient,
+		location:   config.Location,
+		logger:     config.Logger,
 	}
 
 	return m, nil
@@ -51,6 +60,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	patch, err := m.ensureLocation(ctx, azureMachineCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = generic.CopyComponentVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMachineCR.GetObjectMeta(), label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

@@ -11,14 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
-
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
-func Test_EnsureReleaseLabel(t *testing.T) {
+func Test_EnsureComponentVersionLabel(t *testing.T) {
 	testCases := []struct {
 		name         string
 		meta         metav1.Object
@@ -26,38 +24,26 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 		errorMatcher func(error) bool
 	}{
 		{
-			name:         "case 0: release already set",
-			meta:         newObjectWithRelease(to.StringPtr("ab123"), to.StringPtr("v13.0.0")),
-			patch:        nil,
-			errorMatcher: nil,
-		},
-		{
-			name:         "case 1: release wasn't set but cluster ID wasn't set either",
-			meta:         newObjectWithRelease(nil, nil),
-			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name:         "case 2: release wasn't set but cluster CR not found",
-			meta:         newObjectWithRelease(to.StringPtr("cd456"), nil),
-			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name:         "case 3: release wasn't set, cluster CR found but without a release label",
-			meta:         newObjectWithRelease(to.StringPtr("ef789"), nil),
-			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name: "case 4: release wasn't set, cluster CR found, release label present",
-			meta: newObjectWithRelease(to.StringPtr("ab123"), nil),
+			name: "case 0: azure operator label missing",
+			meta: newObjectWithLabels(to.StringPtr("ab123"), nil),
 			patch: &mutator.PatchOperation{
 				Operation: "add",
-				Path:      "/metadata/labels/release.giantswarm.io~1version",
-				Value:     "13.0.0",
+				Path:      "/metadata/labels/azure-operator.giantswarm.io~1version",
+				Value:     "5.0.0",
 			},
 			errorMatcher: nil,
+		},
+		{
+			name:         "case 1: azure operator label present",
+			meta:         newObjectWithLabels(to.StringPtr("ab123"), map[string]string{label.ReleaseVersion: "v13.0.0", label.AzureOperatorVersion: "5.0.0"}),
+			patch:        nil,
+			errorMatcher: nil,
+		},
+		{
+			name:         "case 5: operator label missing, cluster not present",
+			meta:         newObjectWithLabels(to.StringPtr("nf404"), map[string]string{}),
+			patch:        nil,
+			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
 
@@ -69,12 +55,13 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 			fakeK8sClient := unittest.FakeK8sClient()
 			ctrlClient := fakeK8sClient.CtrlClient()
 
+			// AzureCluster with azure operator label.
 			ab123 := &capzv1alpha3.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
 					Labels: map[string]string{
-						"release.giantswarm.io/version": "13.0.0",
+						"azure-operator.giantswarm.io/version": "5.0.0",
 					},
 				},
 			}
@@ -82,7 +69,9 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ef789 := &v1alpha3.Cluster{
+
+			// AzureCluster lacking any operator annotation.
+			ef789 := &capzv1alpha3.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ef789",
 					Namespace: "default",
@@ -93,7 +82,7 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			patch, err := EnsureReleaseVersionLabel(ctx, ctrlClient, tc.meta)
+			patch, err := CopyComponentVersionLabelFromAzureClusterCR(ctx, ctrlClient, tc.meta, label.AzureOperatorVersion)
 
 			switch {
 			case err == nil && tc.errorMatcher == nil:
@@ -114,7 +103,15 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 	}
 }
 
-func newObjectWithRelease(clusterID *string, release *string) metav1.Object {
+func newObjectWithLabels(clusterID *string, labels map[string]string) metav1.Object {
+	mergedLabels := map[string]string{
+		"cluster.x-k8s.io/cluster-name":  "ab123",
+		"cluster.x-k8s.io/control-plane": "true",
+		"giantswarm.io/machine-pool":     "ab123",
+	}
+	for k, v := range labels {
+		mergedLabels[k] = v
+	}
 	obj := &GenericObject{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Unknown",
@@ -123,21 +120,12 @@ func newObjectWithRelease(clusterID *string, release *string) metav1.Object {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ab123",
 			Namespace: "default",
-			Labels: map[string]string{
-				"azure-operator.giantswarm.io/version": "5.0.0",
-				"cluster.x-k8s.io/cluster-name":        "ab123",
-				"cluster.x-k8s.io/control-plane":       "true",
-				"giantswarm.io/machine-pool":           "ab123",
-			},
+			Labels:    mergedLabels,
 		},
 	}
 
 	if clusterID != nil {
 		obj.Labels[label.Cluster] = *clusterID
-	}
-
-	if release != nil {
-		obj.Labels[label.ReleaseVersion] = *release
 	}
 
 	return obj

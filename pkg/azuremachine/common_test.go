@@ -7,7 +7,19 @@ import (
 	providerv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
-func azureMachineRawObject(sshKey string, location string, failureDomain *string) []byte {
+func azureMachineRawObject(sshKey string, location string, failureDomain *string, labels map[string]string) []byte {
+	mergedLabels := map[string]string{
+		"azure-operator.giantswarm.io/version": "5.0.0",
+		"giantswarm.io/cluster":                "ab123",
+		"cluster.x-k8s.io/cluster-name":        "ab123",
+		"cluster.x-k8s.io/control-plane":       "true",
+		"giantswarm.io/machine-pool":           "ab123",
+		"giantswarm.io/organization":           "giantswarm",
+		"release.giantswarm.io/version":        "13.0.0",
+	}
+	for k, v := range labels {
+		mergedLabels[k] = v
+	}
 	mp := providerv1alpha3.AzureMachine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachine",
@@ -16,15 +28,7 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ab123",
 			Namespace: "default",
-			Labels: map[string]string{
-				"azure-operator.giantswarm.io/version": "5.0.0",
-				"giantswarm.io/cluster":                "ab123",
-				"cluster.x-k8s.io/cluster-name":        "ab123",
-				"cluster.x-k8s.io/control-plane":       "true",
-				"giantswarm.io/machine-pool":           "ab123",
-				"giantswarm.io/organization":           "giantswarm",
-				"release.giantswarm.io/version":        "13.0.0",
-			},
+			Labels:    mergedLabels,
 		},
 		Spec: providerv1alpha3.AzureMachineSpec{
 			AvailabilityZone: providerv1alpha3.AvailabilityZone{},

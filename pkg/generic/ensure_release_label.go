@@ -8,9 +8,9 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/apiextensions/v2/pkg/label"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -25,13 +25,13 @@ func EnsureReleaseVersionLabel(ctx context.Context, ctrlClient client.Client, me
 			return nil, microerror.Maskf(errors.InvalidOperationError, "Object has no %s label, can't detect release version.", label.Cluster)
 		}
 
-		// Get release from Cluster.
-		release, err := getLabelValueFromCluster(ctx, ctrlClient, meta, label.ReleaseVersion)
+		// Get release from AzureCluster CR.
+		release, err := getLabelValueFromAzureCluster(ctx, ctrlClient, meta, label.ReleaseVersion)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 		if release == "" {
-			return nil, microerror.Maskf(errors.InvalidOperationError, "Cluster %s did not have a release label set. Can't continue.", clusterID)
+			return nil, microerror.Maskf(errors.InvalidOperationError, "AzureCluster %s did not have a release label set. Can't continue.", clusterID)
 		}
 
 		return mutator.PatchAdd(fmt.Sprintf("/metadata/labels/%s", escapeJSONPatchString(label.ReleaseVersion)), release), nil
@@ -40,18 +40,18 @@ func EnsureReleaseVersionLabel(ctx context.Context, ctrlClient client.Client, me
 	return nil, nil
 }
 
-func getLabelValueFromCluster(ctx context.Context, ctrlClient client.Client, meta metav1.Object, labelName string) (string, error) {
+func getLabelValueFromAzureCluster(ctx context.Context, ctrlClient client.Client, meta metav1.Object, labelName string) (string, error) {
 	clusterID := meta.GetLabels()[label.Cluster]
 	if clusterID == "" {
 		return "", microerror.Maskf(errors.InvalidOperationError, "Object has no %s label, can't detect cluster ID.", label.Cluster)
 	}
 
-	// Retrieve the `Cluster` CR related to this object.
-	cluster := &capiv1alpha3.Cluster{}
+	// Retrieve the `AzureCluster` CR related to this object.
+	cluster := &v1alpha3.AzureCluster{}
 	{
 		err := ctrlClient.Get(ctx, client.ObjectKey{Name: clusterID, Namespace: meta.GetNamespace()}, cluster)
 		if apierrors.IsNotFound(err) {
-			return "", microerror.Maskf(errors.InvalidOperationError, "Looking for Cluster named %s but it was not found. Can't continue.", clusterID)
+			return "", microerror.Maskf(errors.InvalidOperationError, "Looking for AzureCluster named %q but it was not found. Can't continue.", clusterID)
 		} else if err != nil {
 			return "", microerror.Mask(err)
 		}

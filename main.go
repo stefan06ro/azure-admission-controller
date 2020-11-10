@@ -18,6 +18,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	restclient "k8s.io/client-go/rest"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,6 +66,7 @@ func mainError() error {
 		c := k8sclient.ClientsConfig{
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				capiv1alpha3.AddToScheme,
+				capzv1alpha3.AddToScheme,
 				providerv1alpha1.AddToScheme,
 				corev1alpha1.AddToScheme,
 				releasev1alpha1.AddToScheme,
@@ -125,6 +127,7 @@ func mainError() error {
 	{
 		conf := azurecluster.CreateMutatorConfig{
 			BaseDomain: cfg.BaseDomain,
+			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
@@ -149,8 +152,9 @@ func mainError() error {
 	var azureMachineCreateMutator *azuremachine.CreateMutator
 	{
 		createMutatorConfig := azuremachine.CreateMutatorConfig{
-			Location: cfg.Location,
-			Logger:   newLogger,
+			CtrlClient: ctrlClient,
+			Location:   cfg.Location,
+			Logger:     newLogger,
 		}
 		azureMachineCreateMutator, err = azuremachine.NewCreateMutator(createMutatorConfig)
 		if err != nil {
@@ -254,6 +258,7 @@ func mainError() error {
 	{
 		conf := cluster.CreateMutatorConfig{
 			BaseDomain: cfg.BaseDomain,
+			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
 		clusterCreateMutator, err = cluster.NewCreateMutator(conf)
