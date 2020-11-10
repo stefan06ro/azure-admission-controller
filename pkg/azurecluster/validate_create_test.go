@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -25,27 +26,27 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
-			azureCluster: azureClusterRawObject("ab123", "", 0, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab132"), builder.Location("westeurope")),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 1: Invalid Port",
-			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 80, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 2: Invalid Host",
-			azureCluster: azureClusterRawObject("ab123", "api.gigantic.io", 443, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.gigantic.io", 443), builder.Location("westeurope")),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 		{
 			name:         "case 3: Valid values",
-			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443), builder.Location("westeurope")),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Invalid region",
-			azureCluster: azureClusterRawObject("ab123", "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, "westpoland"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("westpoland")),
 			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}

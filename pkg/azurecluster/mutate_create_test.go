@@ -2,7 +2,6 @@ package azurecluster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
@@ -12,9 +11,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
 
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -29,7 +27,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         fmt.Sprintf("case 0: ControlPlaneEndpoint left empty"),
-			azureCluster: azureClusterRawObject("ab132", "", 0, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab132"), builder.ControlPlaneEndpoint("", 0)),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -46,13 +44,13 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         fmt.Sprintf("case 1: ControlPlaneEndpoint has a value"),
-			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.giantswarm.io", 123)),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:         fmt.Sprintf("case 2: Location empty"),
-			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, ""),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -64,7 +62,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         fmt.Sprintf("case 3: Location has value"),
-			azureCluster: azureClusterRawObject("ab132", "api.giantswarm.io", 123, "westeurope"),
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("westeurope")),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
@@ -128,34 +126,4 @@ func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	}
 
 	return req
-}
-
-func azureClusterRawObject(clusterName string, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, location string) []byte {
-	mp := capzv1alpha3.AzureCluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureCluster",
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: "org-giantswarm",
-			Labels: map[string]string{
-				"azure-operator.giantswarm.io/version": "5.0.0",
-				"cluster.x-k8s.io/cluster-name":        clusterName,
-				"giantswarm.io/cluster":                clusterName,
-				"giantswarm.io/organization":           "giantswarm",
-				"release.giantswarm.io/version":        "13.0.0-alpha3",
-			},
-		},
-		Spec: capzv1alpha3.AzureClusterSpec{
-			ResourceGroup: clusterName,
-			Location:      location,
-			ControlPlaneEndpoint: v1alpha3.APIEndpoint{
-				Host: controlPlaneEndpointHost,
-				Port: controlPlaneEndpointPort,
-			},
-		},
-	}
-	byt, _ := json.Marshal(mp)
-	return byt
 }

@@ -13,13 +13,14 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 func TestAzureMachinePoolCreateMutate(t *testing.T) {
-	tr := true
 	type testCase struct {
 		name         string
 		nodePool     []byte
@@ -30,7 +31,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     fmt.Sprintf("case 0: unset storage account type with premium VM"),
-			nodePool: azureMPRawObject("Standard_D4s_v3", &tr, "", desiredDataDisks, "westeurope"),
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4s_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -42,7 +43,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     fmt.Sprintf("case 1: unset storage account type with standard VM"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "", desiredDataDisks, "westeurope"),
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -54,7 +55,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     fmt.Sprintf("case 2: set data disks"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", nil, "westeurope"),
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capzv1alpha3.DataDisk{})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -66,7 +67,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     fmt.Sprintf("case 3: set location"),
-			nodePool: azureMPRawObject("Standard_D4_v3", &tr, "Standard_LRS", desiredDataDisks, ""),
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
