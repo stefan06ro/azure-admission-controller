@@ -33,7 +33,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 		releases     []string
 		oldVersion   string
 		newVersion   string
-		conditions   []string
 		errorMatcher func(err error) bool
 	}{
 		{
@@ -158,32 +157,12 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			ctx:  context.Background(),
 
 			releases:     releases,
-			oldVersion:   "11.3.3",
-			newVersion:   "11.4.0",
-			conditions:   []string{"Updating"},
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name: "case 14",
-			ctx:  context.Background(),
-
-			releases:     releases,
-			oldVersion:   "11.3.3",
-			newVersion:   "11.4.0",
-			conditions:   []string{"Creating"},
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name: "case 15",
-			ctx:  context.Background(),
-
-			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "12.0.1",
 			errorMatcher: nil,
 		},
 		{
-			name: "case 16",
+			name: "case 14",
 			ctx:  context.Background(),
 
 			releases:     releases,
@@ -262,17 +241,6 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 				Spec: providerv1alpha1.AzureConfigSpec{},
 			}
 			err = ctrlClient.Create(tc.ctx, ac)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			var conditions []providerv1alpha1.StatusClusterCondition
-			for _, cond := range tc.conditions {
-				conditions = append(conditions, providerv1alpha1.StatusClusterCondition{Type: cond})
-			}
-
-			ac.Status.Cluster.Conditions = conditions
-			err = ctrlClient.Update(tc.ctx, ac)
 			if err != nil {
 				t.Fatal(err)
 			}

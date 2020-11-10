@@ -25,11 +25,6 @@ type AzureConfigValidatorConfig struct {
 	Logger     micrologger.Logger
 }
 
-const (
-	conditionCreating = "Creating"
-	conditionUpdating = "Updating"
-)
-
 func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigValidator, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
@@ -66,12 +61,6 @@ func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.Ad
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		// If tenant cluster is already upgrading, we can't change the version any more.
-		upgrading, status := clusterIsUpgrading(azureConfigOldCR)
-		if upgrading {
-			return microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
-		}
-
 		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
 	}
 
