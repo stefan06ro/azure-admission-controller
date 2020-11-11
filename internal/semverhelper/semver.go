@@ -2,19 +2,16 @@ package semverhelper
 
 import (
 	"github.com/blang/semver"
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
-const (
-	versionLabel = "release.giantswarm.io/version"
-)
-
 func GetSemverFromLabels(labels map[string]string) (semver.Version, error) {
-	version, ok := labels[versionLabel]
+	version, ok := labels[label.ReleaseVersion]
 	if !ok {
-		return semver.Version{}, microerror.Maskf(errors.ParsingFailedError, "CR didn't have expected label %s", versionLabel)
+		return semver.Version{}, microerror.Maskf(errors.ParsingFailedError, "CR didn't have expected label %s", label.ReleaseVersion)
 	}
 
 	return GetSemverFromString(version)

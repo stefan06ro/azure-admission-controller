@@ -123,31 +123,19 @@ func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.
 func (a *UpdateValidator) validateRelease(ctx context.Context, clusterOldCR *capiv1alpha3.Cluster, clusterNewCR *capiv1alpha3.Cluster) error {
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
 	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the Cluster being updated")
 	}
 	newClusterVersion, err := semverhelper.GetSemverFromLabels(clusterNewCR.Labels)
 	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from applied Cluster")
 	}
 
 	if !newClusterVersion.Equals(oldClusterVersion) {
 		// Upgrade is triggered, let's check if we allow it
-		var setCondition capiv1alpha3.ConditionType
-		var message string
-		forbidden := false
-
 		if capiconditions.IsTrue(clusterOldCR, aeconditions.CreatingCondition) {
-			setCondition = aeconditions.CreatingCondition
-			message = "cluster is currently being created"
-			forbidden = true
+			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is currently being created", aeconditions.CreatingCondition)
 		} else if capiconditions.IsTrue(clusterOldCR, aeconditions.UpgradingCondition) {
-			setCondition = aeconditions.UpgradingCondition
-			message = "cluster is already being upgraded"
-			forbidden = true
-		}
-
-		if forbidden {
-			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, %s", setCondition, message)
+			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is already being upgraded", aeconditions.UpgradingCondition)
 		}
 	}
 
