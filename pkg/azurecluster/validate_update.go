@@ -3,13 +3,11 @@ package azurecluster
 import (
 	"context"
 
-	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capiutil "sigs.k8s.io/cluster-api/util"
-	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -93,11 +91,13 @@ func (a *UpdateValidator) validateRelease(ctx context.Context, azureClusterOldCR
 			return microerror.Mask(err)
 		}
 
-		// Upgrade is triggered, let's check if we allow it
-		if capiconditions.IsTrue(cluster, aeconditions.CreatingCondition) {
-			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is currently being created", aeconditions.CreatingCondition)
-		} else if capiconditions.IsTrue(cluster, aeconditions.UpgradingCondition) {
-			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is already being upgraded", aeconditions.UpgradingCondition)
+		clusterCRReleaseVersion, err := semverhelper.GetSemverFromLabels(cluster.Labels)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		if !newClusterVersion.Equals(clusterCRReleaseVersion) {
+			return microerror.Maskf(errors.InvalidOperationError, "AzureCluster release version must be set to the same release version as Cluster CR release version label")
 		}
 	}
 
