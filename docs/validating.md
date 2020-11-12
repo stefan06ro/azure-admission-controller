@@ -3,6 +3,7 @@
 | Resource           | Field                                               | Create                                                    | Update                                                | Delete |
 |--------------------|-----------------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------|--------|
 | AzureCluster       | metadata.labels[giantswarm.io/organization]         | Check it is a valid organization name                     | Check it is unchanged                                 | n/a    |
+|                    | metadata.labels[release.giantswarm.io/version]      | n/a                                                       | New value must match the same label on Cluster CR     | n/a    |
 |                    | spec.controlPlaneEndpoint.host                      | Check it is "api.<cluster ID>.<installation base domain>" | Check it is unchanged                                 | n/a    |
 |                    | spec.controlPlaneEndpoint.host                      | Check it is 443                                           | Check it is unchanged                                 | n/a    |
 |                    | spec.location                                       | Check it matches the installation's location              | Check it is unchanged                                 | n/a    |
@@ -28,6 +29,13 @@
 |                    | spec.clusterNetwork.services.cidrBlocks             | Check it is set to ["172.31.0.0/16"]                      | Check it is unchanged                                 | n/a    |
 |                    | spec.controlPlaneEndpoint.host                      | Check it is "api.<cluster ID>.<installation base domain>" | Check it is unchanged                                 | n/a    |
 |                    | spec.controlPlaneEndpoint.host                      | Check it is 443                                           | Check it is unchanged                                 | n/a    |
+|                    | status.conditions[]\(Type=Creating)                 | n/a                                                       | Setting Status=Unknown is not allowed                 | n/a    |
+|                    | status.conditions[]\(Type=Creating)                 | n/a                                                       | New Status value must be either True or False         | n/a    |
+|                    | status.conditions[]\(Type=Creating)                 | n/a                                                       | Removing existing condition is not allowed            | n/a    |
+|                    | status.conditions[]\(Type=Creating)                 | n/a                                                       | Changing Status from False to True is not allowed     | n/a    |
+|                    | status.conditions[]\(Type=Upgrading)                | n/a                                                       | Setting Status=Unknown is not allowed                 | n/a    |
+|                    | status.conditions[]\(Type=Upgrading)                | n/a                                                       | New Status value must be either True or False         | n/a    |
+|                    | status.conditions[]\(Type=Upgrading)                | n/a                                                       | Removing existing condition is not allowed            | n/a    |
 | MachinePool        | metadata.labels[giantswarm.io/organization]         | Check it is a valid organization name                     | Check it is unchanged                                 | n/a    |
 |                    | spec.failureDomains                                 | Check they are valid and supported by the VM type.        | Check they are unchanged                              | n/a    |
 | Spark              | n/a                                                 | n/a                                                       | n/a                                                   | n/a    |

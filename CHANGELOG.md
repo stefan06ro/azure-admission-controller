@@ -24,12 +24,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set `release.giantswarm.io/version` label on `MachinePool`, `AzureMachinePool`, and `Spark` CRs on create if empty.
 - Set `AzureMachinePool`'s and `MachinePool`'s operators versions on create if missing.
 - Add builders to make it easier to write tests.
+- New value for `AzureCluster` `release.giantswarm.io/version` label must match the same label on `Cluster` CR
+- `Cluster` `Creating` condition - setting `Status=Unknown` is not allowed
+- `Cluster` `Creating` condition - new `Status` value must be either `True` or `False`
+- `Cluster` `Creating` condition - removing existing condition is not allowed
+- `Cluster` `Creating` condition - changing `Status` from `False` to `True` is not allowed
+- `Cluster` `Upgrading` condition - setting `Status=Unknown` is not allowed
+- `Cluster` `Upgrading` condition - new `Status` value must be either `True` or `False`
+- `Cluster` `Upgrading` condition - removing existing condition is not allowed
 
 ## [1.12.0] - 2020-10-27
 
 ### Added
 
-- Prevent Organization label value change on CR updates.
+- Prevent Organization label value change on CR updates. 
 
 ### Removed
 
