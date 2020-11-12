@@ -120,12 +120,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
-<<<<<<< HEAD
-			errorMatcher: errors.IsInvalidOperationError,
-=======
-			conditions:   []string{},
 			errorMatcher: releaseversion.IsDowngradingIsNotAllowedError,
->>>>>>> master
 		},
 		{
 			name: "case 10",
@@ -143,12 +138,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
-<<<<<<< HEAD
-			errorMatcher: errors.IsInvalidReleaseError,
-=======
-			conditions:   []string{},
 			errorMatcher: releaseversion.IsReleaseNotFoundError,
->>>>>>> master
 		},
 		{
 			name: "case 12",
