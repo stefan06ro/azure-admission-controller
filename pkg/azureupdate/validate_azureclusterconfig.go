@@ -5,7 +5,6 @@ import (
 
 	"github.com/blang/semver"
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -62,20 +61,6 @@ func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1b
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		// The AzureClusterConfig CR doesn't have an indication of the fact that an update is in progress.
-		// I need to use the corresponding AzureConfig CR for this check.
-		acName := AzureClusterConfigOldCR.Spec.Guest.ID
-		ac := &v1alpha1.AzureConfig{}
-		err := a.ctrlClient.Get(ctx, client.ObjectKey{Name: acName, Namespace: AzureClusterConfigNewCR.Namespace}, ac)
-		if err != nil {
-			return microerror.Maskf(errors.InvalidOperationError, "Unable to find AzureConfig %s. Can't reliably tell if the cluster upgrade is safe or not. Error was %s", acName, err)
-		}
-
-		upgrading, status := clusterIsUpgrading(ac)
-		if upgrading {
-			return microerror.Maskf(errors.InvalidOperationError, "cluster has condition: %s", status)
-		}
-
 		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
 	}
 

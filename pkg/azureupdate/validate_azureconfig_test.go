@@ -30,7 +30,6 @@ func TestAzureConfigValidate(t *testing.T) {
 		releases     []string
 		oldVersion   string
 		newVersion   string
-		conditions   []string
 		errorMatcher func(err error) bool
 	}{
 		{
@@ -40,7 +39,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -50,7 +48,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -60,7 +57,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "12.0.0",
-			conditions:   []string{},
 			errorMatcher: releaseversion.IsSkippingReleaseError,
 		},
 		{
@@ -70,7 +66,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.0",
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -80,7 +75,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.4.0",
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -90,7 +84,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "",
-			conditions:   []string{},
 			errorMatcher: errors.IsParsingFailed,
 		},
 		{
@@ -100,7 +93,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "",
 			newVersion:   "11.3.1",
-			conditions:   []string{},
 			errorMatcher: errors.IsParsingFailed,
 		},
 		{
@@ -110,7 +102,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     []string{"invalid"},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
-			conditions:   []string{},
 			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
@@ -120,7 +111,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     []string{"invalid"},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
-			conditions:   []string{},
 			errorMatcher: errors.IsInvalidReleaseError,
 		},
 		{
@@ -130,7 +120,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
-			conditions:   []string{},
 			errorMatcher: releaseversion.IsDowngradingIsNotAllowedError,
 		},
 		{
@@ -140,7 +129,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.0.0", // does not exist
 			newVersion:   "11.3.0", // exists
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -150,7 +138,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
-			conditions:   []string{},
 			errorMatcher: releaseversion.IsReleaseNotFoundError,
 		},
 		{
@@ -160,7 +147,6 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.5.0", // does not exist
 			newVersion:   "11.5.0", // does not exist
-			conditions:   []string{},
 			errorMatcher: nil,
 		},
 		{
@@ -170,28 +156,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "11.4.0",
-			conditions:   []string{},
 			errorMatcher: nil,
-		},
-		{
-			name: "case 14",
-			ctx:  context.Background(),
-
-			releases:     releases,
-			oldVersion:   "11.4.0",
-			newVersion:   "11.4.1",
-			conditions:   []string{conditionCreating},
-			errorMatcher: errors.IsInvalidOperationError,
-		},
-		{
-			name: "case 15",
-			ctx:  context.Background(),
-
-			releases:     releases,
-			oldVersion:   "11.4.0",
-			newVersion:   "11.4.1",
-			conditions:   []string{conditionUpdating},
-			errorMatcher: errors.IsInvalidOperationError,
 		},
 	}
 
@@ -224,7 +189,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(tc.oldVersion, tc.newVersion, tc.conditions))
+			err = admit.Validate(tc.ctx, getAdmissionRequest(tc.oldVersion, tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {
@@ -241,7 +206,7 @@ func TestAzureConfigValidate(t *testing.T) {
 	}
 }
 
-func getAdmissionRequest(oldVersion string, newVersion string, clusterConditionTypes []string) *v1beta1.AdmissionRequest {
+func getAdmissionRequest(oldVersion string, newVersion string) *v1beta1.AdmissionRequest {
 	req := &v1beta1.AdmissionRequest{
 		Kind: metav1.GroupVersionKind{
 			Version: "infrastructure.giantswarm.io/v1alpha2",
@@ -253,11 +218,11 @@ func getAdmissionRequest(oldVersion string, newVersion string, clusterConditionT
 		},
 		Operation: v1beta1.Update,
 		Object: runtime.RawExtension{
-			Raw:    azureConfigRawObj(newVersion, []string{}),
+			Raw:    azureConfigRawObj(newVersion),
 			Object: nil,
 		},
 		OldObject: runtime.RawExtension{
-			Raw:    azureConfigRawObj(oldVersion, clusterConditionTypes),
+			Raw:    azureConfigRawObj(oldVersion),
 			Object: nil,
 		},
 	}
@@ -265,11 +230,7 @@ func getAdmissionRequest(oldVersion string, newVersion string, clusterConditionT
 	return req
 }
 
-func azureConfigRawObj(version string, clusterConditionTypes []string) []byte {
-	var conditions []providerv1alpha1.StatusClusterCondition
-	for _, cond := range clusterConditionTypes {
-		conditions = append(conditions, providerv1alpha1.StatusClusterCondition{Type: cond})
-	}
+func azureConfigRawObj(version string) []byte {
 	azureconfig := providerv1alpha1.AzureConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureConfig",
@@ -288,11 +249,6 @@ func azureConfigRawObj(version string, clusterConditionTypes []string) []byte {
 			Cluster:       providerv1alpha1.Cluster{},
 			Azure:         providerv1alpha1.AzureConfigSpecAzure{},
 			VersionBundle: providerv1alpha1.AzureConfigSpecVersionBundle{},
-		},
-		Status: providerv1alpha1.AzureConfigStatus{
-			Cluster: providerv1alpha1.StatusCluster{
-				Conditions: conditions,
-			},
 		},
 	}
 	byt, _ := json.Marshal(azureconfig)

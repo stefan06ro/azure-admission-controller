@@ -4,12 +4,15 @@ import (
 	"context"
 	"reflect"
 
+	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/giantswarm/azure-admission-controller/internal/conditions"
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
@@ -68,16 +71,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
-	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
+	err = conditions.ValidateClusterConditions(clusterOldCR, clusterNewCR)
 	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
-	}
-	newClusterVersion, err := semverhelper.GetSemverFromLabels(clusterNewCR.Labels)
-	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
+		return microerror.Mask(err)
 	}
 
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	return a.validateRelease(ctx, clusterOldCR, clusterNewCR)
 }
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {
@@ -119,4 +118,26 @@ func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.
 	}
 
 	return nil
+}
+
+func (a *UpdateValidator) validateRelease(ctx context.Context, clusterOldCR *capiv1alpha3.Cluster, clusterNewCR *capiv1alpha3.Cluster) error {
+	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
+	if err != nil {
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the Cluster being updated")
+	}
+	newClusterVersion, err := semverhelper.GetSemverFromLabels(clusterNewCR.Labels)
+	if err != nil {
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from applied Cluster")
+	}
+
+	if !newClusterVersion.Equals(oldClusterVersion) {
+		// Upgrade is triggered, let's check if we allow it
+		if capiconditions.IsTrue(clusterOldCR, aeconditions.CreatingCondition) {
+			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is currently being created", aeconditions.CreatingCondition)
+		} else if capiconditions.IsTrue(clusterOldCR, aeconditions.UpgradingCondition) {
+			return microerror.Maskf(errors.InvalidOperationError, "upgrade cannot be initiated now, Cluster condition %s is set to True, cluster is already being upgraded", aeconditions.UpgradingCondition)
+		}
+	}
+
+	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
 }

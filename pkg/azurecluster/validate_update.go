@@ -7,6 +7,7 @@ import (
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -67,18 +68,38 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
-	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterOldCR.Labels)
-	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")
-	}
-	newClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterNewCR.Labels)
-	if err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (after edit)")
-	}
-
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	return a.validateRelease(ctx, azureClusterOldCR, azureClusterNewCR)
 }
 
 func (a *UpdateValidator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
+}
+
+func (a *UpdateValidator) validateRelease(ctx context.Context, azureClusterOldCR *capzv1alpha3.AzureCluster, azureClusterNewCR *capzv1alpha3.AzureCluster) error {
+	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterOldCR.Labels)
+	if err != nil {
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the AzureCluster being updated")
+	}
+	newClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterNewCR.Labels)
+	if err != nil {
+		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from applied AzureCluster")
+	}
+
+	if !newClusterVersion.Equals(oldClusterVersion) {
+		cluster, err := capiutil.GetOwnerCluster(ctx, a.ctrlClient, azureClusterNewCR.ObjectMeta)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		clusterCRReleaseVersion, err := semverhelper.GetSemverFromLabels(cluster.Labels)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		if !newClusterVersion.Equals(clusterCRReleaseVersion) {
+			return microerror.Maskf(errors.InvalidOperationError, "AzureCluster release version must be set to the same release version as Cluster CR release version label")
+		}
+	}
+
+	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
 }

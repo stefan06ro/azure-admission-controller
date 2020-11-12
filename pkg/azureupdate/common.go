@@ -2,7 +2,6 @@ package azureupdate
 
 import (
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -15,19 +14,6 @@ import (
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 )
-
-func clusterIsUpgrading(cr *v1alpha1.AzureConfig) (bool, string) {
-	for _, cond := range cr.Status.Cluster.Conditions {
-		if cond.Type == conditionUpdating {
-			return true, conditionUpdating
-		}
-		if cond.Type == conditionCreating {
-			return true, conditionCreating
-		}
-	}
-
-	return false, ""
-}
 
 func getFakeCtrlClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
