@@ -10,8 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
 func Test_ValidateOrganizationLabelUnchanged(t *testing.T) {
@@ -31,19 +29,19 @@ func Test_ValidateOrganizationLabelUnchanged(t *testing.T) {
 			name:         "case 1: old CR missing organization label",
 			old:          newObjectWithOrganization(nil),
 			new:          newObjectWithOrganization(to.StringPtr("giantswarm")),
-			errorMatcher: errors.IsNotFoundError,
+			errorMatcher: IsOrganizationLabelNotFoundError,
 		},
 		{
 			name:         "case 2: new CR missing organization label",
 			old:          newObjectWithOrganization(to.StringPtr("giantswarm")),
 			new:          newObjectWithOrganization(nil),
-			errorMatcher: errors.IsNotFoundError,
+			errorMatcher: IsOrganizationLabelNotFoundError,
 		},
 		{
 			name:         "case 3: old and new CR have different organization label",
 			old:          newObjectWithOrganization(to.StringPtr("giantswarm")),
 			new:          newObjectWithOrganization(to.StringPtr("dockzero")),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsOrganizationLabelWasChangedError,
 		},
 	}
 
@@ -64,32 +62,6 @@ func Test_ValidateOrganizationLabelUnchanged(t *testing.T) {
 				t.Fatalf("error == %#v, want matching", err)
 			}
 		})
-	}
-}
-
-func Test_WhenCreatingClusterWithExistingOrganizationThenValidationSucceeds(t *testing.T) {
-	var err error
-	ctx := context.Background()
-
-	scheme := runtime.NewScheme()
-	err = securityv1alpha1.AddToScheme(scheme)
-	if err != nil {
-		panic(err)
-	}
-
-	organization := &securityv1alpha1.Organization{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "giantswarm",
-		},
-		Spec: securityv1alpha1.OrganizationSpec{},
-	}
-
-	ctrlClient := fake.NewFakeClientWithScheme(scheme, organization)
-
-	obj := newObjectWithOrganization(to.StringPtr("giantswarm"))
-	err = ValidateOrganizationLabelContainsExistingOrganization(ctx, ctrlClient, obj)
-	if err != nil {
-		t.Fatalf("it shouldn't fail when using an existing Organization")
 	}
 }
 
@@ -114,7 +86,7 @@ func Test_WhenCreatingClusterWithNonExistingOrganizationThenValidationFails(t *t
 
 	obj := newObjectWithOrganization(to.StringPtr("non-existing"))
 	err = ValidateOrganizationLabelContainsExistingOrganization(ctx, ctrlClient, obj)
-	if err == nil {
+	if !IsOrganizationNotFoundError(err) {
 		t.Fatalf("it should fail when using a non existing Organization")
 	}
 }

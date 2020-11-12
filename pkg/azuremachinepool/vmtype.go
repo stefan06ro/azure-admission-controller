@@ -26,11 +26,11 @@ func checkInstanceTypeIsValid(ctx context.Context, vmcaps *vmcapabilities.VMSKU,
 	}
 
 	if memory < minMemory {
-		return microerror.Maskf(invalidOperationError, "Memory has to be greater than %d GBs", minMemory)
+		return microerror.Maskf(insufficientMemoryError, "Memory has to be greater than %d GBs", minMemory)
 	}
 
 	if cpu < minCPUs {
-		return microerror.Maskf(invalidOperationError, "Number of cores has to be greater than %d", minCPUs)
+		return microerror.Maskf(insufficientCPUError, "Number of cores has to be greater than %d", minCPUs)
 	}
 
 	return nil

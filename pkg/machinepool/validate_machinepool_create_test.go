@@ -43,19 +43,19 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			name:         "case 1: instance type supporting [1,2], requested [3]",
 			machinePool:  builder.BuildMachinePoolAsJson(builder.AzureMachinePool(machinePoolName), builder.FailureDomains([]string{"3"})),
 			vmType:       "Standard_A4_v2",
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsUnsupportedFailureDomainError,
 		},
 		{
 			name:         "case 2: instance type supporting [1,2], requested [2,3]",
 			machinePool:  builder.BuildMachinePoolAsJson(builder.AzureMachinePool(machinePoolName), builder.FailureDomains([]string{"2,3"})),
 			vmType:       "Standard_A4_v2",
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsUnsupportedFailureDomainError,
 		},
 		{
 			name:         "case 3: instance type supporting [], requested [1]",
 			machinePool:  builder.BuildMachinePoolAsJson(builder.AzureMachinePool(machinePoolName), builder.FailureDomains([]string{"1"})),
 			vmType:       "Standard_A8_v2",
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsUnsupportedFailureDomainError,
 		},
 		{
 			name:         "case 4: instance type supporting [], requested []",

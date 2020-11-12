@@ -89,7 +89,7 @@ func (a *CreateValidator) checkAvailabilityZones(ctx context.Context, mp *v1alph
 	for _, zone := range mp.Spec.FailureDomains {
 		if !inSlice(zone, supportedZones) {
 			// Found one unsupported availability zone requested.
-			return microerror.Maskf(invalidOperationError, "You requested the Machine Pool with type %s to be placed in the following FailureDomains (aka Availability zones): %v but the VM type only supports %v in %s", amp.Spec.Template.VMSize, mp.Spec.FailureDomains, supportedZones, amp.Spec.Location)
+			return microerror.Maskf(unsupportedFailureDomainError, "You requested the Machine Pool with type %s to be placed in the following FailureDomains (aka Availability zones): %v but the VM type only supports %v in %s", amp.Spec.Template.VMSize, mp.Spec.FailureDomains, supportedZones, amp.Spec.Location)
 		}
 	}
 

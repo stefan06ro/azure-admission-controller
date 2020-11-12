@@ -35,19 +35,19 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 			name:         "case 1: release wasn't set but cluster ID wasn't set either",
 			meta:         newObjectWithRelease(nil, nil),
 			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsClusterLabelNotFoundError,
 		},
 		{
 			name:         "case 2: release wasn't set but cluster CR not found",
-			meta:         newObjectWithRelease(to.StringPtr("cd456"), nil),
+			meta:         newObjectWithRelease(to.StringPtr("non-existing"), nil),
 			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: errors.IsNotFoundError,
 		},
 		{
 			name:         "case 3: release wasn't set, cluster CR found but without a release label",
-			meta:         newObjectWithRelease(to.StringPtr("ef789"), nil),
+			meta:         newObjectWithRelease(to.StringPtr("cd456"), nil),
 			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsReleaseLabelNotFoundError,
 		},
 		{
 			name: "case 4: release wasn't set, cluster CR found, release label present",
@@ -82,6 +82,18 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			azureClusterWithoutReleaseLabel := &capzv1alpha3.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cd456",
+					Namespace: "default",
+				},
+			}
+			err = ctrlClient.Create(ctx, azureClusterWithoutReleaseLabel)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			ef789 := &v1alpha3.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ef789",
@@ -116,10 +128,6 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 
 func newObjectWithRelease(clusterID *string, release *string) metav1.Object {
 	obj := &GenericObject{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Unknown",
-			APIVersion: "unknown.generic.example/v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ab123",
 			Namespace: "default",

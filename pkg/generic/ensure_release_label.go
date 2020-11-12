@@ -19,19 +19,12 @@ import (
 
 func EnsureReleaseVersionLabel(ctx context.Context, ctrlClient client.Client, meta metav1.Object) (*mutator.PatchOperation, error) {
 	if meta.GetLabels()[label.ReleaseVersion] == "" {
-		// Retrieve the Cluster ID.
-		clusterID := meta.GetLabels()[label.Cluster]
-		if clusterID == "" {
-			return nil, microerror.Maskf(errors.InvalidOperationError, "Object has no %s label, can't detect release version.", label.Cluster)
-		}
-
-		// Get release from AzureCluster CR.
-		release, err := getLabelValueFromAzureCluster(ctx, ctrlClient, meta, label.ReleaseVersion)
+		release, err := getReleaseLabelValueFromAzureCluster(ctx, ctrlClient, meta)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 		if release == "" {
-			return nil, microerror.Maskf(errors.InvalidOperationError, "AzureCluster %s did not have a release label set. Can't continue.", clusterID)
+			return nil, microerror.Maskf(releaseLabelNotFoundError, "AzureCluster did not have the %#q label set. Can't continue.", label.ReleaseVersion)
 		}
 
 		return mutator.PatchAdd(fmt.Sprintf("/metadata/labels/%s", escapeJSONPatchString(label.ReleaseVersion)), release), nil
@@ -40,10 +33,14 @@ func EnsureReleaseVersionLabel(ctx context.Context, ctrlClient client.Client, me
 	return nil, nil
 }
 
+func getReleaseLabelValueFromAzureCluster(ctx context.Context, ctrlClient client.Client, meta metav1.Object) (string, error) {
+	return getLabelValueFromAzureCluster(ctx, ctrlClient, meta, label.ReleaseVersion)
+}
+
 func getLabelValueFromAzureCluster(ctx context.Context, ctrlClient client.Client, meta metav1.Object, labelName string) (string, error) {
 	clusterID := meta.GetLabels()[label.Cluster]
 	if clusterID == "" {
-		return "", microerror.Maskf(errors.InvalidOperationError, "Object has no %s label, can't detect cluster ID.", label.Cluster)
+		return "", microerror.Maskf(clusterLabelNotFoundError, "Object has no %#q label, can't detect cluster ID.", label.Cluster)
 	}
 
 	// Retrieve the `AzureCluster` CR related to this object.
@@ -51,7 +48,7 @@ func getLabelValueFromAzureCluster(ctx context.Context, ctrlClient client.Client
 	{
 		err := ctrlClient.Get(ctx, client.ObjectKey{Name: clusterID, Namespace: meta.GetNamespace()}, cluster)
 		if apierrors.IsNotFound(err) {
-			return "", microerror.Maskf(errors.InvalidOperationError, "Looking for AzureCluster named %q but it was not found. Can't continue.", clusterID)
+			return "", microerror.Maskf(errors.NotFoundError, "Looking for AzureCluster named %#q but it was not found. Can't continue.", clusterID)
 		} else if err != nil {
 			return "", microerror.Mask(err)
 		}

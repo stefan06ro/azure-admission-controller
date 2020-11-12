@@ -24,9 +24,10 @@ func validateFailureDomain(azureMachine capzv1alpha3.AzureMachine, supportedAZs 
 	supportedAZsMsg := fmt.Sprintf("Location %#q supports Failure Domains %s for VM size %#q but got %#q", azureMachine.Spec.Location, strings.Join(supportedAZs, ", "), azureMachine.Spec.VMSize, *azureMachine.Spec.FailureDomain)
 	if len(supportedAZs) == 0 {
 		supportedAZsMsg = fmt.Sprintf("Location %#q does not support specifying a Failure Domain for VM size %#q", azureMachine.Spec.Location, azureMachine.Spec.VMSize)
+		return microerror.Maskf(locationWithNoFailureDomainSupportError, supportedAZsMsg)
 	}
 
-	return microerror.Maskf(invalidOperationError, supportedAZsMsg)
+	return microerror.Maskf(unsupportedFailureDomainError, supportedAZsMsg)
 }
 
 func validateFailureDomainUnchanged(old capzv1alpha3.AzureMachine, new capzv1alpha3.AzureMachine) error {
@@ -45,7 +46,7 @@ func validateFailureDomainUnchanged(old capzv1alpha3.AzureMachine, new capzv1alp
 	if old.Spec.FailureDomain == nil && new.Spec.FailureDomain != nil ||
 		old.Spec.FailureDomain != nil && new.Spec.FailureDomain == nil ||
 		*old.Spec.FailureDomain != *new.Spec.FailureDomain {
-		return microerror.Maskf(invalidOperationError, "AzureMachine.Spec.FailureDomain can't be changed")
+		return microerror.Maskf(failureDomainWasChangedError, "AzureMachine.Spec.FailureDomain can't be changed")
 	}
 
 	return nil

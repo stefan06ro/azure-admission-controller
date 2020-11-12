@@ -82,7 +82,8 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 					Name:      "ab123",
 					Namespace: "default",
 					Labels: map[string]string{
-						"azure-operator.giantswarm.io/version": "5.0.0",
+						label.AzureOperatorVersion: "5.0.0",
+						label.ReleaseVersion:       "13.0.0",
 					},
 				},
 			}

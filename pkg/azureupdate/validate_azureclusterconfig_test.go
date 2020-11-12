@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 )
 
 func TestAzureClusterConfigValidate(t *testing.T) {
@@ -60,7 +61,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.0",
 			newVersion:   "12.0.0",
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: releaseversion.IsSkippingReleaseError,
 		},
 		{
 			name: "case 3",
@@ -123,7 +124,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: releaseversion.IsDowngradingIsNotAllowedError,
 		},
 		{
 			name: "case 10",
@@ -141,7 +142,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
-			errorMatcher: errors.IsInvalidReleaseError,
+			errorMatcher: releaseversion.IsReleaseNotFoundError,
 		},
 		{
 			name: "case 12",
@@ -168,7 +169,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "12.1.0",
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: releaseversion.IsSkippingReleaseError,
 		},
 	}
 

@@ -9,8 +9,6 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
 func GetComponentVersionsFromRelease(ctx context.Context, ctrlClient client.Client, releaseVersion string) (map[string]string, error) {
@@ -24,7 +22,7 @@ func GetComponentVersionsFromRelease(ctx context.Context, ctrlClient client.Clie
 	{
 		err := ctrlClient.Get(ctx, client.ObjectKey{Name: releaseVersion, Namespace: "default"}, release)
 		if apierrors.IsNotFound(err) {
-			return nil, microerror.Maskf(errors.InvalidOperationError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
+			return nil, microerror.Maskf(releaseNotFoundError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
 		} else if err != nil {
 			return nil, microerror.Mask(err)
 		}

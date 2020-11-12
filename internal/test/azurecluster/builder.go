@@ -2,6 +2,7 @@ package azurecluster
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +19,7 @@ func Name(name string) BuilderOption {
 		azureCluster.ObjectMeta.Name = name
 		azureCluster.Labels[capiv1alpha3.ClusterLabelName] = name
 		azureCluster.Labels[label.Cluster] = name
+		azureCluster.Spec.ControlPlaneEndpoint.Host = fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", name)
 		return azureCluster
 	}
 }
@@ -68,8 +70,8 @@ func BuildAzureCluster(opts ...BuilderOption) *capzv1alpha3.AzureCluster {
 			ResourceGroup: clusterName,
 			Location:      "westeurope",
 			ControlPlaneEndpoint: capiv1alpha3.APIEndpoint{
-				Host: "api.gigantic.io",
-				Port: 8080,
+				Host: fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", clusterName),
+				Port: 443,
 			},
 		},
 	}

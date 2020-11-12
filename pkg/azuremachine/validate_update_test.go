@@ -34,19 +34,19 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			name:         "Case 1 - not empty ssh key",
 			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
 			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsSSHFieldIsSetError,
 		},
 		{
 			name:         "Case 2 - location changed",
 			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
 			newAM:        azureMachineRawObject("", "westpoland", nil, nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsLocationWasChangedError,
 		},
 		{
 			name:         "Case 3 - failure domain changed",
-			oldAM:        azureMachineRawObject("", "westeurope", to.StringPtr("1"), nil),
+			oldAM:        azureMachineRawObject("", "westpoland", to.StringPtr("1"), nil),
 			newAM:        azureMachineRawObject("", "westpoland", to.StringPtr("2"), nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsFailureDomainWasChangedError,
 		},
 	}
 

@@ -33,17 +33,17 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 		{
 			name:         "Case 1 - not empty ssh key",
 			azureMachine: azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsSSHFieldIsSetError,
 		},
 		{
 			name:         "Case 2 - invalid location",
 			azureMachine: azureMachineRawObject("", "westpoland", nil, nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsUnexpectedLocationError,
 		},
 		{
 			name:         "Case 3 - invalid failure domain",
 			azureMachine: azureMachineRawObject("", "westeurope", to.StringPtr("2"), nil),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsUnsupportedFailureDomainError,
 		},
 		{
 			name:         "Case 4 - valid failure domain",

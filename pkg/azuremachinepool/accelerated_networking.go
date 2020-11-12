@@ -21,7 +21,7 @@ func checkAcceleratedNetworking(ctx context.Context, vmcaps *vmcapabilities.VMSK
 	}
 
 	if !isSupported {
-		return microerror.Maskf(invalidOperationError, "The new VMSize does not support AcceleratedNetworking")
+		return microerror.Maskf(vmsizeDoesNotSupportAcceleratedNetworkingError, "The new VMSize does not support AcceleratedNetworking")
 	}
 
 	return nil
