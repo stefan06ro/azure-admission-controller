@@ -7,7 +7,7 @@ import (
 
 func validateLocation(azureMachine capzv1alpha3.AzureMachine, expectedLocation string) error {
 	if azureMachine.Spec.Location != expectedLocation {
-		return microerror.Maskf(invalidOperationError, "AzureMachine.Spec.Location can only be set to %s", expectedLocation)
+		return microerror.Maskf(unexpectedLocationError, "AzureMachine.Spec.Location can only be set to %s", expectedLocation)
 	}
 
 	return nil
@@ -15,7 +15,7 @@ func validateLocation(azureMachine capzv1alpha3.AzureMachine, expectedLocation s
 
 func validateLocationUnchanged(old capzv1alpha3.AzureMachine, new capzv1alpha3.AzureMachine) error {
 	if old.Spec.Location != new.Spec.Location {
-		return microerror.Maskf(invalidOperationError, "AzureMachine.Spec.Location can't be changed")
+		return microerror.Maskf(locationWasChangedError, "AzureMachine.Spec.Location can't be changed")
 	}
 
 	return nil

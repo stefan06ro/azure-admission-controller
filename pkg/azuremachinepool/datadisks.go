@@ -25,7 +25,7 @@ var desiredDataDisks = []capzv1alpha3.DataDisk{
 
 func checkDataDisks(ctx context.Context, mp *expcapzv1alpha3.AzureMachinePool) error {
 	if !reflect.DeepEqual(mp.Spec.Template.DataDisks, desiredDataDisks) {
-		return microerror.Maskf(invalidOperationError, "AzureMachinePool.Spec.Template.DataDisks is reserved and should not be set.")
+		return microerror.Maskf(datadisksFieldIsSetError, "AzureMachinePool.Spec.Template.DataDisks is reserved and should not be set.")
 	}
 
 	return nil

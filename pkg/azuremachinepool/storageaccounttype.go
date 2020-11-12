@@ -16,7 +16,7 @@ func checkStorageAccountTypeIsValid(ctx context.Context, vmcaps *vmcapabilities.
 	if selectedStorageAccount != string(compute.StorageAccountTypesStandardLRS) &&
 		selectedStorageAccount != string(compute.StorageAccountTypesPremiumLRS) {
 		// Storage account type is invalid.
-		return microerror.Maskf(invalidOperationError, "Storage account type %q is invalid. Allowed values are %q and %q", selectedStorageAccount, string(compute.StorageAccountTypesStandardLRS), string(compute.StorageAccountTypesPremiumLRS))
+		return microerror.Maskf(invalidStorageAccountTypeError, "Storage account type %q is invalid. Allowed values are %q and %q", selectedStorageAccount, string(compute.StorageAccountTypesStandardLRS), string(compute.StorageAccountTypesPremiumLRS))
 	}
 
 	// Storage account type is valid, check if it matches the VM type's support.
@@ -28,7 +28,7 @@ func checkStorageAccountTypeIsValid(ctx context.Context, vmcaps *vmcapabilities.
 		}
 
 		if !supported {
-			return microerror.Maskf(invalidOperationError, "VM Type %s does not support Premium Storage", azureMachinePool.Spec.Template.VMSize)
+			return microerror.Maskf(premiumStorageNotSupportedByVMSizeError, "VM Type %s does not support Premium Storage", azureMachinePool.Spec.Template.VMSize)
 		}
 	}
 

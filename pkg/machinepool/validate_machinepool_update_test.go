@@ -32,7 +32,7 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			name:         "case 1: FailureDomains changed",
 			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1"})),
 			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"2"})),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsFailureDomainWasChangedError,
 		},
 	}
 

@@ -40,7 +40,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
 			nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsVmsizeDoesNotSupportAcceleratedNetworkingError,
 		})
 
 		testCases = append(testCases, testCase{
@@ -69,7 +69,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	{
 		testCases = append(testCases, testCase{
 			name: fmt.Sprintf("case %d: data disks already set", len(testCases)),
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_A2_v2"), builder.DataDisks([]capzv1alpha3.DataDisk{
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.DataDisks([]capzv1alpha3.DataDisk{
 				{
 					NameSuffix: "docker",
 					DiskSizeGB: 50,
@@ -81,14 +81,14 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 					Lun:        to.Int32Ptr(22),
 				},
 			})),
-			errorMatcher: IsInvalidOperationError,
+			errorMatcher: IsDatadisksFieldIsSetError,
 		})
 	}
 
 	testCases = append(testCases, testCase{
 		name:         fmt.Sprintf("case %d: invalid location", len(testCases)-1),
-		nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_A2_v2"), builder.Location("eastgalicia")),
-		errorMatcher: IsInvalidOperationError,
+		nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.Location("eastgalicia")),
+		errorMatcher: IsUnexpectedLocationError,
 	})
 
 	for _, tc := range testCases {
@@ -195,6 +195,23 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 						{
 							Name:  to.StringPtr("AcceleratedNetworkingEnabled"),
 							Value: to.StringPtr("False"),
+						},
+						{
+							Name:  to.StringPtr("vCPUs"),
+							Value: to.StringPtr("4"),
+						},
+						{
+							Name:  to.StringPtr("MemoryGB"),
+							Value: to.StringPtr("16"),
+						},
+					},
+				},
+				"Standard_D4_v3": {
+					Name: to.StringPtr("Standard_D4s_v3"),
+					Capabilities: &[]compute.ResourceSkuCapabilities{
+						{
+							Name:  to.StringPtr("AcceleratedNetworkingEnabled"),
+							Value: to.StringPtr("True"),
 						},
 						{
 							Name:  to.StringPtr("vCPUs"),

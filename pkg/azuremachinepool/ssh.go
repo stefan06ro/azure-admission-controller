@@ -9,7 +9,7 @@ import (
 
 func checkSSHKeyIsEmpty(ctx context.Context, mp *expcapzv1alpha3.AzureMachinePool) error {
 	if mp.Spec.Template.SSHPublicKey != "" {
-		return microerror.Maskf(invalidOperationError, "AzureMachinePool.Spec.Template.SSHPublicKey is unsupported and must be empty.")
+		return microerror.Maskf(sshFieldIsSetError, "AzureMachinePool.Spec.Template.SSHPublicKey is unsupported and must be empty.")
 	}
 
 	return nil

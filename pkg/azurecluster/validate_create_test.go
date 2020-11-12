@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -26,18 +25,18 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab132"), builder.Location("westeurope")),
-			errorMatcher: errors.IsInvalidOperationError,
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 443)),
+			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 1: Invalid Port",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
-			errorMatcher: errors.IsInvalidOperationError,
+			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
+			errorMatcher: IsInvalidControlPlaneEndpointPortError,
 		},
 		{
 			name:         "case 2: Invalid Host",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.gigantic.io", 443), builder.Location("westeurope")),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 3: Valid values",
@@ -47,7 +46,7 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 		{
 			name:         "case 4: Invalid region",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("westpoland")),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsUnexpectedLocationError,
 		},
 	}
 

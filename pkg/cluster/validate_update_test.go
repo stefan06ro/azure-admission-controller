@@ -11,8 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
-
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
 
 func TestClusterUpdateValidate(t *testing.T) {
@@ -44,19 +42,19 @@ func TestClusterUpdateValidate(t *testing.T) {
 			name:         "case 1: host changed",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:         "case 2: port changed",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:         "case 3: clusterNetwork deleted",
 			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster:   clusterRawObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsClusterNetworkWasChangedError,
 		},
 		{
 			name:       "case 4: clusterNetwork.APIServerPort changed",
@@ -76,7 +74,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsClusterNetworkWasChangedError,
 		},
 		{
 			name:       "case 5: clusterNetwork.ServiceDomain changed",
@@ -96,7 +94,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsClusterNetworkWasChangedError,
 		},
 		{
 			name:       "case 6: clusterNetwork.Services deleted",
@@ -112,7 +110,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsClusterNetworkWasChangedError,
 		},
 	}
 	for _, tc := range testCases {

@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 )
 
@@ -25,27 +24,27 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:            "case 0: unchanged ControlPlaneEndpoint",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
 			errorMatcher:    nil,
 		},
 		{
 			name:            "case 1: host changed",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
 			newAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.azure.gigantic.io", 443)),
-			errorMatcher:    errors.IsInvalidOperationError,
+			errorMatcher:    IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:            "case 2: port changed",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
-			errorMatcher:    errors.IsInvalidOperationError,
+			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
+			errorMatcher:    IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:            "case 3: location changed",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Location("westeurope")),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Location("westpoland")),
-			errorMatcher:    errors.IsInvalidOperationError,
+			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.Location("westeurope")),
+			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.Location("westpoland")),
+			errorMatcher:    IsLocationWasChangedError,
 		},
 	}
 

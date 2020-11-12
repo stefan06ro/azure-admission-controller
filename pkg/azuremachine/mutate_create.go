@@ -3,7 +3,6 @@ package azuremachine
 import (
 	"context"
 
-	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -67,7 +66,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = generic.CopyComponentVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMachineCR.GetObjectMeta(), label.AzureOperatorVersion)
+	patch, err = generic.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMachineCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

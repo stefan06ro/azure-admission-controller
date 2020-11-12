@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 )
 
 var (
@@ -60,7 +61,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.0",
 			newVersion:   "12.0.0",
 			conditions:   []string{},
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: releaseversion.IsSkippingReleaseError,
 		},
 		{
 			name: "case 3",
@@ -130,7 +131,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			oldVersion:   "11.3.1",
 			newVersion:   "11.3.0",
 			conditions:   []string{},
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: releaseversion.IsDowngradingIsNotAllowedError,
 		},
 		{
 			name: "case 10",
@@ -150,7 +151,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			oldVersion:   "11.4.0", // exists
 			newVersion:   "11.5.0", // does not exist
 			conditions:   []string{},
-			errorMatcher: errors.IsInvalidReleaseError,
+			errorMatcher: releaseversion.IsReleaseNotFoundError,
 		},
 		{
 			name: "case 12",

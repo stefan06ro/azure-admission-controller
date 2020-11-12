@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
 
-	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -38,17 +37,17 @@ func TestClusterCreateValidate(t *testing.T) {
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
 			cluster:      clusterRawObject("ab123", clusterNetwork, "", 0, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 1: Invalid Port",
 			cluster:      clusterRawObject("ab123", clusterNetwork, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 80, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsInvalidControlPlaneEndpointPortError,
 		},
 		{
 			name:         "case 2: Invalid Host",
 			cluster:      clusterRawObject("ab123", clusterNetwork, "api.gigantic.io", 443, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 3: Valid values",
@@ -58,7 +57,7 @@ func TestClusterCreateValidate(t *testing.T) {
 		{
 			name:         "case 4: ClusterNetwork null",
 			cluster:      clusterRawObject("ab123", nil, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, nil),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsEmptyClusterNetworkError,
 		},
 		{
 			name: "case 5: ClusterNetwork.APIServerPort wrong",
@@ -77,7 +76,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsUnexpectedAPIServerPortError,
 		},
 		{
 			name: "case 6: ClusterNetwork.ServiceDomain wrong",
@@ -96,7 +95,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsUnexpectedServiceDomainError,
 		},
 		{
 			name: "case 7: ClusterNetwork.Services nil",
@@ -111,7 +110,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsEmptyClusterNetworkServicesError,
 		},
 		{
 			name: "case 8: ClusterNetwork.CIDRBlocks wrong",
@@ -130,7 +129,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				443,
 				nil,
 			),
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: IsUnexpectedCIDRBlocksError,
 		},
 	}
 

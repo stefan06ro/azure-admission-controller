@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Simplify `Validator` interface to only return `error`, dropping the `bool`.
+- Use specific errors for specific business rules.
 
 ### Added
 

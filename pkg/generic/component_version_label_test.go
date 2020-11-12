@@ -40,10 +40,10 @@ func Test_EnsureComponentVersionLabel(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:         "case 5: operator label missing, cluster not present",
+			name:         "case 2: operator label missing, cluster not present",
 			meta:         newObjectWithLabels(to.StringPtr("nf404"), map[string]string{}),
 			patch:        nil,
-			errorMatcher: errors.IsInvalidOperationError,
+			errorMatcher: errors.IsNotFoundError,
 		},
 	}
 
@@ -82,7 +82,7 @@ func Test_EnsureComponentVersionLabel(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			patch, err := CopyComponentVersionLabelFromAzureClusterCR(ctx, ctrlClient, tc.meta, label.AzureOperatorVersion)
+			patch, err := CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, ctrlClient, tc.meta)
 
 			switch {
 			case err == nil && tc.errorMatcher == nil:
