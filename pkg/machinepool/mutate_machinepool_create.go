@@ -52,7 +52,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse MachinePool CR: %v", err)
 	}
 
-	defaultSpecValues := setDefaultSpecValues(m, ctx, machinePoolCR)
+	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
 	if defaultSpecValues != nil {
 		result = append(result, defaultSpecValues...)
 	}

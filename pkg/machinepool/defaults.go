@@ -1,7 +1,6 @@
 package machinepool
 
 import (
-	"context"
 	"fmt"
 
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -11,10 +10,10 @@ import (
 
 // setDefaultSpecValues checks if some optional field is not set, and sets
 // default values defined by upstream Cluster API.
-func setDefaultSpecValues(m mutator.Mutator, ctx context.Context, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
+func setDefaultSpecValues(m mutator.Mutator, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
 
-	defaultSpecReplicas := setDefaultReplicaValue(m, ctx, machinePool)
+	defaultSpecReplicas := setDefaultReplicaValue(m, machinePool)
 	if defaultSpecReplicas != nil {
 		patches = append(patches, *defaultSpecReplicas)
 	}
@@ -24,10 +23,10 @@ func setDefaultSpecValues(m mutator.Mutator, ctx context.Context, machinePool *c
 
 // setDefaultReplicaValue checks if Spec.Replicas has been set, and if it is
 // not, it sets its value to 1.
-func setDefaultReplicaValue(m mutator.Mutator, ctx context.Context, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
+func setDefaultReplicaValue(m mutator.Mutator, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
 	if machinePool.Spec.Replicas == nil {
 		const defaultReplicas int64 = 1
-		m.Log(ctx, "level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %d", defaultReplicas))
+		m.Log("level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %d", defaultReplicas))
 		return mutator.PatchAdd("/spec/replicas", defaultReplicas)
 	}
 

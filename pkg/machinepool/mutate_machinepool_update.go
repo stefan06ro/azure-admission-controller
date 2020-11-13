@@ -46,7 +46,7 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 
 	// Values for some optional spec fields could be removed in a CR update, so
 	// here we set them back again to their default values.
-	defaultSpecValues := setDefaultSpecValues(m, ctx, machinePoolCR)
+	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
 	if defaultSpecValues != nil {
 		result = append(result, defaultSpecValues...)
 	}

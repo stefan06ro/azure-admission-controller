@@ -49,8 +49,11 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 				}
 			}
 
-			admit := &UpdateValidator{
-				logger: newLogger,
+			admit, err := NewUpdateValidator(UpdateValidatorConfig{
+				Logger: newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.

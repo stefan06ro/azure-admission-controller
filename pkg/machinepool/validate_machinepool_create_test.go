@@ -199,10 +199,13 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateValidator{
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
-				vmcaps:     vmcaps,
+			admit, err := NewCreateValidator(CreateValidatorConfig{
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
