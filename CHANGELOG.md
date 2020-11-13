@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.1] - 2020-11-13
+
 ## [1.13.0] - 2020-11-12
 
 ### Changed
@@ -155,7 +157,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.1...HEAD
+[1.13.1]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.10.0...v1.11.0
