@@ -1,0 +1,31 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureCluster
+metadata:
+  labels:
+    azure-operator.giantswarm.io/version: 5.0.1
+    cluster.x-k8s.io/cluster-name: 2mw4b
+    giantswarm.io/cluster: 2mw4b
+    giantswarm.io/organization: giantswarm
+    release.giantswarm.io/version: 13.0.0
+  name: 2mw4b
+  namespace: org-giantswarm
+spec:
+  controlPlaneEndpoint:
+    host: api.2mw4b.k8s.test.westeurope.azure.gigantic.io
+    port: 443
+  location: westeurope
+  networkSpec:
+    subnets:
+      - cidrBlocks:
+          - 10.11.3.0/24
+        id: /subscriptions/1be3b2e6-497b-45b9-915f-eb35cae23c6a/resourceGroups/2mw4b/providers/Microsoft.Network/virtualNetworks/2mw4b-VirtualNetwork/subnets/tia3i
+        name: tia3i
+        role: node
+        routeTable: {}
+        securityGroup: {}
+    vnet:
+      cidrBlocks:
+        - 10.11.0.0/16
+      name: 2mw4b-VirtualNetwork
+      resourceGroup: 2mw4b
+  resourceGroup: 2mw4b

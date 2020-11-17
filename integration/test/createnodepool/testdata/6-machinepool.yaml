@@ -1,0 +1,30 @@
+apiVersion: exp.cluster.x-k8s.io/v1alpha3
+kind: MachinePool
+metadata:
+  annotations:
+    machine-pool.giantswarm.io/name: Unnamed node pool
+  labels:
+    azure-operator.giantswarm.io/version: 5.0.1
+    cluster-operator.giantswarm.io/version: 0.23.18
+    cluster.x-k8s.io/cluster-name: 2mw4b
+    giantswarm.io/cluster: 2mw4b
+    giantswarm.io/machine-pool: 8c7mn
+    giantswarm.io/organization: giantswarm
+    release.giantswarm.io/version: 13.0.0
+  name: 8c7mn
+  namespace: org-giantswarm
+spec:
+  clusterName: 2mw4b
+  failureDomains:
+    - "3"
+  replicas: 3
+  template:
+    metadata: {}
+    spec:
+      bootstrap: {}
+      clusterName: 2mw4b
+      infrastructureRef:
+        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachinePool
+        name: 8c7mn
+        namespace: org-giantswarm

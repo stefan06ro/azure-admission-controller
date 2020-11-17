@@ -62,7 +62,7 @@ workflows:
           context: architect
           name: admission-integration-test
           install-app-platform: true
-          test-dir: "integration/test/organization"
+          test-dir: "integration/test/createnodepool"
           test-timeout: "10m"
           filters:
             # Do not trigger the job on merge to master.

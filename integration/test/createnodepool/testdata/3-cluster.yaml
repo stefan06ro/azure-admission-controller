@@ -1,0 +1,26 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  annotations:
+    cluster.giantswarm.io/description: admission-e2e-testing
+  labels:
+    azure-operator.giantswarm.io/version: 5.0.1
+    cluster-operator.giantswarm.io/version: 0.23.18
+    cluster.x-k8s.io/cluster-name: 2mw4b
+    giantswarm.io/cluster: 2mw4b
+    giantswarm.io/organization: giantswarm
+    release.giantswarm.io/version: 13.0.0
+  name: 2mw4b
+  namespace: org-giantswarm
+spec:
+  clusterNetwork:
+    apiServerPort: 443
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 172.31.0.0/16
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureCluster
+    name: 2mw4b
+    namespace: org-giantswarm
