@@ -15,7 +15,7 @@ metadata:
 spec:
   clusterNetwork:
     apiServerPort: 443
-    serviceDomain: cluster.local
+    serviceDomain: lalalalalala
     services:
       cidrBlocks:
         - 172.31.0.0/16
