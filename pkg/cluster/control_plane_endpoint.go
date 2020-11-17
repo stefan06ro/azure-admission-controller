@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func validateClusterNetwork(cluster capiv1alpha3.Cluster, baseDomain string) error {
+func validateClusterNetwork(cluster capiv1alpha3.Cluster) error {
 	if cluster.Spec.ClusterNetwork == nil {
 		return microerror.Maskf(emptyClusterNetworkError, "ClusterNetwork can't be null")
 	}
@@ -18,8 +18,8 @@ func validateClusterNetwork(cluster capiv1alpha3.Cluster, baseDomain string) err
 		return microerror.Maskf(unexpectedAPIServerPortError, "ClusterNetwork.APIServerPort can only be set to %d", key.ControlPlaneEndpointPort)
 	}
 
-	if cluster.Spec.ClusterNetwork.ServiceDomain != key.ServiceDomain(cluster.Name, baseDomain) {
-		return microerror.Maskf(unexpectedServiceDomainError, "ClusterNetwork.ServiceDomain can only be set to %s", key.ServiceDomain(cluster.Name, baseDomain))
+	if cluster.Spec.ClusterNetwork.ServiceDomain != key.ServiceDomain() {
+		return microerror.Maskf(unexpectedServiceDomainError, "ClusterNetwork.ServiceDomain can only be set to %s", key.ServiceDomain())
 	}
 
 	if cluster.Spec.ClusterNetwork.Services == nil {

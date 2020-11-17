@@ -25,7 +25,7 @@ func TestClusterCreateValidate(t *testing.T) {
 
 	clusterNetwork := &v1alpha3.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
-		ServiceDomain: "ab123.k8s.test.westeurope.azure.gigantic.io",
+		ServiceDomain: "cluster.local",
 		Services: &v1alpha3.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
@@ -65,7 +65,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
-					ServiceDomain: "ab123.k8s.test.westeurope.azure.gigantic.io",
+					ServiceDomain: "cluster.local",
 					Services: &v1alpha3.NetworkRanges{
 						CIDRBlocks: []string{
 							"172.31.0.0/16",
@@ -103,7 +103,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
-					ServiceDomain: "ab123.k8s.test.westeurope.azure.gigantic.io",
+					ServiceDomain: "cluster.local",
 					Services:      nil,
 				},
 				"api.ab123.k8s.test.westeurope.azure.gigantic.io",
@@ -118,7 +118,7 @@ func TestClusterCreateValidate(t *testing.T) {
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
-					ServiceDomain: "ab123.k8s.test.westeurope.azure.gigantic.io",
+					ServiceDomain: "cluster.local",
 					Services: &v1alpha3.NetworkRanges{
 						CIDRBlocks: []string{
 							"192.168.0.0/24",

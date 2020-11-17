@@ -57,7 +57,7 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
-	err = validateClusterNetwork(*clusterCR, a.baseDomain)
+	err = validateClusterNetwork(*clusterCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

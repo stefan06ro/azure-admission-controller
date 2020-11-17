@@ -109,7 +109,7 @@ func (m *CreateMutator) ensureClusterNetwork(ctx context.Context, clusterCR *cap
 	if clusterCR.Spec.ClusterNetwork == nil {
 		clusterNetwork := capiv1alpha3.ClusterNetwork{
 			APIServerPort: to.Int32Ptr(key.ControlPlaneEndpointPort),
-			ServiceDomain: key.ServiceDomain(clusterCR.Name, m.baseDomain),
+			ServiceDomain: key.ServiceDomain(),
 			Services: &capiv1alpha3.NetworkRanges{
 				CIDRBlocks: []string{
 					key.ClusterNetworkServiceCIDR,
