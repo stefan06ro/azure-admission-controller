@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ignore release in validation logic by setting `release.giantswarm.io/ignore` annotation on a `Release` CR.
+
 ### Changed
 
 - Update `apptest` library and CAPZ fork dependencies.
+- On upgrade ignore alpha releases when validating new cluster release version, because upgrading to or from an alpha release is not supported.
 
 ## [1.13.3] - 2020-11-17
 
