@@ -9,15 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update `apptest` library and CAPZ fork.
+- Update `apptest` library and CAPZ fork dependencies.
 
 ## [1.13.3] - 2020-11-17
+
+### Changed
 
 - Default `Cluster.Spec.ClusterNetwork.ServiceDomain` to `cluster.local` and don't allow any other value to be set. 
 
 ## [1.13.2] - 2020-11-13
 
+- No changes.
+
 ## [1.13.1] - 2020-11-13
+
+- No changes.
 
 ## [1.13.0] - 2020-11-12
 
