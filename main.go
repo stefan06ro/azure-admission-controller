@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/dyson/certman"
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
@@ -392,9 +394,20 @@ func healthCheck(writer http.ResponseWriter, request *http.Request) {
 }
 
 func serve(config config.Config, handler http.Handler) {
+	cm, err := certman.New(config.CertFile, config.KeyFile)
+	if err != nil {
+		panic(microerror.JSON(err))
+	}
+	if err := cm.Watch(); err != nil {
+		panic(microerror.JSON(err))
+	}
+
 	server := &http.Server{
 		Addr:    config.Address,
 		Handler: handler,
+		TLSConfig: &tls.Config{
+			GetCertificate: cm.GetCertificate,
+		},
 	}
 
 	sig := make(chan os.Signal, 1)
@@ -407,7 +420,7 @@ func serve(config config.Config, handler http.Handler) {
 		}
 	}()
 
-	err := server.ListenAndServeTLS(config.CertFile, config.KeyFile)
+	err = server.ListenAndServeTLS("", "")
 	if err != nil {
 		if err != http.ErrServerClosed {
 			panic(microerror.JSON(err))

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Ignore release in validation logic by setting `release.giantswarm.io/ignore` annotation on a `Release` CR.
+- Make Pod terminate itself when the TLS certificate is expired.
 
 ### Changed
 
