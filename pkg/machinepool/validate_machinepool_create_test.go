@@ -7,15 +7,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -68,6 +71,12 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			machinePool:  builder.BuildMachinePoolAsJson(builder.AzureMachinePool(machinePoolName), builder.FailureDomains([]string{})),
 			vmType:       "",
 			errorMatcher: IsAzureMachinePoolNotFound,
+		},
+		{
+			name:         "case 6: Wrong Organization",
+			machinePool:  builder.BuildMachinePoolAsJson(builder.AzureMachinePool(machinePoolName), builder.Organization("wrongorg")),
+			vmType:       "",
+			errorMatcher: generic.IsNodepoolOrgDoesNotMatchClusterOrg,
 		},
 	}
 
@@ -195,6 +204,21 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 				Spec: securityv1alpha1.OrganizationSpec{},
 			}
 			err = ctrlClient.Create(ctx, organization)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Create cluster CR.
+			cluster := &capiv1alpha3.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "ab123",
+					Labels: map[string]string{
+						label.Cluster:      "ab123",
+						label.Organization: "giantswarm",
+					},
+				},
+			}
+			err = ctrlClient.Create(ctx, cluster)
 			if err != nil {
 				t.Fatal(err)
 			}

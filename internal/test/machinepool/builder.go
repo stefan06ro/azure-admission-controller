@@ -2,6 +2,7 @@ package azuremachinepool
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	v1 "k8s.io/api/core/v1"
@@ -33,6 +34,14 @@ func Name(name string) BuilderOption {
 	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
 		machinePool.ObjectMeta.Name = name
 		machinePool.Labels[label.MachinePool] = name
+		return machinePool
+	}
+}
+
+func Organization(org string) BuilderOption {
+	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
+		machinePool.Labels[label.Organization] = org
+		machinePool.Namespace = fmt.Sprintf("org-%s", org)
 		return machinePool
 	}
 }

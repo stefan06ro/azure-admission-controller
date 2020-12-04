@@ -8,6 +8,7 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/normalize"
@@ -41,6 +42,45 @@ func ValidateOrganizationLabelContainsExistingOrganization(ctx context.Context, 
 		return microerror.Maskf(organizationNotFoundError, "Organization label %#q must contain an existing organization, got %#q but didn't find any CR with name %#q", label.Organization, organizationName, normalize.AsDNSLabelName(organizationName))
 	} else if err != nil {
 		return microerror.Mask(err)
+	}
+
+	return nil
+}
+
+func ValidateOrganizationLabelMatchesCluster(ctx context.Context, ctrlClient client.Client, obj metav1.Object) error {
+	organizationName, ok := obj.GetLabels()[label.Organization]
+	if !ok {
+		return microerror.Maskf(organizationLabelNotFoundError, "CR doesn't contain Organization label %#q", label.Organization)
+	}
+
+	clusterName, ok := obj.GetLabels()[label.Cluster]
+	if !ok {
+		return microerror.Maskf(clusterLabelNotFoundError, "CR doesn't contain Cluster label %#q", label.Cluster)
+	}
+
+	cluster := capiv1alpha3.Cluster{}
+	{
+		clusters := &capiv1alpha3.ClusterList{}
+		err := ctrlClient.List(ctx, clusters, client.MatchingLabels{label.Cluster: clusterName})
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		// We want exactly one result.
+		if len(clusters.Items) != 1 {
+			return microerror.Maskf(clusterNotFoundError, "Expected one Cluster CR with label %#q=%#q. %d found.", label.Cluster, clusterName, len(clusters.Items))
+		}
+
+		cluster = clusters.Items[0]
+	}
+
+	clusterOrg, ok := cluster.GetLabels()[label.Organization]
+	if !ok {
+		return microerror.Maskf(organizationLabelNotFoundError, "Cluster CR doesn't contain Organization label %#q", label.Organization)
+	}
+
+	if clusterOrg != organizationName {
+		return microerror.Maskf(nodepoolOrgDoesNotMatchClusterOrgError, "Organization label %#q (%#q) does not match Cluster's (%#q)", label.Organization, organizationName, clusterOrg)
 	}
 
 	return nil

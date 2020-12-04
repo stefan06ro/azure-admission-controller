@@ -4,6 +4,24 @@ import (
 	"github.com/giantswarm/microerror"
 )
 
+var clusterNotFoundError = &microerror.Error{
+	Kind: "clusterNotFoundError",
+}
+
+// IsClusterNotFoundError asserts clusterNotFoundError.
+func IsClusterNotFoundError(err error) bool {
+	return microerror.Cause(err) == clusterNotFoundError
+}
+
+var nodepoolOrgDoesNotMatchClusterOrgError = &microerror.Error{
+	Kind: "nodepoolOrgDoesNotMatchClusterOrgError",
+}
+
+// IsNodepoolOrgDoesNotMatchClusterOrg asserts nodepoolOrgDoesNotMatchClusterOrgError.
+func IsNodepoolOrgDoesNotMatchClusterOrg(err error) bool {
+	return microerror.Cause(err) == nodepoolOrgDoesNotMatchClusterOrgError
+}
+
 var organizationLabelNotFoundError = &microerror.Error{
 	Kind: "organizationLabelNotFoundError",
 }

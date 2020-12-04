@@ -2,6 +2,7 @@ package azuremachinepool
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -40,6 +41,14 @@ func DataDisks(dataDisks []capzv1alpha3.DataDisk) BuilderOption {
 func Location(location string) BuilderOption {
 	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
 		azureMachinePool.Spec.Location = location
+		return azureMachinePool
+	}
+}
+
+func Organization(org string) BuilderOption {
+	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+		azureMachinePool.Labels[label.Organization] = org
+		azureMachinePool.Namespace = fmt.Sprintf("org-%s", org)
 		return azureMachinePool
 	}
 }

@@ -53,7 +53,7 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, machinePoolNewCR)
+	err := generic.ValidateOrganizationLabelMatchesCluster(ctx, a.ctrlClient, machinePoolNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
