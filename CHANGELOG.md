@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2020-12-04
+
 ### Added
 
 - Ignore release in validation logic by setting `release.giantswarm.io/ignore` annotation on a `Release` CR.
@@ -180,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.3...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.3...v1.14.0
 [1.13.3]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.0...v1.13.1
