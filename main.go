@@ -34,6 +34,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/cluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/machinepool"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
+	"github.com/giantswarm/azure-admission-controller/pkg/project"
 	"github.com/giantswarm/azure-admission-controller/pkg/spark"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
@@ -65,6 +66,9 @@ func mainError() error {
 		if err != nil {
 			return microerror.Mask(err)
 		}
+
+		restConfig.UserAgent = fmt.Sprintf("%s/%s", project.Name(), project.Version())
+
 		c := k8sclient.ClientsConfig{
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				capiv1alpha3.AddToScheme,
