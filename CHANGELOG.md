@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Validate the Master node CIDR does not change in `AzureConfig` CR.
+
 ## [1.14.0] - 2020-12-04
 
 ### Added

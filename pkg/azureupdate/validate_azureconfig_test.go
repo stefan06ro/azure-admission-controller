@@ -21,6 +21,88 @@ var (
 	controlPlaneNameSpace = "default"
 )
 
+func TestMasterCIDR(t *testing.T) {
+	testCases := []struct {
+		name         string
+		ctx          context.Context
+		oldCIDR      string
+		newCIDR      string
+		errorMatcher func(err error) bool
+	}{
+		{
+			name: "case 0: CIDR changed",
+			ctx:  context.Background(),
+
+			oldCIDR:      "10.0.1.0/24",
+			newCIDR:      "10.0.2.0/24",
+			errorMatcher: IsMasterCIDRChange,
+		},
+		{
+			name: "case 1: CIDR unchanged",
+			ctx:  context.Background(),
+
+			oldCIDR:      "10.0.1.0/24",
+			newCIDR:      "10.0.1.0/24",
+			errorMatcher: nil,
+		},
+		{
+			name: "case 2: CIDR was unset, being set",
+			ctx:  context.Background(),
+
+			oldCIDR:      "",
+			newCIDR:      "10.0.1.0/24",
+			errorMatcher: nil,
+		},
+		{
+			name: "case 3: CIDR was set, being unset",
+			ctx:  context.Background(),
+
+			oldCIDR:      "10.0.1.0/24",
+			newCIDR:      "",
+			errorMatcher: IsMasterCIDRChange,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+
+			// Create a new logger that is used by all admitters.
+			var newLogger micrologger.Logger
+			{
+				newLogger, err = micrologger.New(micrologger.Config{})
+				if err != nil {
+					panic(microerror.JSON(err))
+				}
+			}
+			fakeCtrlClient, err := getFakeCtrlClient()
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
+			admit := &AzureConfigValidator{
+				ctrlClient: fakeCtrlClient,
+				logger:     newLogger,
+			}
+
+			// Run admission request to validate AzureConfig updates.
+			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj("13.0.0", tc.oldCIDR), azureConfigRawObj("13.0.0", tc.newCIDR)))
+
+			// Check if the error is the expected one.
+			switch {
+			case err == nil && tc.errorMatcher == nil:
+				// fall through
+			case err != nil && tc.errorMatcher == nil:
+				t.Fatalf("expected %#v got %#v", nil, err)
+			case err == nil && tc.errorMatcher != nil:
+				t.Fatalf("expected %#v got %#v", "error", nil)
+			case !tc.errorMatcher(err):
+				t.Fatalf("unexpected error: %#v", err)
+			}
+		})
+	}
+}
+
 func TestAzureConfigValidate(t *testing.T) {
 	releases := []string{"11.3.0", "11.3.1", "11.4.0", "12.0.0"}
 
@@ -189,7 +271,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(tc.oldVersion, tc.newVersion))
+			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj(tc.oldVersion, "10.0.0.0/24"), azureConfigRawObj(tc.newVersion, "10.0.0.0/24")))
 
 			// Check if the error is the expected one.
 			switch {
@@ -206,7 +288,7 @@ func TestAzureConfigValidate(t *testing.T) {
 	}
 }
 
-func getAdmissionRequest(oldVersion string, newVersion string) *v1beta1.AdmissionRequest {
+func getAdmissionRequest(oldRaw []byte, newRaw []byte) *v1beta1.AdmissionRequest {
 	req := &v1beta1.AdmissionRequest{
 		Kind: metav1.GroupVersionKind{
 			Version: "infrastructure.giantswarm.io/v1alpha2",
@@ -218,11 +300,11 @@ func getAdmissionRequest(oldVersion string, newVersion string) *v1beta1.Admissio
 		},
 		Operation: v1beta1.Update,
 		Object: runtime.RawExtension{
-			Raw:    azureConfigRawObj(newVersion),
+			Raw:    newRaw,
 			Object: nil,
 		},
 		OldObject: runtime.RawExtension{
-			Raw:    azureConfigRawObj(oldVersion),
+			Raw:    oldRaw,
 			Object: nil,
 		},
 	}
@@ -230,7 +312,7 @@ func getAdmissionRequest(oldVersion string, newVersion string) *v1beta1.Admissio
 	return req
 }
 
-func azureConfigRawObj(version string) []byte {
+func azureConfigRawObj(version string, cidr string) []byte {
 	azureconfig := providerv1alpha1.AzureConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureConfig",
@@ -246,8 +328,12 @@ func azureConfigRawObj(version string) []byte {
 			},
 		},
 		Spec: providerv1alpha1.AzureConfigSpec{
-			Cluster:       providerv1alpha1.Cluster{},
-			Azure:         providerv1alpha1.AzureConfigSpecAzure{},
+			Cluster: providerv1alpha1.Cluster{},
+			Azure: providerv1alpha1.AzureConfigSpecAzure{
+				VirtualNetwork: providerv1alpha1.AzureConfigSpecAzureVirtualNetwork{
+					MasterSubnetCIDR: cidr,
+				},
+			},
 			VersionBundle: providerv1alpha1.AzureConfigSpecVersionBundle{},
 		},
 	}
