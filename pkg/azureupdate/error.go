@@ -4,6 +4,15 @@ import (
 	"github.com/giantswarm/microerror"
 )
 
+var availabilityZonesChangeError = &microerror.Error{
+	Kind: "availabilityZonesChangeError",
+}
+
+// IsAvailabilityZonesChange asserts availabilityZonesChangeError.
+func IsAvailabilityZonesChange(err error) bool {
+	return microerror.Cause(err) == availabilityZonesChangeError
+}
+
 var invalidConfigError = &microerror.Error{
 	Kind: "invalidConfigError",
 }

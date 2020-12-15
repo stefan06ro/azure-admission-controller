@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Block possibility to change `Spec/Azure/AvailabilityZones` field of `AzureConfig`.
+
 ## [0.15.0] - 2020-12-10
 
 ### Added

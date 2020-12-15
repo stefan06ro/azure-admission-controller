@@ -27,6 +27,8 @@ func TestMasterCIDR(t *testing.T) {
 		ctx          context.Context
 		oldCIDR      string
 		newCIDR      string
+		oldAZs       []int
+		newAZs       []int
 		errorMatcher func(err error) bool
 	}{
 		{
@@ -61,6 +63,46 @@ func TestMasterCIDR(t *testing.T) {
 			newCIDR:      "",
 			errorMatcher: IsMasterCIDRChange,
 		},
+		{
+			name: "case 4: AZs changed",
+			ctx:  context.Background(),
+
+			oldAZs:       []int{1, 2, 3},
+			newAZs:       []int{1},
+			errorMatcher: IsAvailabilityZonesChange,
+		},
+		{
+			name: "case 5: AZ unchanged",
+			ctx:  context.Background(),
+
+			oldAZs:       []int{1, 2, 3},
+			newAZs:       []int{1, 2, 3},
+			errorMatcher: nil,
+		},
+		{
+			name: "case 6: AZ set for the first time",
+			ctx:  context.Background(),
+
+			oldAZs:       []int{},
+			newAZs:       []int{1, 2, 3},
+			errorMatcher: nil,
+		},
+		{
+			name: "case 7: AZ set for the first time",
+			ctx:  context.Background(),
+
+			oldAZs:       nil,
+			newAZs:       []int{1, 2, 3},
+			errorMatcher: nil,
+		},
+		{
+			name: "case 8: AZ allow different order",
+			ctx:  context.Background(),
+
+			oldAZs:       []int{3, 2, 1},
+			newAZs:       []int{1, 2, 3},
+			errorMatcher: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -86,7 +128,7 @@ func TestMasterCIDR(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj("13.0.0", tc.oldCIDR), azureConfigRawObj("13.0.0", tc.newCIDR)))
+			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigRawObj("13.0.0", tc.newCIDR, tc.newAZs)))
 
 			// Check if the error is the expected one.
 			switch {
@@ -271,7 +313,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj(tc.oldVersion, "10.0.0.0/24"), azureConfigRawObj(tc.newVersion, "10.0.0.0/24")))
+			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj(tc.oldVersion, "10.0.0.0/24", nil), azureConfigRawObj(tc.newVersion, "10.0.0.0/24", nil)))
 
 			// Check if the error is the expected one.
 			switch {
@@ -312,7 +354,7 @@ func getAdmissionRequest(oldRaw []byte, newRaw []byte) *v1beta1.AdmissionRequest
 	return req
 }
 
-func azureConfigRawObj(version string, cidr string) []byte {
+func azureConfigRawObj(version string, cidr string, azs []int) []byte {
 	azureconfig := providerv1alpha1.AzureConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureConfig",
@@ -330,6 +372,7 @@ func azureConfigRawObj(version string, cidr string) []byte {
 		Spec: providerv1alpha1.AzureConfigSpec{
 			Cluster: providerv1alpha1.Cluster{},
 			Azure: providerv1alpha1.AzureConfigSpecAzure{
+				AvailabilityZones: azs,
 				VirtualNetwork: providerv1alpha1.AzureConfigSpecAzureVirtualNetwork{
 					MasterSubnetCIDR: cidr,
 				},

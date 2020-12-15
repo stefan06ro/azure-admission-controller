@@ -2,6 +2,8 @@ package azureupdate
 
 import (
 	"context"
+	"reflect"
+	"sort"
 
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
@@ -70,6 +72,12 @@ func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.Ad
 		return microerror.Mask(err)
 	}
 
+	// Don't allow change of Availability Zones.
+	err = validateAvailabilityZonesUnchanged(azureConfigOldCR, azureConfigNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
 	return nil
 }
 
@@ -80,6 +88,24 @@ func (a *AzureConfigValidator) Log(keyVals ...interface{}) {
 func validateMasterCIDRUnchanged(old *v1alpha1.AzureConfig, new *v1alpha1.AzureConfig) error {
 	if old.Spec.Azure.VirtualNetwork.MasterSubnetCIDR != "" && old.Spec.Azure.VirtualNetwork.MasterSubnetCIDR != new.Spec.Azure.VirtualNetwork.MasterSubnetCIDR {
 		return microerror.Maskf(masterCIDRChangeError, "Spec.Azure.VirtualNetwork.MasterSubnetCIDR change disallowed")
+	}
+
+	return nil
+}
+
+func validateAvailabilityZonesUnchanged(old *v1alpha1.AzureConfig, new *v1alpha1.AzureConfig) error {
+	if len(old.Spec.Azure.AvailabilityZones) != 0 {
+		oldAZs := make([]int, len(old.Spec.Azure.AvailabilityZones))
+		copy(oldAZs, old.Spec.Azure.AvailabilityZones)
+		sort.Ints(oldAZs)
+
+		newAZs := make([]int, len(new.Spec.Azure.AvailabilityZones))
+		copy(newAZs, new.Spec.Azure.AvailabilityZones)
+		sort.Ints(newAZs)
+
+		if !reflect.DeepEqual(oldAZs, newAZs) {
+			return microerror.Maskf(availabilityZonesChangeError, "Spec.Azure.AvailabilityZones change disallowed")
+		}
 	}
 
 	return nil
