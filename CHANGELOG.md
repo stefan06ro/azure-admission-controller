@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2021-01-14
+
 ### Changed
 
 - Update cert apiVersion to v1.
@@ -199,7 +201,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/giantswarm/azure-admission-controller/compare/v0.15.0...v1.16.0
 [0.15.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.14.0...v0.15.0
 [1.14.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.13.3...v1.14.0
