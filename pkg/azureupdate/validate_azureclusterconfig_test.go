@@ -26,12 +26,37 @@ import (
 )
 
 func TestAzureClusterConfigValidate(t *testing.T) {
-	releases := []string{"11.3.0", "11.3.1", "11.4.0", "12.0.0", "12.0.1", "12.1.0"}
+	releases := []ReleaseWithState{
+		{
+			Version: "11.3.0",
+			State:   releasev1alpha1.StateDeprecated,
+		},
+		{
+			Version: "11.3.1",
+			State:   releasev1alpha1.StateActive,
+		},
+		{
+			Version: "11.4.0",
+			State:   releasev1alpha1.StateActive,
+		},
+		{
+			Version: "12.0.0",
+			State:   releasev1alpha1.StateActive,
+		},
+		{
+			Version: "12.0.1",
+			State:   releasev1alpha1.StateDeprecated,
+		},
+		{
+			Version: "12.1.0",
+			State:   releasev1alpha1.StateActive,
+		},
+	}
 
 	testCases := []struct {
 		name         string
 		ctx          context.Context
-		releases     []string
+		releases     []ReleaseWithState
 		oldVersion   string
 		newVersion   string
 		errorMatcher func(err error) bool
@@ -103,7 +128,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			name: "case 7",
 			ctx:  context.Background(),
 
-			releases:     []string{"invalid"},
+			releases:     []ReleaseWithState{{Version: "invalid", State: releasev1alpha1.StateActive}},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
 			errorMatcher: errors.IsInvalidReleaseError,
@@ -112,7 +137,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			name: "case 8",
 			ctx:  context.Background(),
 
-			releases:     []string{"invalid"},
+			releases:     []ReleaseWithState{{Version: "invalid", State: releasev1alpha1.StateActive}},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
 			errorMatcher: errors.IsInvalidReleaseError,

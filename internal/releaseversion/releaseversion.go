@@ -47,7 +47,7 @@ func Validate(ctx context.Context, ctrlCLient client.Client, oldVersion semver.V
 	}
 
 	// Remove alpha and ignored releases from remaining validations logic.
-	availableReleases = filterOutAlphaAndIgnoredReleases(availableReleases)
+	availableReleases = filterOutAlphaAndIgnoredAndDeprecatedReleases(availableReleases)
 
 	if oldVersion.Major != newVersion.Major || oldVersion.Minor != newVersion.Minor {
 		// The major or minor version is changed. We support this only for sequential minor releases (no skip allowed).
@@ -94,7 +94,7 @@ func availableReleases(ctx context.Context, ctrlClient client.Client) ([]*releas
 	return releases, nil
 }
 
-func filterOutAlphaAndIgnoredReleases(releases []*release) []*release {
+func filterOutAlphaAndIgnoredAndDeprecatedReleases(releases []*release) []*release {
 	var result []*release
 
 	for _, release := range releases {
@@ -103,6 +103,10 @@ func filterOutAlphaAndIgnoredReleases(releases []*release) []*release {
 		}
 
 		if isIgnoredRelease(release.CR) {
+			continue
+		}
+
+		if isDeprecatedRelease(release.CR) {
 			continue
 		}
 
@@ -145,4 +149,8 @@ func isIgnoredRelease(releaseCR *v1alpha1.Release) bool {
 	}
 
 	return false
+}
+
+func isDeprecatedRelease(releaseCR *v1alpha1.Release) bool {
+	return releaseCR.Spec.State == v1alpha1.StateDeprecated
 }

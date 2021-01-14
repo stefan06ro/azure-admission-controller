@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update cert apiVersion to v1.
+- Ignore Deprecated releases during upgrade validations.
 
 ## [1.16.0] - 2020-12-15
 

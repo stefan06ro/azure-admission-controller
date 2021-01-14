@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -146,12 +148,50 @@ func TestMasterCIDR(t *testing.T) {
 }
 
 func TestAzureConfigValidate(t *testing.T) {
-	releases := []string{"11.3.0", "11.3.1", "11.4.0", "12.0.0"}
+	releases := []ReleaseWithState{
+		{
+			Version: "11.3.0",
+			State:   v1alpha1.StateDeprecated,
+		},
+		{
+			Version: "11.3.1",
+			State:   v1alpha1.StateActive,
+		},
+		{
+			Version: "11.4.0",
+			State:   v1alpha1.StateActive,
+		},
+		{
+			Version: "12.0.0",
+			State:   v1alpha1.StateActive,
+		},
+		{
+			Version: "12.1.1",
+			State:   v1alpha1.StateDeprecated,
+		},
+		{
+			Version: "12.1.2",
+			State:   v1alpha1.StateActive,
+		},
+		{
+			Version: "13.0.1",
+			State:   v1alpha1.StateDeprecated,
+		},
+		{
+			Version: "13.0.2",
+			Ignored: true,
+			State:   v1alpha1.StateActive,
+		},
+		{
+			Version: "13.1.0",
+			State:   v1alpha1.StateActive,
+		},
+	}
 
 	testCases := []struct {
 		name         string
 		ctx          context.Context
-		releases     []string
+		releases     []ReleaseWithState
 		oldVersion   string
 		newVersion   string
 		errorMatcher func(err error) bool
@@ -223,7 +263,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			name: "case 7",
 			ctx:  context.Background(),
 
-			releases:     []string{"invalid"},
+			releases:     []ReleaseWithState{{Version: "invalid", State: v1alpha1.StateActive}},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.4.0",
 			errorMatcher: errors.IsInvalidReleaseError,
@@ -232,7 +272,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			name: "case 8",
 			ctx:  context.Background(),
 
-			releases:     []string{"invalid"},
+			releases:     []ReleaseWithState{{Version: "invalid", State: v1alpha1.StateActive}},
 			oldVersion:   "11.3.0",
 			newVersion:   "11.3.1",
 			errorMatcher: errors.IsInvalidReleaseError,
@@ -280,6 +320,43 @@ func TestAzureConfigValidate(t *testing.T) {
 			releases:     releases,
 			oldVersion:   "11.4.0",
 			newVersion:   "11.4.0",
+			errorMatcher: nil,
+		},
+		{
+			name: "case 14",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "12.1.2",
+			newVersion:   "13.1.0",
+			errorMatcher: nil,
+		},
+		{
+			name: "case 15",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "12.0.0",
+			newVersion:   "13.1.0",
+			errorMatcher: releaseversion.IsSkippingReleaseError,
+		},
+		{
+			name: "case 16",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "12.1.1",
+			newVersion:   "13.1.0",
+			errorMatcher: nil,
+		},
+
+		{
+			name: "case 17",
+			ctx:  context.Background(),
+
+			releases:     releases,
+			oldVersion:   "12.1.2",
+			newVersion:   "13.1.0",
 			errorMatcher: nil,
 		},
 	}
