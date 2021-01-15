@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ensure autoscaler min and max annotations are present when creating or updating a `Machinepool`.
+
 ## [1.17.0] - 2021-01-14
 
 ### Changed

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
@@ -36,6 +37,103 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 					Operation: "add",
 					Path:      "/spec/replicas",
 					Value:     int64(1),
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 1: set min replicas annotation when replicas field is set"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
+					Value:     "7",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 2: set max replicas annotation when replicas field is set"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
+					Value:     "7",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 3: set min and max replicas annotation when replicas field is set"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
+					Value:     "7",
+				},
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
+					Value:     "7",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 4: set min and max replicas annotation when replicas field is not set"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     int64(1),
+				},
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
+					Value:     "1",
+				},
+				{
+					Operation: "add",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
+					Value:     "1",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 5: set max replicas annotation when invalid"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMaxSize, "INVALID")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     int64(1),
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
+					Value:     "1",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     fmt.Sprintf("case 5: set min replicas annotation when invalid"),
+			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, "INVALID")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     int64(1),
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
+					Value:     "1",
 				},
 			},
 			errorMatcher: nil,

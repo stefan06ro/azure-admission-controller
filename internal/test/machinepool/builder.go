@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,12 +47,32 @@ func Organization(org string) BuilderOption {
 	}
 }
 
+func Replicas(replicas int32) BuilderOption {
+	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
+		machinePool.Spec.Replicas = &replicas
+		machinePool.Annotations[annotation.NodePoolMinSize] = fmt.Sprintf("%d", replicas)
+		machinePool.Annotations[annotation.NodePoolMaxSize] = fmt.Sprintf("%d", replicas)
+		return machinePool
+	}
+}
+
+func Annotation(name, val string) BuilderOption {
+	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
+		machinePool.Annotations[name] = val
+		return machinePool
+	}
+}
+
 func BuildMachinePool(opts ...BuilderOption) *expcapiv1alpha3.MachinePool {
 	nodepoolName := test.GenerateName()
 	machinePool := &expcapiv1alpha3.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodepoolName,
 			Namespace: "org-giantswarm",
+			Annotations: map[string]string{
+				annotation.NodePoolMinSize: "1",
+				annotation.NodePoolMaxSize: "1",
+			},
 			Labels: map[string]string{
 				label.AzureOperatorVersion:    "5.0.0",
 				label.Cluster:                 "ab123",

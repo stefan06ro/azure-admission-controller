@@ -73,6 +73,11 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
+	patches := ensureAutoscalingAnnotations(m, machinePoolCR)
+	if patches != nil {
+		result = append(result, patches...)
+	}
+
 	return result, nil
 }
 

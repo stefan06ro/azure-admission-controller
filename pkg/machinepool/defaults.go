@@ -8,6 +8,8 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
+const defaultReplicas int64 = 1
+
 // setDefaultSpecValues checks if some optional field is not set, and sets
 // default values defined by upstream Cluster API.
 func setDefaultSpecValues(m mutator.Mutator, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
@@ -25,7 +27,6 @@ func setDefaultSpecValues(m mutator.Mutator, machinePool *capiexp.MachinePool) [
 // not, it sets its value to 1.
 func setDefaultReplicaValue(m mutator.Mutator, machinePool *capiexp.MachinePool) *mutator.PatchOperation {
 	if machinePool.Spec.Replicas == nil {
-		const defaultReplicas int64 = 1
 		m.Log("level", "debug", "message", fmt.Sprintf("setting default MachinePool.Spec.Replicas to %d", defaultReplicas))
 		return mutator.PatchAdd("/spec/replicas", defaultReplicas)
 	}

@@ -51,6 +51,12 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, defaultSpecValues...)
 	}
 
+	// Ensure autoscaling annotations are set.
+	patch := ensureAutoscalingAnnotations(m, machinePoolCR)
+	if patch != nil {
+		result = append(result, patch...)
+	}
+
 	return result, nil
 }
 
