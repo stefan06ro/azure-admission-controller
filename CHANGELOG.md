@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-01-20
+
 ### Changed
 
 - Ensure `azure-operator.giantswarm.io/version` label has the right value depending on the `release.giantswarm.io/version`
@@ -212,7 +214,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v1.18.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.18.0...v2.0.0
 [1.18.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/giantswarm/azure-admission-controller/compare/v0.15.0...v1.16.0
