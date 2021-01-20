@@ -10,6 +10,7 @@ import (
 	applicationv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/application/v1alpha1"
 	corev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/provider/v1alpha1"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/apiextensions/v3/pkg/crd"
 	"github.com/giantswarm/apptest"
@@ -40,6 +41,7 @@ const (
 	infrastructureAPIGroup             = "infrastructure.cluster.x-k8s.io"
 	experimentalClusterAPIGroup        = "exp.cluster.x-k8s.io"
 	experimentalInfrastructureAPIGroup = "exp.infrastructure.cluster.x-k8s.io"
+	releaseAPIGroup                    = "release.giantswarm.io"
 	securityAPIGroup                   = "security.giantswarm.io"
 )
 
@@ -66,6 +68,7 @@ func TestCreateCluster(t *testing.T) {
 			securityv1alpha1.AddToScheme,
 			corev1.AddToScheme,
 			corev1alpha1.AddToScheme,
+			releasev1alpha1.AddToScheme,
 		}
 		err = appSchemeBuilder.AddToScheme(runtimeScheme)
 		if err != nil {
@@ -148,6 +151,7 @@ func getRequiredCRDs() []*apiextensionsv1.CustomResourceDefinition {
 		crd.LoadV1(clusterAPIGroup, "Cluster"),
 		crd.LoadV1(experimentalClusterAPIGroup, "MachinePool"),
 		crd.LoadV1(securityAPIGroup, "Organization"),
+		crd.LoadV1(releaseAPIGroup, "Release"),
 		crd.LoadV1(giantswarmCoreAPIGroup, "Spark"),
 	}
 }

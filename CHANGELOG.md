@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Ensure `azure-operator.giantswarm.io/version` label has the right value depending on the `release.giantswarm.io/version`
+  label when updating `Cluster` and `AzureCluster`.
+
 ## [1.18.0] - 2021-01-15
 
 ### Added

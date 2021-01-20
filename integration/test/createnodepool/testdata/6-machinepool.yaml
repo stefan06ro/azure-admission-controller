@@ -10,7 +10,7 @@ metadata:
     giantswarm.io/cluster: 2mw4b
     giantswarm.io/machine-pool: 8c7mn
     giantswarm.io/organization: giantswarm
-    release.giantswarm.io/version: 13.0.0
+    release.giantswarm.io/version: 13.0.1
   name: 8c7mn
   namespace: org-giantswarm
 spec:

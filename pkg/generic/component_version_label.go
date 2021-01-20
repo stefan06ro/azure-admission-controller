@@ -31,21 +31,21 @@ func CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx context.Context, ctrlCl
 }
 
 func EnsureComponentVersionLabelFromRelease(ctx context.Context, ctrlClient client.Client, meta metav1.Object, componentName string, labelName string) (*mutator.PatchOperation, error) {
-	if meta.GetLabels()[labelName] == "" {
-		var releaseVersion = meta.GetLabels()[label.ReleaseVersion]
-		if releaseVersion == "" {
-			return nil, microerror.Maskf(releaseLabelNotFoundError, "Cannot find label %#q in CR. Can't continue.", label.ReleaseVersion)
-		}
+	var releaseVersion = meta.GetLabels()[label.ReleaseVersion]
+	if releaseVersion == "" {
+		return nil, microerror.Maskf(releaseLabelNotFoundError, "Cannot find label %#q in CR. Can't continue.", label.ReleaseVersion)
+	}
 
-		componentVersions, err := release.GetComponentVersionsFromRelease(ctx, ctrlClient, releaseVersion)
-		if err != nil {
-			return nil, microerror.Mask(err)
-		}
+	componentVersions, err := release.GetComponentVersionsFromRelease(ctx, ctrlClient, releaseVersion)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
 
-		if componentVersions[componentName] == "" {
-			return nil, microerror.Maskf(componentNotFoundInReleaseError, "Component %q was not found in release %q. Can't continue.", componentName, releaseVersion)
-		}
+	if componentVersions[componentName] == "" {
+		return nil, microerror.Maskf(componentNotFoundInReleaseError, "Component %q was not found in release %q. Can't continue.", componentName, releaseVersion)
+	}
 
+	if meta.GetLabels()[labelName] != componentVersions[componentName] {
 		return mutator.PatchAdd(fmt.Sprintf("/metadata/labels/%s", escapeJSONPatchString(labelName)), componentVersions[componentName]), nil
 	}
 

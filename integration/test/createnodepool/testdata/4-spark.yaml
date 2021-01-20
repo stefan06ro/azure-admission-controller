@@ -4,7 +4,7 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: 2mw4b
     giantswarm.io/cluster: 2mw4b
-    release.giantswarm.io/version: 13.0.0
+    release.giantswarm.io/version: 13.0.1
   name: 8c7mn
   namespace: org-giantswarm
 spec: {}

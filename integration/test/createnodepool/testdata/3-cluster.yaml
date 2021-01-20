@@ -9,7 +9,7 @@ metadata:
     cluster.x-k8s.io/cluster-name: 2mw4b
     giantswarm.io/cluster: 2mw4b
     giantswarm.io/organization: giantswarm
-    release.giantswarm.io/version: 13.0.0
+    release.giantswarm.io/version: 13.0.1
   name: 2mw4b
   namespace: org-giantswarm
 spec:

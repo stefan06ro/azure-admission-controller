@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	corev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	corev1 "k8s.io/api/core/v1"
@@ -106,6 +107,8 @@ func unmarshal(bs []byte) (runtime.Object, error) {
 		obj = new(capzv1alpha3.AzureMachine)
 	case "AzureMachinePool":
 		obj = new(expcapzv1alpha3.AzureMachinePool)
+	case "Release":
+		obj = new(releasev1alpha1.Release)
 	case "Spark":
 		obj = new(corev1alpha1.Spark)
 	default:
