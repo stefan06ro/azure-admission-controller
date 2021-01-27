@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2021-01-27
+
 ### Fixed
 
 - Avoid nil pointer panic while checking for failureDomain.
@@ -218,7 +220,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/giantswarm/azure-admission-controller/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.18.0...v2.0.0
 [1.18.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/giantswarm/azure-admission-controller/compare/v1.16.0...v1.17.0
