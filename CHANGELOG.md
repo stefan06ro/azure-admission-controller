@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoid nil pointer panic while checking for failureDomain.
+
 ## [2.0.0] - 2021-01-20
 
 ### Changed
