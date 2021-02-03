@@ -69,6 +69,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Mask(err)
 	}
 
+	err = a.checkSpotVMOptionsUnchanged(ctx, azureMPOldCR, azureMPNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
 	err = a.checkStorageAccountTypeUnchanged(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
@@ -126,6 +131,28 @@ func (a *UpdateValidator) checkInstanceTypeChangeIsValid(ctx context.Context, az
 			// Azure doesn't support that.
 			return microerror.Maskf(switchToVmSizeThatDoesNotSupportAcceleratedNetworkingError, "Changing the node pool VM type from one that supports accelerated networking to one that does not is unsupported.")
 		}
+	}
+
+	return nil
+}
+
+func (a *UpdateValidator) checkSpotVMOptionsUnchanged(ctx context.Context, azureMPOldCR *expcapzv1alpha3.AzureMachinePool, azureMPNewCR *expcapzv1alpha3.AzureMachinePool) error {
+
+	switch {
+	case (azureMPOldCR.Spec.Template.SpotVMOptions == nil && azureMPNewCR.Spec.Template.SpotVMOptions == nil):
+		return nil
+	case (azureMPOldCR.Spec.Template.SpotVMOptions == nil && azureMPNewCR.Spec.Template.SpotVMOptions != nil):
+		return microerror.Maskf(spotVMOptionsWasChangedError, "can't enable spot instances for existing machine pool")
+	case (azureMPOldCR.Spec.Template.SpotVMOptions != nil && azureMPNewCR.Spec.Template.SpotVMOptions == nil):
+		return microerror.Maskf(spotVMOptionsWasChangedError, "can't disable spot instances for existing machine pool")
+	case (azureMPOldCR.Spec.Template.SpotVMOptions.MaxPrice == nil && azureMPNewCR.Spec.Template.SpotVMOptions.MaxPrice != nil):
+		return microerror.Maskf(spotVMOptionsWasChangedError, "can't change spot instance pricing for existing machine pool")
+	case (azureMPOldCR.Spec.Template.SpotVMOptions.MaxPrice != nil && azureMPNewCR.Spec.Template.SpotVMOptions.MaxPrice == nil):
+		return microerror.Maskf(spotVMOptionsWasChangedError, "can't change spot instance pricing for existing machine pool")
+	case (azureMPOldCR.Spec.Template.SpotVMOptions.MaxPrice == nil && azureMPNewCR.Spec.Template.SpotVMOptions.MaxPrice == nil):
+		return nil
+	case (*azureMPOldCR.Spec.Template.SpotVMOptions.MaxPrice != *azureMPNewCR.Spec.Template.SpotVMOptions.MaxPrice):
+		return microerror.Maskf(spotVMOptionsWasChangedError, "can't change spot instance pricing for existing machine pool")
 	}
 
 	return nil

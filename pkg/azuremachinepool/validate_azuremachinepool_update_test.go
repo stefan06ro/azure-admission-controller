@@ -9,6 +9,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -135,6 +136,42 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("westeurope")),
 			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("northeastitaly")),
 			errorMatcher: IsLocationWasChangedError,
+		},
+		{
+			name:         "case 15: disable spot instance configuration",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			errorMatcher: IsSpotVMOptionsWasChangedError,
+		},
+		{
+			name:         "case 16: enable spot instance configuration",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			errorMatcher: IsSpotVMOptionsWasChangedError,
+		},
+		{
+			name:         "case 17: change spot instance price configuration",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			errorMatcher: IsSpotVMOptionsWasChangedError,
+		},
+		{
+			name:         "case 18: keep spot instances disabled",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			errorMatcher: nil,
+		},
+		{
+			name:         "case 19: keep spot instances price configuration unknown",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: nil})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: nil})),
+			errorMatcher: nil,
+		},
+		{
+			name:         "case 20: keep spot instances price configuration unchanged",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			errorMatcher: nil,
 		},
 	}
 
@@ -286,4 +323,10 @@ func getUpdateAdmissionRequest(oldMP []byte, newMP []byte) *v1beta1.AdmissionReq
 	}
 
 	return req
+}
+
+func toQuantityPtr(d string) *resource.Quantity {
+	r := resource.MustParse(d)
+
+	return &r
 }

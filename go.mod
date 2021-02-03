@@ -3,7 +3,7 @@ module github.com/giantswarm/azure-admission-controller
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v46.4.0+incompatible
+	github.com/Azure/azure-sdk-for-go v48.2.0+incompatible
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.6
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/blang/semver v3.5.1+incompatible
@@ -34,6 +34,6 @@ replace (
 	// Required to replace version with vulnerabilities.
 	github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.24+incompatible
 	github.com/gorilla/websocket v1.4.0 => github.com/gorilla/websocket v1.4.2
-	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.10-gs
-	sigs.k8s.io/cluster-api-provider-azure => github.com/giantswarm/cluster-api-provider-azure v0.4.9-gsalpha2
+	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.13-gs
+	sigs.k8s.io/cluster-api-provider-azure => github.com/giantswarm/cluster-api-provider-azure v0.4.12-gsalpha1
 )

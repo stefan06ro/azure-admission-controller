@@ -58,6 +58,15 @@ func IsAcceleratedNetworkingWasChangedError(err error) bool {
 	return microerror.Cause(err) == acceleratedNetworkingWasChangedError
 }
 
+var spotVMOptionsWasChangedError = &microerror.Error{
+	Kind: "spotVMOptionsWasChangedError",
+}
+
+// IsSpotVMOptionsWasChangedError asserts spotVMOptionsWasChangedError.
+func IsSpotVMOptionsWasChangedError(err error) bool {
+	return microerror.Cause(err) == spotVMOptionsWasChangedError
+}
+
 var storageAccountWasChangedError = &microerror.Error{
 	Kind: "storageAccountWasChangedError",
 }

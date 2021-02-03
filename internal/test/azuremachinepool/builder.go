@@ -61,6 +61,13 @@ func Name(name string) BuilderOption {
 	}
 }
 
+func SpotVMOptions(opts *capzv1alpha3.SpotVMOptions) BuilderOption {
+	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+		azureMachinePool.Spec.Template.SpotVMOptions = opts
+		return azureMachinePool
+	}
+}
+
 func StorageAccountType(storageAccountType compute.StorageAccountTypes) BuilderOption {
 	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
 		azureMachinePool.Spec.Template.OSDisk.ManagedDisk.StorageAccountType = string(storageAccountType)
