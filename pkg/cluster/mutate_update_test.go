@@ -29,12 +29,24 @@ func TestClusterUpdateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:    fmt.Sprintf("case 0: Wrong azure-operator component label"),
-			cluster: builder.BuildClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "4.2.0"})),
+			cluster: builder.BuildClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "4.2.0", "cluster-operator.giantswarm.io/version": "0.23.11"})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
 					Path:      "/metadata/labels/azure-operator.giantswarm.io~1version",
 					Value:     "5.1.0",
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:    fmt.Sprintf("case 0: Wrong azure-operator component label"),
+			cluster: builder.BuildClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "5.1.0", "cluster-operator.giantswarm.io/version": "0.23.10"})),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "add",
+					Path:      "/metadata/labels/cluster-operator.giantswarm.io~1version",
+					Value:     "0.23.11",
 				},
 			},
 			errorMatcher: nil,
@@ -68,6 +80,10 @@ func TestClusterUpdateMutate(t *testing.T) {
 						{
 							Name:    "azure-operator",
 							Version: "5.1.0",
+						},
+						{
+							Name:    "cluster-operator",
+							Version: "0.23.11",
 						},
 					},
 				},

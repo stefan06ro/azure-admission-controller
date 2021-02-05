@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add `Cluster` and `AzureCluster` mutate webhook definition in the Helm chart.
+- Ensure `cluster-operator.giantswarm.io/version` label has the right value depending on the `release.giantswarm.io/version`
+  label when updating `Cluster` and `AzureCluster`.
+  
 ## [2.1.0] - 2021-02-03
 
 ### Added
