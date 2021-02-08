@@ -3,7 +3,7 @@ module github.com/giantswarm/azure-admission-controller
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v48.2.0+incompatible
+	github.com/Azure/azure-sdk-for-go v48.2.2+incompatible
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/blang/semver v3.5.1+incompatible
