@@ -56,7 +56,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelUnchanged(clusterOldCR, clusterNewCR)
+	err := clusterNewCR.ValidateUpdate(clusterOldCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = generic.ValidateOrganizationLabelUnchanged(clusterOldCR, clusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

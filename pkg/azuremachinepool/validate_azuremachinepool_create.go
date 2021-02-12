@@ -58,7 +58,12 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelMatchesCluster(ctx, a.ctrlClient, azureMPNewCR)
+	err := azureMPNewCR.ValidateCreate()
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = generic.ValidateOrganizationLabelMatchesCluster(ctx, a.ctrlClient, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

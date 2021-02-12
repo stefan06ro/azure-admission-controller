@@ -12,11 +12,3 @@ func validateLocation(azureCluster capzv1alpha3.AzureCluster, expectedLocation s
 
 	return nil
 }
-
-func validateLocationUnchanged(oldAzureCluster capzv1alpha3.AzureCluster, newAzureCluster capzv1alpha3.AzureCluster) error {
-	if oldAzureCluster.Spec.Location != newAzureCluster.Spec.Location {
-		return microerror.Maskf(locationWasChangedError, "AzureCluster.Spec.Location can't be changed")
-	}
-
-	return nil
-}

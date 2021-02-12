@@ -41,8 +41,11 @@ func Name(name string) BuilderOption {
 
 func Organization(org string) BuilderOption {
 	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
+		namespace := fmt.Sprintf("org-%s", org)
 		machinePool.Labels[label.Organization] = org
-		machinePool.Namespace = fmt.Sprintf("org-%s", org)
+		machinePool.Namespace = namespace
+		machinePool.Spec.Template.Spec.InfrastructureRef.Namespace = namespace
+		machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace = namespace
 		return machinePool
 	}
 }
@@ -86,6 +89,12 @@ func BuildMachinePool(opts ...BuilderOption) *expcapiv1alpha3.MachinePool {
 			FailureDomains: []string{},
 			Template: v1alpha3.MachineTemplateSpec{
 				Spec: v1alpha3.MachineSpec{
+					Bootstrap: capiv1alpha3.Bootstrap{
+						ConfigRef: &v1.ObjectReference{
+							Namespace: "org-giantswarm",
+							Name:      "ab123",
+						},
+					},
 					InfrastructureRef: v1.ObjectReference{
 						Namespace: "org-giantswarm",
 						Name:      "ab123",

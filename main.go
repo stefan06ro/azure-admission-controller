@@ -180,6 +180,18 @@ func mainError() error {
 		}
 	}
 
+	var azureMachineUpdateMutator *azuremachine.UpdateMutator
+	{
+		updateMutatorConfig := azuremachine.UpdateMutatorConfig{
+			CtrlClient: ctrlClient,
+			Logger:     newLogger,
+		}
+		azureMachineUpdateMutator, err = azuremachine.NewUpdateMutator(updateMutatorConfig)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
 	var azureMachinePoolCreateMutator *azuremachinepool.CreateMutator
 	{
 		createMutatorConfig := azuremachinepool.CreateMutatorConfig{
@@ -385,6 +397,7 @@ func mainError() error {
 	handler := http.NewServeMux()
 	// Mutators.
 	handler.Handle("/mutate/azuremachine/create", mutator.Handler(azureMachineCreateMutator))
+	handler.Handle("/mutate/azuremachine/update", mutator.Handler(azureMachineUpdateMutator))
 	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
 	handler.Handle("/mutate/azurecluster/create", mutator.Handler(azureClusterCreateMutator))
 	handler.Handle("/mutate/azurecluster/update", mutator.Handler(azureClusterUpdateMutator))

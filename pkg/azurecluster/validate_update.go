@@ -53,17 +53,18 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelUnchanged(azureClusterOldCR, azureClusterNewCR)
+	err := azureClusterNewCR.ValidateUpdate(azureClusterOldCR)
+	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = generic.ValidateOrganizationLabelUnchanged(azureClusterOldCR, azureClusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
 	err = validateControlPlaneEndpointUnchanged(*azureClusterOldCR, *azureClusterNewCR)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	err = validateLocationUnchanged(*azureClusterOldCR, *azureClusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

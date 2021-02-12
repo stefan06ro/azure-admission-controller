@@ -10,6 +10,7 @@ import (
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/test"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
 type BuilderOption func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster
@@ -19,7 +20,14 @@ func Name(name string) BuilderOption {
 		azureCluster.ObjectMeta.Name = name
 		azureCluster.Labels[capiv1alpha3.ClusterLabelName] = name
 		azureCluster.Labels[label.Cluster] = name
+		azureCluster.Spec.ResourceGroup = name
 		azureCluster.Spec.ControlPlaneEndpoint.Host = fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", name)
+		azureCluster.Spec.NetworkSpec.APIServerLB.Name = key.APIServerLBName(name)
+		azureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs = []capzv1alpha3.FrontendIP{
+			{
+				Name: key.APIServerLBFrontendIPName(name),
+			},
+		}
 		return azureCluster
 	}
 }
@@ -72,6 +80,28 @@ func BuildAzureCluster(opts ...BuilderOption) *capzv1alpha3.AzureCluster {
 			ControlPlaneEndpoint: capiv1alpha3.APIEndpoint{
 				Host: fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", clusterName),
 				Port: 443,
+			},
+			NetworkSpec: capzv1alpha3.NetworkSpec{
+				Subnets: capzv1alpha3.Subnets{
+					&capzv1alpha3.SubnetSpec{
+						Role: "control-plane",
+						Name: key.MasterSubnetName(clusterName),
+					},
+					&capzv1alpha3.SubnetSpec{
+						Role: "node",
+						Name: clusterName,
+					},
+				},
+				APIServerLB: capzv1alpha3.LoadBalancerSpec{
+					Name: key.APIServerLBName(clusterName),
+					SKU:  capzv1alpha3.SKU(key.APIServerLBSKU()),
+					Type: capzv1alpha3.LBType(key.APIServerLBType()),
+					FrontendIPs: []capzv1alpha3.FrontendIP{
+						{
+							Name: key.APIServerLBFrontendIPName(clusterName),
+						},
+					},
+				},
 			},
 		},
 	}

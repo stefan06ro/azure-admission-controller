@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -66,6 +67,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
+	patch, err = m.ensureOSDiskCachingType(ctx, azureMachineCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
 	patch, err = generic.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMachineCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
@@ -88,6 +97,14 @@ func (m *CreateMutator) Resource() string {
 func (m *CreateMutator) ensureLocation(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
 	if azureMachine.Spec.Location == "" {
 		return mutator.PatchAdd("/spec/location", m.location), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureOSDiskCachingType(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
+	if len(azureMachine.Spec.OSDisk.CachingType) < 1 {
+		return mutator.PatchAdd("/spec/osDisk/cachingType", key.OSDiskCachingType()), nil
 	}
 
 	return nil, nil

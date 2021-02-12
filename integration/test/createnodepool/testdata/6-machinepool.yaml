@@ -21,7 +21,12 @@ spec:
   template:
     metadata: {}
     spec:
-      bootstrap: {}
+      bootstrap:
+        configRef:
+          apiVersion: core.giantswarm.io/v1alpha1
+          kind: Spark
+          name: 8c7mn
+          namespace: org-giantswarm
       clusterName: 2mw4b
       infrastructureRef:
         apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3

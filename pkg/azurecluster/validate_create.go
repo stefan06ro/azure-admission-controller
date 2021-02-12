@@ -58,7 +58,13 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, azureClusterCR)
+	err := azureClusterCR.ValidateCreate()
+	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, azureClusterCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

@@ -44,8 +44,9 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 			},
 			Location: location,
 			OSDisk: providerv1alpha3.OSDisk{
-				OSType:     "Linux",
-				DiskSizeGB: 50,
+				OSType:      "Linux",
+				CachingType: "ReadWrite",
+				DiskSizeGB:  50,
 				ManagedDisk: providerv1alpha3.ManagedDisk{
 					StorageAccountType: "Premium_LRS",
 				},

@@ -91,6 +91,46 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
+	patch, err = m.ensureAPIServerLBName(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = m.ensureAPIServerLBSKU(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = m.ensureAPIServerLBType(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = m.ensureAPIServerLBFrontendIPs(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
+	patch, err = m.ensureControlPlaneSubnet(ctx, azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if patch != nil {
+		result = append(result, *patch)
+	}
+
 	patch, err = generic.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
@@ -129,6 +169,64 @@ func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clus
 func (m *CreateMutator) ensureLocation(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
 	if azureCluster.Spec.Location == "" {
 		return mutator.PatchAdd("/spec/location", m.location), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureAPIServerLBName(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	if len(azureCluster.Spec.NetworkSpec.APIServerLB.Name) < 1 {
+		return mutator.PatchAdd("/spec/networkSpec/apiServerLB/name", key.APIServerLBName(azureCluster.Name)), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureAPIServerLBSKU(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	if len(azureCluster.Spec.NetworkSpec.APIServerLB.SKU) < 1 {
+		return mutator.PatchAdd("/spec/networkSpec/apiServerLB/sku", key.APIServerLBSKU()), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureAPIServerLBType(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	if len(azureCluster.Spec.NetworkSpec.APIServerLB.Type) < 1 {
+		return mutator.PatchAdd("/spec/networkSpec/apiServerLB/type", key.APIServerLBType()), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureAPIServerLBFrontendIPs(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	if len(azureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs) < 1 {
+		frontendIPs := []capzv1alpha3.FrontendIP{
+			{Name: key.APIServerLBFrontendIPName(azureCluster.Name)},
+		}
+
+		return mutator.PatchAdd("/spec/networkSpec/apiServerLB/frontendIPs", frontendIPs), nil
+	}
+
+	return nil, nil
+}
+
+func (m *CreateMutator) ensureControlPlaneSubnet(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+	hasControlPlaneSubnet := false
+	for _, subnet := range azureCluster.Spec.NetworkSpec.Subnets {
+		if subnet.Role == capzv1alpha3.SubnetControlPlane {
+			hasControlPlaneSubnet = true
+			break
+		}
+	}
+
+	if !hasControlPlaneSubnet {
+		subnets := azureCluster.Spec.NetworkSpec.Subnets[:]
+		subnets = append(subnets, &capzv1alpha3.SubnetSpec{
+			Role: capzv1alpha3.SubnetControlPlane,
+			Name: key.MasterSubnetName(azureCluster.Name),
+		})
+
+		return mutator.PatchAdd("/spec/networkSpec/subnets", subnets), nil
 	}
 
 	return nil, nil

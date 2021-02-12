@@ -49,7 +49,12 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	err := generic.ValidateOrganizationLabelUnchanged(azureMPOldCR, azureMPNewCR)
+	err := azureMPNewCR.ValidateUpdate(azureMPOldCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = generic.ValidateOrganizationLabelUnchanged(azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
