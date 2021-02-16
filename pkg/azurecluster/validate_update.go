@@ -55,6 +55,7 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 
 	err := azureClusterNewCR.ValidateUpdate(azureClusterOldCR)
 	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
+	err = errors.IgnoreCAPIErrorForField("spec.networkSpec.subnets", err)
 	if err != nil {
 		return microerror.Mask(err)
 	}
