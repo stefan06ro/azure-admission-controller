@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/azure-admission-controller/internal/patches"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
@@ -91,6 +92,17 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 	if patch != nil {
 		result = append(result, *patch)
+	}
+
+	clusterCR.Default()
+	{
+		var capiPatches []mutator.PatchOperation
+		capiPatches, err = patches.GenerateFrom(request.Object.Raw, clusterCR)
+		if err != nil {
+			return []mutator.PatchOperation{}, microerror.Mask(err)
+		}
+
+		result = append(result, capiPatches...)
 	}
 
 	return result, nil

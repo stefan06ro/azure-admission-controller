@@ -1,4 +1,4 @@
-package azuremachine
+package azuremachinepool
 
 import (
 	"context"
@@ -6,11 +6,10 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/patches"
-	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -41,6 +40,7 @@ func NewUpdateMutator(config UpdateMutatorConfig) (*UpdateMutator, error) {
 }
 
 func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRequest) ([]mutator.PatchOperation, error) {
+	var err error
 	var result []mutator.PatchOperation
 
 	if request.DryRun != nil && *request.DryRun {
@@ -48,28 +48,20 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	azureMachineCR := &v1alpha3.AzureMachine{}
-	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMachineCR); err != nil {
-		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse AzureMachine CR: %v", err)
+	azureMPCR := &expcapzv1alpha3.AzureMachinePool{}
+	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMPCR); err != nil {
+		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	patch, err := m.ensureOSDiskCachingType(ctx, azureMachineCR)
-	if err != nil {
-		return []mutator.PatchOperation{}, microerror.Mask(err)
-	}
-	if patch != nil {
-		result = append(result, *patch)
-	}
-
-	azureMachineCR.Default()
+	azureMPCR.Default()
 	{
 		var capiPatches []mutator.PatchOperation
-		capiPatches, err = patches.GenerateFrom(request.Object.Raw, azureMachineCR)
+		capiPatches, err = patches.GenerateFrom(request.Object.Raw, azureMPCR)
 		if err != nil {
 			return []mutator.PatchOperation{}, microerror.Mask(err)
 		}
 
-		capiPatches = patches.SkipForPath("/spec/sshPublicKey", capiPatches)
+		capiPatches = patches.SkipForPath("/spec/template/sshPublicKey", capiPatches)
 
 		result = append(result, capiPatches...)
 	}
@@ -82,13 +74,5 @@ func (m *UpdateMutator) Log(keyVals ...interface{}) {
 }
 
 func (m *UpdateMutator) Resource() string {
-	return "azuremachine"
-}
-
-func (m *UpdateMutator) ensureOSDiskCachingType(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
-	if len(azureMachine.Spec.OSDisk.CachingType) < 1 {
-		return mutator.PatchAdd("/spec/osDisk/cachingType", key.OSDiskCachingType()), nil
-	}
-
-	return nil, nil
+	return "azurecluster"
 }

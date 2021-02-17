@@ -34,9 +34,19 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			nodePool: builder.BuildMachinePoolAsJson(),
 			patches: []mutator.PatchOperation{
 				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
+				{
 					Operation: "add",
 					Path:      "/spec/replicas",
-					Value:     int64(1),
+					Value:     float64(1),
 				},
 			},
 			errorMatcher: nil,
@@ -50,6 +60,16 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
 					Value:     "7",
 				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
 			},
 			errorMatcher: nil,
 		},
@@ -61,6 +81,16 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 					Operation: "add",
 					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
 					Value:     "7",
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
 				},
 			},
 			errorMatcher: nil,
@@ -79,6 +109,16 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
 					Value:     "7",
 				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
 			},
 			errorMatcher: nil,
 		},
@@ -88,11 +128,6 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
-					Path:      "/spec/replicas",
-					Value:     int64(1),
-				},
-				{
-					Operation: "add",
 					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
 					Value:     "1",
 				},
@@ -100,6 +135,21 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 					Operation: "add",
 					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
 					Value:     "1",
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     float64(1),
 				},
 			},
 			errorMatcher: nil,

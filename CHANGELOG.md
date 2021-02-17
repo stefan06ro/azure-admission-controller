@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Execute CAPI/CAPZ validation for all resources.
+- Execute CAPI/CAPZ defaulting on all resources.
 
 ### Remove
 

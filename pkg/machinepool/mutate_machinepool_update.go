@@ -8,6 +8,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/internal/patches"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -32,6 +33,7 @@ func NewUpdateMutator(config UpdateMutatorConfig) (*UpdateMutator, error) {
 }
 
 func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRequest) ([]mutator.PatchOperation, error) {
+	var err error
 	var result []mutator.PatchOperation
 
 	if request.DryRun != nil && *request.DryRun {
@@ -55,6 +57,17 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	patch := ensureAutoscalingAnnotations(m, machinePoolCR)
 	if patch != nil {
 		result = append(result, patch...)
+	}
+
+	machinePoolCR.Default()
+	{
+		var capiPatches []mutator.PatchOperation
+		capiPatches, err = patches.GenerateFrom(request.Object.Raw, machinePoolCR)
+		if err != nil {
+			return []mutator.PatchOperation{}, microerror.Mask(err)
+		}
+
+		result = append(result, capiPatches...)
 	}
 
 	return result, nil
