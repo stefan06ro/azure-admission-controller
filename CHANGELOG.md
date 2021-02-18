@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Remove
 
 - Don't execute CAPI/CAPZ validation for the `subnet` and `spec.subscriptionID` fields of the `AzureCluster` resource.
+- Remove defaulting for the `AzureCluster` `control-plane` subnet.
 
 ## [2.2.0] - 2021-02-05
 
