@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Execute CAPI/CAPZ validation for all resources.
 - Execute CAPI/CAPZ defaulting on all resources.
 
+### Changed
+
+- Allow `0` as the minimum node count for the cluster autoscaler.
+
 ### Remove
 
 - Don't execute CAPI/CAPZ validation for the `subnet` and `spec.subscriptionID` fields of the `AzureCluster` resource.

@@ -37,7 +37,7 @@ func ensureAutoscalingAnnotations(m mutator.Mutator, machinePool *capiexp.Machin
 	} else {
 		// Parse current value of min Size.
 		min, err := strconv.Atoi(machinePool.Annotations[annotation.NodePoolMinSize])
-		if err != nil || min < 1 {
+		if err != nil || min < 0 {
 			// Invalid annotation value, set it to the default.
 			m.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMinSize, clusterReplicas))
 			patches = append(patches, mutator.PatchReplace(fmt.Sprintf("/metadata/annotations/%s", escapeJSONPatchString(annotation.NodePoolMinSize)), fmt.Sprintf("%d", clusterReplicas)))
