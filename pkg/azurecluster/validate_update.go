@@ -56,6 +56,8 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	err := azureClusterNewCR.ValidateUpdate(azureClusterOldCR)
 	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
 	err = errors.IgnoreCAPIErrorForField("spec.networkSpec.subnets", err)
+	// TODO(axbarsan): Remove this once all the older clusters have it.
+	err = errors.IgnoreCAPIErrorForField("spec.networkSpec.apiServerLB", err)
 	err = errors.IgnoreCAPIErrorForField("spec.SubscriptionID", err)
 	if err != nil {
 		return microerror.Mask(err)

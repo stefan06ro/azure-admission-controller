@@ -110,7 +110,7 @@ func IgnoreCAPIErrorForField(field string, err error) error {
 		var causes []metav1.StatusCause
 		{
 			for _, cause := range errStatus.Details.Causes {
-				if cause.Field != field {
+				if !strings.HasPrefix(cause.Field, field) {
 					causes = append(causes, cause)
 				}
 			}
