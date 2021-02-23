@@ -5,7 +5,7 @@ var (
 	gitSHA      = "n/a"
 	name        = "azure-admission-controller"
 	source      = "https://github.com/giantswarm/azure-admission-controller"
-	version     = "2.3.2"
+	version     = "2.3.3-dev"
 )
 
 func Description() string {
