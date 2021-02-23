@@ -160,7 +160,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			// Check if the validation result is the expected one.
 			if len(tc.patches) != 0 || len(patches) != 0 {
 				if !reflect.DeepEqual(tc.patches, patches) {
-					t.Fatalf("Patches mismatch: expected %v, got %v", tc.patches, patches)
+					t.Fatalf("Patches mismatch: expected\n %+v, got\n %+v", tc.patches, patches)
 				}
 			}
 		})

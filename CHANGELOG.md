@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changed `azureCluster.spec.networkSpec.apiServerLB` defaulting to include the case where the field does not exist.
+
 ## [2.3.0] - 2021-02-23
 
 ### Added
