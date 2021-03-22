@@ -58,7 +58,15 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
-	err := azureClusterCR.ValidateCreate()
+	capi, err := generic.IsCAPIRelease(azureClusterCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if capi {
+		return nil
+	}
+
+	err = azureClusterCR.ValidateCreate()
 	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
 	err = errors.IgnoreCAPIErrorForField("spec.networkSpec.subnets", err)
 	err = errors.IgnoreCAPIErrorForField("spec.SubscriptionID", err)

@@ -43,7 +43,15 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
 
-	err := machinePoolNewCR.ValidateUpdate(machinePoolOldCR)
+	capi, err := generic.IsCAPIRelease(machinePoolNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if capi {
+		return nil
+	}
+
+	err = machinePoolNewCR.ValidateUpdate(machinePoolOldCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

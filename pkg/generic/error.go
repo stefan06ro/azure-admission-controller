@@ -84,3 +84,12 @@ var componentNotFoundInReleaseError = &microerror.Error{
 func IsComponentNotFoundInReleaseError(err error) bool {
 	return microerror.Cause(err) == componentNotFoundInReleaseError
 }
+
+var parsingFailedError = &microerror.Error{
+	Kind: "parsingFailedError",
+}
+
+// IsParsingFailed asserts parsingFailedError.
+func IsParsingFailed(err error) bool {
+	return microerror.Cause(err) == parsingFailedError
+}

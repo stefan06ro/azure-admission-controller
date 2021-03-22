@@ -54,6 +54,14 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
+	capi, err := generic.IsCAPIRelease(azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if capi {
+		return []mutator.PatchOperation{}, nil
+	}
+
 	patch, err := ensureAPIServerLB(azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)

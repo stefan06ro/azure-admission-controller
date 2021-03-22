@@ -52,7 +52,15 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	err := clusterCR.ValidateCreate()
+	capi, err := generic.IsCAPIRelease(clusterCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if capi {
+		return nil
+	}
+
+	err = clusterCR.ValidateCreate()
 	if err != nil {
 		return microerror.Mask(err)
 	}

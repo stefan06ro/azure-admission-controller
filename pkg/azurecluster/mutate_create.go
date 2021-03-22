@@ -68,6 +68,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
+	capi, err := generic.IsCAPIRelease(azureClusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if capi {
+		return []mutator.PatchOperation{}, nil
+	}
+
 	patch, err := m.ensureControlPlaneEndpointHost(ctx, azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)

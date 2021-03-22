@@ -53,7 +53,15 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
-	err := azureClusterNewCR.ValidateUpdate(azureClusterOldCR)
+	capi, err := generic.IsCAPIRelease(azureClusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if capi {
+		return nil
+	}
+
+	err = azureClusterNewCR.ValidateUpdate(azureClusterOldCR)
 	err = errors.IgnoreCAPIErrorForField("metadata.Name", err)
 	err = errors.IgnoreCAPIErrorForField("spec.networkSpec.subnets", err)
 	// TODO(axbarsan): Remove this once all the older clusters have it.

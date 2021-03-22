@@ -62,6 +62,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
+	capi, err := generic.IsCAPIRelease(clusterCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if capi {
+		return []mutator.PatchOperation{}, nil
+	}
+
 	patch, err := m.ensureClusterNetwork(ctx, clusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)

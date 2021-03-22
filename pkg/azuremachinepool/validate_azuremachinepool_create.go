@@ -58,7 +58,15 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}
 
-	err := azureMPNewCR.ValidateCreate()
+	capi, err := generic.IsCAPIRelease(azureMPNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if capi {
+		return nil
+	}
+
+	err = azureMPNewCR.ValidateCreate()
 	if err != nil {
 		return microerror.Mask(err)
 	}

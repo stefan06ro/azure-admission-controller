@@ -10,6 +10,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/patches"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
@@ -51,6 +52,14 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	azureMPCR := &expcapzv1alpha3.AzureMachinePool{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMPCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
+	}
+
+	capi, err := generic.IsCAPIRelease(azureMPCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if capi {
+		return []mutator.PatchOperation{}, nil
 	}
 
 	azureMPCR.Default()

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Skipping all validation and defaulting for resources with CAPI release label
+
 ## [2.3.2] - 2021-02-23
 
 ### Changed

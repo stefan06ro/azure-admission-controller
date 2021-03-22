@@ -53,6 +53,14 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse MachinePool CR: %v", err)
 	}
 
+	capi, err := generic.IsCAPIRelease(machinePoolCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+	if capi {
+		return []mutator.PatchOperation{}, nil
+	}
+
 	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
 	if defaultSpecValues != nil {
 		result = append(result, defaultSpecValues...)
