@@ -57,3 +57,12 @@ var failureDomainWasChangedError = &microerror.Error{
 func IsFailureDomainWasChangedError(err error) bool {
 	return microerror.Cause(err) == failureDomainWasChangedError
 }
+
+var tooManyFailureDomainsRequestedError = &microerror.Error{
+	Kind: "tooManyFailureDomainsRequestedError",
+}
+
+// IsTooManyFailureDomainsRequestedError asserts tooManyFailureDomainsRequestedError.
+func IsTooManyFailureDomainsRequestedError(err error) bool {
+	return microerror.Cause(err) == tooManyFailureDomainsRequestedError
+}

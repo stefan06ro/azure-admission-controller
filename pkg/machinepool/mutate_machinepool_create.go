@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/patches"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
@@ -17,11 +18,13 @@ import (
 type CreateMutator struct {
 	ctrlClient client.Client
 	logger     micrologger.Logger
+	vmcaps     *vmcapabilities.VMSKU
 }
 
 type CreateMutatorConfig struct {
 	CtrlClient client.Client
 	Logger     micrologger.Logger
+	VMcaps     *vmcapabilities.VMSKU
 }
 
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
@@ -31,10 +34,14 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.VMcaps == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.VMcaps must not be empty", config)
+	}
 
 	m := &CreateMutator{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
+		vmcaps:     config.VMcaps,
 	}
 
 	return m, nil
@@ -52,6 +59,13 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, machinePoolCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse MachinePool CR: %v", err)
 	}
+
+	failureDomainPatches, err := m.ensureAutomaticFailureDomains(ctx, machinePoolCR)
+	if err != nil {
+		return []mutator.PatchOperation{}, microerror.Mask(err)
+	}
+
+	result = append(result, failureDomainPatches...)
 
 	capi, err := generic.IsCAPIRelease(machinePoolCR)
 	if err != nil {

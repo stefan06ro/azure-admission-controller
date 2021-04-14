@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Skipping all validation and defaulting for resources with CAPI release label
+- Added support to automatically set failure domains in `Machine pools` based with an annotation.
 
 ## [2.3.2] - 2021-02-23
 

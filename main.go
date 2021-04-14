@@ -351,6 +351,7 @@ func mainError() error {
 		c := machinepool.CreateMutatorConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
+			VMcaps:     vmcaps,
 		}
 		machinePoolCreateMutator, err = machinepool.NewCreateMutator(c)
 		if err != nil {

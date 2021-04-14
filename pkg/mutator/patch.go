@@ -36,3 +36,11 @@ func PatchAdd(path string, value interface{}) *PatchOperation {
 		Value:     value,
 	}
 }
+
+// PatchRemove creates a patch operation of type "remove".
+func PatchRemove(path string) *PatchOperation {
+	return &PatchOperation{
+		Operation: "remove",
+		Path:      path,
+	}
+}
