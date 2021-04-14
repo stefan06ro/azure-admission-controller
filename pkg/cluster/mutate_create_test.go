@@ -3,7 +3,6 @@ package cluster
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -42,7 +41,7 @@ func TestClusterCreateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:    fmt.Sprintf("case 0: ControlPlaneEndpoint left empty"),
+			name:    "case 0: ControlPlaneEndpoint left empty",
 			cluster: clusterRawObject("ab123", clusterNetwork, "", 0, nil),
 			patches: []mutator.PatchOperation{
 				{
@@ -59,13 +58,13 @@ func TestClusterCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 1: ControlPlaneEndpoint has a value"),
+			name:         "case 1: ControlPlaneEndpoint has a value",
 			cluster:      clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
-			name:    fmt.Sprintf("case 2: Azure Operator version empty"),
+			name:    "case 2: Azure Operator version empty",
 			cluster: clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, map[string]string{label.AzureOperatorVersion: ""}),
 			patches: []mutator.PatchOperation{
 				{

@@ -463,6 +463,7 @@ func serve(config config.Config, handler http.Handler) {
 		Handler: handler,
 		TLSConfig: &tls.Config{
 			GetCertificate: cm.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
 		},
 	}
 

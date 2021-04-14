@@ -2,7 +2,6 @@ package azurecluster
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestAzureClusterUpdateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:    fmt.Sprintf("case 0: Wrong azure-operator component label"),
+			name:    "case 0: Wrong azure-operator component label",
 			cluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "4.2.0", "cluster-operator.giantswarm.io/version": "0.23.11"})),
 			patches: []mutator.PatchOperation{
 				{
@@ -40,7 +39,7 @@ func TestAzureClusterUpdateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:    fmt.Sprintf("case 1: Wrong cluster-operator component label"),
+			name:    "case 1: Wrong cluster-operator component label",
 			cluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "5.1.0", "cluster-operator.giantswarm.io/version": "0.23.10"})),
 			patches: []mutator.PatchOperation{
 				{

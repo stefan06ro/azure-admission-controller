@@ -2,7 +2,6 @@ package azuremachine
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:         fmt.Sprintf("case 0: Location empty"),
+			name:         "case 0: Location empty",
 			azureMachine: azureMachineRawObject("ab132", "", nil, nil),
 			patches: []mutator.PatchOperation{
 				{
@@ -40,13 +39,13 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 1: Location has value"),
+			name:         "case 1: Location has value",
 			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 2: Azure Operator version label empty"),
+			name:         "case 2: Azure Operator version label empty",
 			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, map[string]string{label.AzureOperatorVersion: ""}),
 			patches: []mutator.PatchOperation{
 				{

@@ -2,7 +2,6 @@ package azurecluster
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -30,7 +29,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:         fmt.Sprintf("case 0: ControlPlaneEndpoint left empty"),
+			name:         "case 0: ControlPlaneEndpoint left empty",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 0)),
 			patches: []mutator.PatchOperation{
 				{
@@ -47,13 +46,13 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 1: ControlPlaneEndpoint has a value"),
+			name:         "case 1: ControlPlaneEndpoint has a value",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.giantswarm.io", 123)),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 2: Location empty"),
+			name:         "case 2: Location empty",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
@@ -65,13 +64,13 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 3: Location has value"),
+			name:         "case 3: Location has value",
 			azureCluster: builder.BuildAzureClusterAsJson(),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
-			name:         fmt.Sprintf("case 4: Azure operator label missing"),
+			name:         "case 4: Azure operator label missing",
 			azureCluster: builder.BuildAzureClusterAsJson(builder.Labels(map[string]string{label.AzureOperatorVersion: ""})),
 			patches: []mutator.PatchOperation{
 				{

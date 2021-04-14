@@ -2,7 +2,6 @@ package machinepool
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -30,7 +29,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:     fmt.Sprintf("case 0: set default number of replicas"),
+			name:     "case 0: set default number of replicas",
 			nodePool: builder.BuildMachinePoolAsJson(),
 			patches: []mutator.PatchOperation{
 				{
@@ -52,7 +51,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 1: set min replicas annotation when replicas field is set"),
+			name:     "case 1: set min replicas annotation when replicas field is set",
 			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
 			patches: []mutator.PatchOperation{
 				{
@@ -74,7 +73,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 2: set max replicas annotation when replicas field is set"),
+			name:     "case 2: set max replicas annotation when replicas field is set",
 			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
@@ -96,7 +95,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 3: set min and max replicas annotation when replicas field is set"),
+			name:     "case 3: set min and max replicas annotation when replicas field is set",
 			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
@@ -123,7 +122,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 4: set min and max replicas annotation when replicas field is not set"),
+			name:     "case 4: set min and max replicas annotation when replicas field is not set",
 			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{

@@ -2,7 +2,6 @@ package azuremachinepool
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -33,7 +32,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:     fmt.Sprintf("case 0: unset storage account type with premium VM"),
+			name:     "case 0: unset storage account type with premium VM",
 			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4s_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
@@ -45,7 +44,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 1: unset storage account type with standard VM"),
+			name:     "case 1: unset storage account type with standard VM",
 			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
@@ -57,7 +56,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 2: set data disks"),
+			name:     "case 2: set data disks",
 			nodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capzv1alpha3.DataDisk{})),
 			patches: []mutator.PatchOperation{
 				{
@@ -69,7 +68,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			errorMatcher: nil,
 		},
 		{
-			name:     fmt.Sprintf("case 3: set location"),
+			name:     "case 3: set location",
 			nodePool: builder.BuildAzureMachinePoolAsJson(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
