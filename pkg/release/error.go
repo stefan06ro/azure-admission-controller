@@ -5,7 +5,7 @@ import (
 )
 
 var releaseNotFoundError = &microerror.Error{
-	Kind: "downgradingIsNotAllowedError",
+	Kind: "releaseNotFoundError",
 }
 
 // IsReleaseNotFoundError asserts releaseNotFoundError.

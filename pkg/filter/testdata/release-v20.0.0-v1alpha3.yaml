@@ -1,0 +1,68 @@
+apiVersion: release.giantswarm.io/v1alpha1
+kind: Release
+metadata:
+  name: v20.0.0-v1alpha3
+  namespace: default
+spec:
+  apps:
+  - name: cert-exporter
+    version: 1.6.0
+  - name: chart-operator
+    version: 2.9.0
+  - componentVersion: 1.6.5
+    name: coredns
+    version: 1.2.0
+  - componentVersion: 0.7.6
+    name: external-dns
+    version: 2.1.1
+  - componentVersion: 1.9.7
+    name: kube-state-metrics
+    version: 1.3.0
+  - name: metrics-server
+    version: 1.2.1
+  - name: net-exporter
+    version: 1.9.2
+  - componentVersion: 1.0.1
+    name: node-exporter
+    version: 1.7.1
+  - name: cluster-autoscaler
+    version: 1.19.1
+  - name: azure-scheduled-events
+    version: 0.2.2
+  components:
+  - name: app-operator
+    releaseOperatorDeploy: true
+    version: 3.2.0
+  - name: cluster-api-bootstrap-provider-kubeadm
+    catalog: control-plane-test-catalog
+    reference: 0.0.0-9c6fd2450ee1113238c30c4e639a0c488e3ebb62
+    releaseOperatorDeploy: true
+    version: 0.0.0
+  - name: cluster-api-control-plane
+    catalog: control-plane-test-catalog
+    reference: 0.0.0-c822112e865c77d600581fe9afd2c83777b9d73d
+    releaseOperatorDeploy: true
+    version: 0.0.0
+  - name: cluster-api-core
+    catalog: control-plane-test-catalog
+    reference: 0.0.1-e977b2c5bc8c7e8f80b244bac48874657fbb60ee
+    releaseOperatorDeploy: true
+    version: 0.0.1
+  - name: cluster-api-provider-azure
+    catalog: control-plane-test-catalog
+    reference: 0.0.0-6af9ab2b97a99d0b2ab108aa7e0ccb47f1568155
+    releaseOperatorDeploy: true
+    version: 0.0.0
+  - name: kubernetes
+    version: 1.19.8
+  - name: containerlinux
+    version: 2605.12.0
+  - name: calico
+    version: 3.15.3
+  - name: etcd
+    version: 3.4.14
+  date: "2021-03-02T14:50:41Z"
+  state: active
+status:
+  inUse: false
+  ready: false
