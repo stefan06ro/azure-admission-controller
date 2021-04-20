@@ -52,7 +52,7 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 
 		// Cluster
 		{
-			name:           "Cluster is processed",
+			name:           "Cluster with release label is processed",
 			inputCR:        cluster().withReleaseVersionLabel(legacyRelease),
 			expectedResult: true,
 		},
@@ -135,11 +135,21 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 
 		// Cluster
 		{
-			name:           "Cluster is not processed",
+			name:           "Cluster without release label is not processed",
+			inputCR:        cluster(),
+			expectedResult: false,
+		},
+		{
+			name:           "Cluster with release label is not processed",
 			inputCR:        cluster().withReleaseVersionLabel(capiRelease),
 			expectedResult: false,
 		},
 		// AzureCluster
+		{
+			name:           "AzureCluster without release label and without cluster name/id label is not processed",
+			inputCR:        azureCluster(),
+			expectedResult: false,
+		},
 		{
 			name:           "AzureCluster with release label is not processed",
 			inputCR:        azureCluster().withReleaseVersionLabel(capiRelease),
@@ -159,6 +169,11 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 		},
 		// MachinePool
 		{
+			name:           "MachinePool without release label and without cluster name/id label is not processed",
+			inputCR:        machinePool(),
+			expectedResult: false,
+		},
+		{
 			name:           "MachinePool with release label is not processed",
 			inputCR:        machinePool().withReleaseVersionLabel(capiRelease),
 			expectedResult: false,
@@ -177,6 +192,11 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 		},
 		// AzureMachinePool
 		{
+			name:           "AzureMachinePool without release label and without cluster name/id label is not processed",
+			inputCR:        azureMachinePool(),
+			expectedResult: false,
+		},
+		{
 			name:           "AzureMachinePool with release label is not processed",
 			inputCR:        azureMachinePool().withReleaseVersionLabel(capiRelease),
 			expectedResult: false,
@@ -194,6 +214,11 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 			expectedResult: false,
 		},
 		// AzureMachine
+		{
+			name:           "AzureMachine without release label and without cluster name/id label is not processed",
+			inputCR:        azureMachine(),
+			expectedResult: false,
+		},
 		{
 			name:           "AzureMachine with release label is not processed",
 			inputCR:        azureMachine().withReleaseVersionLabel(capiRelease),
@@ -239,7 +264,7 @@ func Test_IsCRProcessed_ReturnsTrue(t *testing.T) {
 	}
 }
 
-func loadReleases(t *testing.T, client client.Client, ) {
+func loadReleases(t *testing.T, client client.Client) {
 	testReleasesToLoad := []string{legacyRelease, capiRelease}
 
 	for _, releaseVersion := range testReleasesToLoad {

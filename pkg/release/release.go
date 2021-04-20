@@ -71,4 +71,3 @@ func ContainsAzureOperator(ctx context.Context, ctrlClient client.Client, releas
 
 	return true, nil
 }
-
