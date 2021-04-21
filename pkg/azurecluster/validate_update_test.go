@@ -4,40 +4,38 @@ import (
 	"context"
 	"testing"
 
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func TestAzureClusterUpdateValidate(t *testing.T) {
 	type testCase struct {
 		name            string
-		oldAzureCluster []byte
-		newAzureCluster []byte
+		oldAzureCluster *capz.AzureCluster
+		newAzureCluster *capz.AzureCluster
 		errorMatcher    func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
 			name:            "case 0: unchanged ControlPlaneEndpoint",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			oldAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
 			errorMatcher:    nil,
 		},
 		{
 			name:            "case 1: host changed",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.azure.gigantic.io", 443)),
+			oldAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.azure.gigantic.io", 443)),
 			errorMatcher:    IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:            "case 2: port changed",
-			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
-			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
+			oldAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
 			errorMatcher:    IsControlPlaneEndpointWasChangedError,
 		},
 	}
@@ -55,12 +53,19 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 				}
 			}
 
-			admit := &UpdateValidator{
-				logger: newLogger,
+			ctx := context.Background()
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
+			admit := &Validator{
+				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				ctrlClient: ctrlClient,
+				location:   "westeurope",
+				logger:     newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldAzureCluster, tc.newAzureCluster))
+			err = admit.ValidateUpdate(ctx, tc.oldAzureCluster, tc.newAzureCluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -75,24 +80,4 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateAdmissionRequest(oldCR []byte, newCR []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azurecluster",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newCR,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldCR,
-			Object: nil,
-		},
-	}
-
-	return req
 }

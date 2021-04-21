@@ -2,6 +2,10 @@ package key
 
 import (
 	"fmt"
+
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
+	"github.com/giantswarm/microerror"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 const (
@@ -39,4 +43,17 @@ func OSDiskCachingType() string {
 
 func MasterSubnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s-%s", clusterName, "VirtualNetwork", "MasterSubnet")
+}
+
+func ToAzureClusterPtr(v interface{}) (*capz.AzureCluster, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capz.AzureCluster{}, v)
+	}
+
+	customObjectPointer, ok := v.(*capz.AzureCluster)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capz.AzureCluster{}, v)
+	}
+
+	return customObjectPointer, nil
 }
