@@ -2,20 +2,16 @@ package azureupdate
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 
-	"github.com/giantswarm/microerror"
-	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
+	"github.com/giantswarm/microerror"
+	"github.com/giantswarm/micrologger"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -130,7 +126,7 @@ func TestMasterCIDR(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigRawObj("13.0.0", tc.newCIDR, tc.newAZs)))
+			err = admit.ValidateUpdate(tc.ctx, azureConfigObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigObj("13.0.0", tc.newCIDR, tc.newAZs))
 
 			// Check if the error is the expected one.
 			switch {
@@ -390,7 +386,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getAdmissionRequest(azureConfigRawObj(tc.oldVersion, "10.0.0.0/24", nil), azureConfigRawObj(tc.newVersion, "10.0.0.0/24", nil)))
+			err = admit.ValidateUpdate(tc.ctx, azureConfigObj(tc.oldVersion, "10.0.0.0/24", nil), azureConfigObj(tc.newVersion, "10.0.0.0/24", nil))
 
 			// Check if the error is the expected one.
 			switch {
@@ -407,31 +403,7 @@ func TestAzureConfigValidate(t *testing.T) {
 	}
 }
 
-func getAdmissionRequest(oldRaw []byte, newRaw []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
-			Version: "infrastructure.giantswarm.io/v1alpha2",
-			Kind:    "AzureClusterUpgrade",
-		},
-		Resource: metav1.GroupVersionResource{
-			Version:  "provider.giantswarm.io/v1alpha1",
-			Resource: "azureconfigs",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newRaw,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldRaw,
-			Object: nil,
-		},
-	}
-
-	return req
-}
-
-func azureConfigRawObj(version string, cidr string, azs []int) []byte {
+func azureConfigObj(version string, cidr string, azs []int) *providerv1alpha1.AzureConfig {
 	azureconfig := providerv1alpha1.AzureConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureConfig",
@@ -457,6 +429,6 @@ func azureConfigRawObj(version string, cidr string, azs []int) []byte {
 			VersionBundle: providerv1alpha1.AzureConfigSpecVersionBundle{},
 		},
 	}
-	byt, _ := json.Marshal(azureconfig)
-	return byt
+
+	return &azureconfig
 }
