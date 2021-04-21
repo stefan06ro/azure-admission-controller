@@ -5,30 +5,33 @@ import (
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
-type CreateValidator struct {
+type Validator struct {
 	ctrlClient client.Client
 	location   string
 	logger     micrologger.Logger
 	vmcaps     *vmcapabilities.VMSKU
 }
 
-type CreateValidatorConfig struct {
+type ValidatorConfig struct {
 	CtrlClient client.Client
 	Location   string
 	Logger     micrologger.Logger
 	VMcaps     *vmcapabilities.VMSKU
 }
 
-func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) {
+func NewCreateValidator(config ValidatorConfig) (*Validator, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
@@ -42,7 +45,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 		return nil, microerror.Maskf(invalidConfigError, "%T.VMcaps must not be empty", config)
 	}
 
-	admitter := &CreateValidator{
+	admitter := &Validator{
 		ctrlClient: config.CtrlClient,
 		location:   config.Location,
 		logger:     config.Logger,
@@ -52,18 +55,19 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return admitter, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	azureMPNewCR := &expcapzv1alpha3.AzureMachinePool{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMPNewCR); err != nil {
-		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
+func (a *Validator) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+	cr := &capzexp.AzureMachinePool{}
+	if _, _, err := validator.Deserializer.Decode(rawObject.Raw, nil, cr); err != nil {
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureMachinePool CR: %v", err)
 	}
 
-	capi, err := generic.IsCAPIRelease(azureMPNewCR)
+	return cr, nil
+}
+
+func (a *Validator) Validate(ctx context.Context, object interface{}) error {
+	azureMPNewCR, err := key.ToAzureMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
-	}
-	if capi {
-		return nil
 	}
 
 	err = azureMPNewCR.ValidateCreate()
@@ -109,6 +113,6 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	return nil
 }
 
-func (a *CreateValidator) Log(keyVals ...interface{}) {
+func (a *Validator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
 }

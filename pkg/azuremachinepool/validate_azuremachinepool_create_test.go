@@ -11,11 +11,10 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -33,7 +32,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	}
 	type testCase struct {
 		name         string
-		nodePool     []byte
+		nodePool     *capzexp.AzureMachinePool
 		errorMatcher func(err error) bool
 	}
 
@@ -42,19 +41,19 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	for i, instanceType := range unsupportedInstanceType {
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", i*3, instanceType),
-			nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			nodePool:     builder.BuildAzureMachinePool(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: IsVmsizeDoesNotSupportAcceleratedNetworkingError,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking disabled", i*3+1, instanceType),
-			nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			nodePool:     builder.BuildAzureMachinePool(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(false))),
 			errorMatcher: nil,
 		})
 
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking nil", i*3+2, instanceType),
-			nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize(instanceType), builder.AcceleratedNetworking(nil)),
+			nodePool:     builder.BuildAzureMachinePool(builder.VMSize(instanceType), builder.AcceleratedNetworking(nil)),
 			errorMatcher: nil,
 		})
 	}
@@ -64,7 +63,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 		instanceType := "this_is_a_random_name"
 		testCases = append(testCases, testCase{
 			name:         fmt.Sprintf("case %d: instance type %s with accelerated networking enabled", len(testCases), instanceType),
-			nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			nodePool:     builder.BuildAzureMachinePool(builder.VMSize(instanceType), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: vmcapabilities.IsSkuNotFoundError,
 		})
 	}
@@ -72,7 +71,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	{
 		testCases = append(testCases, testCase{
 			name: fmt.Sprintf("case %d: data disks already set", len(testCases)),
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.DataDisks([]capzv1alpha3.DataDisk{
+			nodePool: builder.BuildAzureMachinePool(builder.VMSize("Standard_D4_v3"), builder.DataDisks([]capz.DataDisk{
 				{
 					NameSuffix: "docker",
 					DiskSizeGB: 50,
@@ -90,13 +89,13 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 
 	testCases = append(testCases, testCase{
 		name:         fmt.Sprintf("case %d: invalid location", len(testCases)-1),
-		nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.Location("eastgalicia")),
+		nodePool:     builder.BuildAzureMachinePool(builder.VMSize("Standard_D4_v3"), builder.Location("eastgalicia")),
 		errorMatcher: IsUnexpectedLocationError,
 	})
 
 	testCases = append(testCases, testCase{
 		name:         fmt.Sprintf("case %d: invalid organization", len(testCases)-1),
-		nodePool:     builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.Organization("wrongorg")),
+		nodePool:     builder.BuildAzureMachinePool(builder.VMSize("Standard_D4_v3"), builder.Organization("wrongorg")),
 		errorMatcher: generic.IsNodepoolOrgDoesNotMatchClusterOrg,
 	})
 
@@ -130,7 +129,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Create cluster CR.
-			cluster := &capiv1alpha3.Cluster{
+			cluster := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "ab123",
 					Labels: map[string]string{
@@ -257,7 +256,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &CreateValidator{
+			admit := &Validator{
 				ctrlClient: ctrlClient,
 				location:   "westeurope",
 				logger:     newLogger,
@@ -265,7 +264,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.nodePool))
+			err = admit.Validate(ctx, tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -292,20 +291,4 @@ func NewStubAPI(stubbedSKUs map[string]compute.ResourceSku) vmcapabilities.API {
 
 func (s *StubAPI) List(ctx context.Context, filter string) (map[string]compute.ResourceSku, error) {
 	return s.stubbedSKUs, nil
-}
-
-func getCreateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }
