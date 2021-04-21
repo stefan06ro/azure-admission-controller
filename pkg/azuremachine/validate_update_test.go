@@ -6,46 +6,44 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func TestAzureMachineUpdateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		oldAM        []byte
-		newAM        []byte
+		oldAM        capz.AzureMachine
+		newAM        capz.AzureMachine
 		errorMatcher func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
 			name:         "Case 0 - empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
-			newAM:        azureMachineRawObject("", "westeurope", nil, nil),
+			oldAM:        azureMachineObject("", "westeurope", nil, nil),
+			newAM:        azureMachineObject("", "westeurope", nil, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "Case 1 - not empty ssh key",
-			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
-			newAM:        azureMachineRawObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
+			oldAM:        azureMachineObject("", "westeurope", nil, nil),
+			newAM:        azureMachineObject("ssh-rsa 12345 giantswarm", "westeurope", nil, nil),
 			errorMatcher: IsSSHFieldIsSetError,
 		},
 		{
 			name:         "Case 2 - location changed",
-			oldAM:        azureMachineRawObject("", "westeurope", nil, nil),
-			newAM:        azureMachineRawObject("", "westpoland", nil, nil),
+			oldAM:        azureMachineObject("", "westeurope", nil, nil),
+			newAM:        azureMachineObject("", "westpoland", nil, nil),
 			errorMatcher: IsLocationWasChangedError,
 		},
 		{
 			name:         "Case 3 - failure domain changed",
-			oldAM:        azureMachineRawObject("", "westpoland", to.StringPtr("1"), nil),
-			newAM:        azureMachineRawObject("", "westpoland", to.StringPtr("2"), nil),
+			oldAM:        azureMachineObject("", "westpoland", to.StringPtr("1"), nil),
+			newAM:        azureMachineObject("", "westpoland", to.StringPtr("2"), nil),
 			errorMatcher: IsFailureDomainWasChangedError,
 		},
 	}
@@ -79,13 +77,13 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &UpdateValidator{
+			admit := &Validator{
 				ctrlClient: ctrlClient,
 				logger:     newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, getUpdateAdmissionRequest(tc.oldAM, tc.newAM))
+			err = admit.ValidateUpdate(ctx, &tc.oldAM, &tc.newAM)
 
 			// Check if the error is the expected one.
 			switch {
@@ -100,24 +98,4 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateAdmissionRequest(oldMP []byte, newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }
