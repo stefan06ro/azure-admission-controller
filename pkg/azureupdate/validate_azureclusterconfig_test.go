@@ -2,7 +2,6 @@ package azureupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -272,7 +270,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
+			err = admit.ValidateUpdate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {
@@ -289,31 +287,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 	}
 }
 
-func getClusterConfigAdmissionRequest(oldVersion string, newVersion string) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
-			Version: "infrastructure.giantswarm.io/v1alpha2",
-			Kind:    "AzureClusterUpgrade",
-		},
-		Resource: metav1.GroupVersionResource{
-			Version:  "core.giantswarm.io/v1alpha1",
-			Resource: "azureclusterconfigs",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    azureClusterConfigRawObj(newVersion),
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    azureClusterConfigRawObj(oldVersion),
-			Object: nil,
-		},
-	}
-
-	return req
-}
-
-func azureClusterConfigRawObj(version string) []byte {
+func azureClusterConfigObj(version string) *corev1alpha1.AzureClusterConfig {
 	azureclusterconfig := corev1alpha1.AzureClusterConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureClusterConfig",
@@ -333,6 +307,6 @@ func azureClusterConfigRawObj(version string) []byte {
 			VersionBundle: corev1alpha1.AzureClusterConfigSpecVersionBundle{},
 		},
 	}
-	byt, _ := json.Marshal(azureclusterconfig)
-	return byt
+
+	return &azureclusterconfig
 }

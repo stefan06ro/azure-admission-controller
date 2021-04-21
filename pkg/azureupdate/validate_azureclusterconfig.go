@@ -5,9 +5,11 @@ import (
 
 	"github.com/blang/semver"
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -41,21 +43,30 @@ func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*
 	return azureClusterValidator, nil
 }
 
-func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	AzureClusterConfigNewCR := &corev1alpha1.AzureClusterConfig{}
-	AzureClusterConfigOldCR := &corev1alpha1.AzureClusterConfig{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, AzureClusterConfigNewCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
-	}
-	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, AzureClusterConfigOldCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
+func (a *AzureClusterConfigValidator) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+	cr := &corev1alpha1.AzureClusterConfig{}
+	if _, _, err := validator.Deserializer.Decode(rawObject.Raw, nil, cr); err != nil {
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
 	}
 
-	oldVersion, err := getSemver(AzureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
+	return cr, nil
+}
+
+func (a *AzureClusterConfigValidator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {
+	azureClusterConfigNewCR, err := key.ToAzureClusterConfigPtr(object)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	azureClusterConfigOldCR, err := key.ToAzureClusterConfigPtr(oldObject)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	oldVersion, err := getSemver(azureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (before edit)")
 	}
-	newVersion, err := getSemver(AzureClusterConfigNewCR.Spec.Guest.ReleaseVersion)
+	newVersion, err := getSemver(azureClusterConfigNewCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (after edit)")
 	}
