@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestMachinePoolUpdateValidate(t *testing.T) {
