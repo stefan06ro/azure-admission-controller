@@ -8,9 +8,7 @@ import (
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
@@ -19,7 +17,7 @@ import (
 func TestClusterCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		cluster      []byte
+		cluster      v1alpha3.Cluster
 		errorMatcher func(err error) bool
 	}
 
@@ -36,32 +34,32 @@ func TestClusterCreateValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "", 0, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "", 0, nil),
 			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 1: Invalid Port",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 80, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 80, nil),
 			errorMatcher: IsInvalidControlPlaneEndpointPortError,
 		},
 		{
 			name:         "case 2: Invalid Host",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "api.gigantic.io", 443, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "api.gigantic.io", 443, nil),
 			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 3: Valid values",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: ClusterNetwork null",
-			cluster:      clusterRawObject("ab123", nil, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, nil),
+			cluster:      clusterObject("ab123", nil, "api.ab123.k8s.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: IsEmptyClusterNetworkError,
 		},
 		{
 			name: "case 5: ClusterNetwork.APIServerPort wrong",
-			cluster: clusterRawObject(
+			cluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
@@ -80,7 +78,7 @@ func TestClusterCreateValidate(t *testing.T) {
 		},
 		{
 			name: "case 6: ClusterNetwork.ServiceDomain wrong",
-			cluster: clusterRawObject(
+			cluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
@@ -99,7 +97,7 @@ func TestClusterCreateValidate(t *testing.T) {
 		},
 		{
 			name: "case 7: ClusterNetwork.Services nil",
-			cluster: clusterRawObject(
+			cluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
@@ -114,7 +112,7 @@ func TestClusterCreateValidate(t *testing.T) {
 		},
 		{
 			name: "case 8: ClusterNetwork.CIDRBlocks wrong",
-			cluster: clusterRawObject(
+			cluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
@@ -162,14 +160,14 @@ func TestClusterCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateValidator{
+			admit := &Validator{
 				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				ctrlClient: ctrlClient,
 				logger:     newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.cluster))
+			err = admit.Validate(ctx, &tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -184,20 +182,4 @@ func TestClusterCreateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "cluster.x-k8s.io/v1alpha3",
-			Resource: "cluster",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

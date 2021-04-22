@@ -175,7 +175,7 @@ func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	return req
 }
 
-func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
+func clusterObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) v1alpha3.Cluster {
 	mergedLabels := map[string]string{
 		"azure-operator.giantswarm.io/version": "5.0.0",
 		"cluster.x-k8s.io/cluster-name":        clusterName,
@@ -187,7 +187,7 @@ func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwor
 		mergedLabels[k] = v
 	}
 
-	mp := v1alpha3.Cluster{
+	cluster := v1alpha3.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
 			APIVersion: "cluster.x-k8s.io/v1alpha3",
@@ -205,6 +205,11 @@ func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwor
 			},
 		},
 	}
-	byt, _ := json.Marshal(mp)
+	return cluster
+}
+
+func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
+	cluster := clusterObject(clusterName, clusterNetwork, controlPlaneEndpointHost, controlPlaneEndpointPort, labels)
+	byt, _ := json.Marshal(cluster)
 	return byt
 }

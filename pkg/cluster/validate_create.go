@@ -5,28 +5,30 @@ import (
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
-type CreateValidator struct {
+type Validator struct {
 	baseDomain string
 	ctrlClient client.Client
 	logger     micrologger.Logger
 }
 
-type CreateValidatorConfig struct {
+type ValidatorConfig struct {
 	BaseDomain string
 	CtrlClient client.Client
 	Logger     micrologger.Logger
 }
 
-func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) {
+func NewValidator(config ValidatorConfig) (*Validator, error) {
 	if config.BaseDomain == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.BaseDomain must not be empty", config)
 	}
@@ -37,7 +39,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	v := &CreateValidator{
+	v := &Validator{
 		baseDomain: config.BaseDomain,
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
@@ -46,18 +48,19 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 	return v, nil
 }
 
-func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	clusterCR := &capiv1alpha3.Cluster{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, clusterCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
+func (a *Validator) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+	cr := &capiv1alpha3.Cluster{}
+	if _, _, err := validator.Deserializer.Decode(rawObject.Raw, nil, cr); err != nil {
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
-	capi, err := generic.IsCAPIRelease(clusterCR)
+	return cr, nil
+}
+
+func (a *Validator) Validate(ctx context.Context, object interface{}) error {
+	clusterCR, err := key.ToClusterPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
-	}
-	if capi {
-		return nil
 	}
 
 	err = clusterCR.ValidateCreate()
@@ -83,6 +86,6 @@ func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	return nil
 }
 
-func (a *CreateValidator) Log(keyVals ...interface{}) {
+func (a *Validator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
 }

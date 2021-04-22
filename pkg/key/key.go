@@ -9,6 +9,7 @@ import (
 	"github.com/giantswarm/microerror"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 const (
@@ -46,6 +47,19 @@ func OSDiskCachingType() string {
 
 func MasterSubnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s-%s", clusterName, "VirtualNetwork", "MasterSubnet")
+}
+
+func ToClusterPtr(v interface{}) (*capi.Cluster, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capi.Cluster{}, v)
+	}
+
+	customObjectPointer, ok := v.(*capi.Cluster)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capi.Cluster{}, v)
+	}
+
+	return customObjectPointer, nil
 }
 
 func ToAzureClusterPtr(v interface{}) (*capz.AzureCluster, error) {

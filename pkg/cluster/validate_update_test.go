@@ -7,17 +7,14 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 func TestClusterUpdateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		oldCluster   []byte
-		newCluster   []byte
+		oldCluster   v1alpha3.Cluster
+		newCluster   v1alpha3.Cluster
 		errorMatcher func(err error) bool
 	}
 
@@ -34,32 +31,32 @@ func TestClusterUpdateValidate(t *testing.T) {
 	var testCases = []testCase{
 		{
 			name:         "case 0: unchanged ControlPlaneEndpoint",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			oldCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: host changed",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443, nil),
+			oldCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterObject("ab123", clusterNetwork, "api.azure.gigantic.io", 443, nil),
 			errorMatcher: IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:         "case 2: port changed",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80, nil),
+			oldCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 80, nil),
 			errorMatcher: IsControlPlaneEndpointWasChangedError,
 		},
 		{
 			name:         "case 3: clusterNetwork deleted",
-			oldCluster:   clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster:   clusterRawObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			oldCluster:   clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster:   clusterObject("ab123", nil, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			errorMatcher: IsClusterNetworkWasChangedError,
 		},
 		{
 			name:       "case 4: clusterNetwork.APIServerPort changed",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster: clusterRawObject(
+			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
@@ -78,8 +75,8 @@ func TestClusterUpdateValidate(t *testing.T) {
 		},
 		{
 			name:       "case 5: clusterNetwork.ServiceDomain changed",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster: clusterRawObject(
+			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
@@ -98,8 +95,8 @@ func TestClusterUpdateValidate(t *testing.T) {
 		},
 		{
 			name:       "case 6: clusterNetwork.Services deleted",
-			oldCluster: clusterRawObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
-			newCluster: clusterRawObject(
+			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
+			newCluster: clusterObject(
 				"ab123",
 				&v1alpha3.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
@@ -126,12 +123,12 @@ func TestClusterUpdateValidate(t *testing.T) {
 				}
 			}
 
-			admit := &UpdateValidator{
+			admit := &Validator{
 				logger: newLogger,
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldCluster, tc.newCluster))
+			err = admit.ValidateUpdate(context.Background(), &tc.oldCluster, &tc.newCluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -146,24 +143,4 @@ func TestClusterUpdateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateAdmissionRequest(oldCR []byte, newCR []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "cluster.x-k8s.io/v1alpha3",
-			Resource: "cluster",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newCR,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldCR,
-			Object: nil,
-		},
-	}
-
-	return req
 }
