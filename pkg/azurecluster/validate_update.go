@@ -3,14 +3,15 @@ package azurecluster
 import (
 	"context"
 
+	"github.com/giantswarm/microerror"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capiutil "sigs.k8s.io/cluster-api/util"
+
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
-	"github.com/giantswarm/microerror"
-	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capiutil "sigs.k8s.io/cluster-api/util"
 )
 
 func (a *Validator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {

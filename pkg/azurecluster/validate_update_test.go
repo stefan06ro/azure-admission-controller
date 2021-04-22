@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
-	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
-	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureClusterUpdateValidate(t *testing.T) {
