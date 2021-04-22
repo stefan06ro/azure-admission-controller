@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 )
@@ -16,22 +17,22 @@ import (
 func TestMachinePoolUpdateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		oldNodePool  []byte
-		newNodePool  []byte
+		oldNodePool  *capiexp.MachinePool
+		newNodePool  *capiexp.MachinePool
 		errorMatcher func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
 			name:         "case 0: FailureDomains unchanged",
-			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1", "2"})),
-			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1", "2"})),
+			oldNodePool:  builder.BuildMachinePool(builder.FailureDomains([]string{"1", "2"})),
+			newNodePool:  builder.BuildMachinePool(builder.FailureDomains([]string{"1", "2"})),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: FailureDomains changed",
-			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1"})),
-			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"2"})),
+			oldNodePool:  builder.BuildMachinePool(builder.FailureDomains([]string{"1"})),
+			newNodePool:  builder.BuildMachinePool(builder.FailureDomains([]string{"2"})),
 			errorMatcher: IsFailureDomainWasChangedError,
 		},
 	}
@@ -48,16 +49,30 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
 
-			admit, err := NewUpdateValidator(UpdateValidatorConfig{
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
 				Logger: newLogger,
+			})
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
+			admit, err := NewValidator(ValidatorConfig{
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
+			err = admit.ValidateUpdate(context.Background(), tc.oldNodePool, tc.newNodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -72,24 +87,4 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateAdmissionRequest(oldMP []byte, newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

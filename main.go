@@ -218,79 +218,43 @@ func mainError() error {
 		}
 	}
 
-	var azureMachinePoolCreateValidator *azuremachinepool.CreateValidator
+	var azureMachinePoolValidator *azuremachinepool.Validator
 	{
-		createValidatorConfig := azuremachinepool.CreateValidatorConfig{
+		azureMachinePoolValidatorConfig := azuremachinepool.ValidatorConfig{
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachinePoolCreateValidator, err = azuremachinepool.NewCreateValidator(createValidatorConfig)
+		azureMachinePoolValidator, err = azuremachinepool.NewCreateValidator(azureMachinePoolValidatorConfig)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var azureMachinePoolUpdateValidator *azuremachinepool.UpdateValidator
+	var azureClusterValidator *azurecluster.Validator
 	{
-		updateValidatorConfig := azuremachinepool.UpdateValidatorConfig{
-			Logger: newLogger,
-			VMcaps: vmcaps,
-		}
-		azureMachinePoolUpdateValidator, err = azuremachinepool.NewUpdateValidator(updateValidatorConfig)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterCreateValidator *azurecluster.CreateValidator
-	{
-		c := azurecluster.CreateValidatorConfig{
+		c := azurecluster.ValidatorConfig{
 			BaseDomain: cfg.BaseDomain,
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
-		azureClusterCreateValidator, err = azurecluster.NewCreateValidator(c)
+		azureClusterValidator, err = azurecluster.NewValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var azureClusterUpdateValidator *azurecluster.UpdateValidator
+	var azureMachineValidator *azuremachine.Validator
 	{
-		c := azurecluster.UpdateValidatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureClusterUpdateValidator, err = azurecluster.NewUpdateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachineCreateValidator *azuremachine.CreateValidator
-	{
-		c := azuremachine.CreateValidatorConfig{
+		c := azuremachine.ValidatorConfig{
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachineCreateValidator, err = azuremachine.NewCreateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachineUpdateValidator *azuremachine.UpdateValidator
-	{
-		c := azuremachine.UpdateValidatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureMachineUpdateValidator, err = azuremachine.NewUpdateValidator(c)
+		azureMachineValidator, err = azuremachine.NewCreateValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -321,26 +285,14 @@ func mainError() error {
 		}
 	}
 
-	var clusterCreateValidator *cluster.CreateValidator
+	var clusterValidator *cluster.Validator
 	{
-		c := cluster.CreateValidatorConfig{
+		c := cluster.ValidatorConfig{
 			BaseDomain: cfg.BaseDomain,
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		clusterCreateValidator, err = cluster.NewCreateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var clusterUpdateValidator *cluster.UpdateValidator
-	{
-		c := cluster.UpdateValidatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		clusterUpdateValidator, err = cluster.NewUpdateValidator(c)
+		clusterValidator, err = cluster.NewValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -369,25 +321,14 @@ func mainError() error {
 		}
 	}
 
-	var machinePoolCreateValidator *machinepool.CreateValidator
+	var machinePoolValidator *machinepool.Validator
 	{
-		c := machinepool.CreateValidatorConfig{
+		c := machinepool.ValidatorConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		machinePoolCreateValidator, err = machinepool.NewCreateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolUpdateValidator *machinepool.UpdateValidator
-	{
-		c := machinepool.UpdateValidatorConfig{
-			Logger: newLogger,
-		}
-		machinePoolUpdateValidator, err = machinepool.NewUpdateValidator(c)
+		machinePoolValidator, err = machinepool.NewValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -400,6 +341,17 @@ func mainError() error {
 			Logger:     newLogger,
 		}
 		sparkCreateMutator, err = spark.NewCreateMutator(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	var handlerFactory *validator.HandlerFactory
+	{
+		c := validator.HandlerFactoryConfig{
+			CtrlClient: ctrlClient,
+		}
+		handlerFactory, err = validator.NewHandlerFactory(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -421,18 +373,18 @@ func mainError() error {
 	handler.Handle("/mutate/spark/create", mutator.Handler(sparkCreateMutator))
 
 	// Validators.
-	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
-	handler.Handle("/validate/azureclusterconfig/update", validator.Handler(azureClusterConfigValidator))
-	handler.Handle("/validate/azurecluster/create", validator.Handler(azureClusterCreateValidator))
-	handler.Handle("/validate/azurecluster/update", validator.Handler(azureClusterUpdateValidator))
-	handler.Handle("/validate/azuremachine/create", validator.Handler(azureMachineCreateValidator))
-	handler.Handle("/validate/azuremachine/update", validator.Handler(azureMachineUpdateValidator))
-	handler.Handle("/validate/azuremachinepool/create", validator.Handler(azureMachinePoolCreateValidator))
-	handler.Handle("/validate/azuremachinepool/update", validator.Handler(azureMachinePoolUpdateValidator))
-	handler.Handle("/validate/cluster/create", validator.Handler(clusterCreateValidator))
-	handler.Handle("/validate/cluster/update", validator.Handler(clusterUpdateValidator))
-	handler.Handle("/validate/machinepool/create", validator.Handler(machinePoolCreateValidator))
-	handler.Handle("/validate/machinepool/update", validator.Handler(machinePoolUpdateValidator))
+	handler.Handle("/validate/azureconfig/update", handlerFactory.NewUpdateHandler(azureConfigValidator))
+	handler.Handle("/validate/azureclusterconfig/update", handlerFactory.NewUpdateHandler(azureClusterConfigValidator))
+	handler.Handle("/validate/azurecluster/create", handlerFactory.NewCreateHandler(azureClusterValidator))
+	handler.Handle("/validate/azurecluster/update", handlerFactory.NewUpdateHandler(azureClusterValidator))
+	handler.Handle("/validate/azuremachine/create", handlerFactory.NewCreateHandler(azureMachineValidator))
+	handler.Handle("/validate/azuremachine/update", handlerFactory.NewUpdateHandler(azureMachineValidator))
+	handler.Handle("/validate/azuremachinepool/create", handlerFactory.NewCreateHandler(azureMachinePoolValidator))
+	handler.Handle("/validate/azuremachinepool/update", handlerFactory.NewUpdateHandler(azureMachinePoolValidator))
+	handler.Handle("/validate/cluster/create", handlerFactory.NewCreateHandler(clusterValidator))
+	handler.Handle("/validate/cluster/update", handlerFactory.NewUpdateHandler(clusterValidator))
+	handler.Handle("/validate/machinepool/create", handlerFactory.NewCreateHandler(machinePoolValidator))
+	handler.Handle("/validate/machinepool/update", handlerFactory.NewUpdateHandler(machinePoolValidator))
 	handler.HandleFunc("/healthz", healthCheck)
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))

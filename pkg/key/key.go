@@ -10,6 +10,7 @@ import (
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 )
 
 const (
@@ -57,6 +58,19 @@ func ToClusterPtr(v interface{}) (*capi.Cluster, error) {
 	customObjectPointer, ok := v.(*capi.Cluster)
 	if !ok {
 		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capi.Cluster{}, v)
+	}
+
+	return customObjectPointer, nil
+}
+
+func ToMachinePoolPtr(v interface{}) (*capiexp.MachinePool, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capiexp.MachinePool{}, v)
+	}
+
+	customObjectPointer, ok := v.(*capiexp.MachinePool)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capiexp.MachinePool{}, v)
 	}
 
 	return customObjectPointer, nil
