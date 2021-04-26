@@ -1,14 +1,9 @@
-package spark
+package machinepool
 
 import (
-	"context"
-
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/giantswarm/azure-admission-controller/pkg/key"
-	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
 type Mutator struct {
@@ -41,28 +36,10 @@ func NewMutator(config MutatorConfig) (*Mutator, error) {
 	return m, nil
 }
 
-func (m *Mutator) Mutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
-	var result []mutator.PatchOperation
-	sparkCR, err := key.ToSparkPtr(object)
-	if err != nil {
-		return []mutator.PatchOperation{}, microerror.Mask(err)
-	}
-
-	patch, err := mutator.EnsureReleaseVersionLabel(ctx, m.ctrlClient, sparkCR.GetObjectMeta())
-	if err != nil {
-		return []mutator.PatchOperation{}, microerror.Mask(err)
-	}
-	if patch != nil {
-		result = append(result, *patch)
-	}
-
-	return result, nil
-}
-
 func (m *Mutator) Log(keyVals ...interface{}) {
 	m.logger.Log(keyVals...)
 }
 
 func (m *Mutator) Resource() string {
-	return "spark"
+	return "machinepool"
 }

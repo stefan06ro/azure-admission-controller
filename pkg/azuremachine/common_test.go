@@ -1,17 +1,9 @@
 package azuremachine
 
 import (
-	"encoding/json"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
-
-func azureMachineRawObject(sshKey string, location string, failureDomain *string, labels map[string]string) []byte {
-	azureMachine := azureMachineObject(sshKey, location, failureDomain, labels)
-	byt, _ := json.Marshal(azureMachine)
-	return byt
-}
 
 func azureMachineObject(sshKey string, location string, failureDomain *string, labels map[string]string) capz.AzureMachine {
 	mergedLabels := map[string]string{

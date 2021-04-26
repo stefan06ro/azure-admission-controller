@@ -129,27 +129,15 @@ func mainError() error {
 		}
 	}
 
-	var azureClusterCreateMutator *azurecluster.CreateMutator
+	var azureClusterMutator *azurecluster.Mutator
 	{
-		conf := azurecluster.CreateMutatorConfig{
+		conf := azurecluster.MutatorConfig{
 			BaseDomain: cfg.BaseDomain,
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
-		azureClusterCreateMutator, err = azurecluster.NewCreateMutator(conf)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterUpdateMutator *azurecluster.UpdateMutator
-	{
-		conf := azurecluster.UpdateMutatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureClusterUpdateMutator, err = azurecluster.NewUpdateMutator(conf)
+		azureClusterMutator, err = azurecluster.NewMutator(conf)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -167,52 +155,28 @@ func mainError() error {
 		}
 	}
 
-	var azureMachineCreateMutator *azuremachine.CreateMutator
+	var azureMachineMutator *azuremachine.Mutator
 	{
-		createMutatorConfig := azuremachine.CreateMutatorConfig{
+		azureMachineMutatorConfig := azuremachine.MutatorConfig{
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
-		azureMachineCreateMutator, err = azuremachine.NewCreateMutator(createMutatorConfig)
+		azureMachineMutator, err = azuremachine.NewMutator(azureMachineMutatorConfig)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var azureMachineUpdateMutator *azuremachine.UpdateMutator
+	var azureMachinePoolMutator *azuremachinepool.Mutator
 	{
-		updateMutatorConfig := azuremachine.UpdateMutatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureMachineUpdateMutator, err = azuremachine.NewUpdateMutator(updateMutatorConfig)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachinePoolCreateMutator *azuremachinepool.CreateMutator
-	{
-		createMutatorConfig := azuremachinepool.CreateMutatorConfig{
+		azureMachinePoolMutatorConfig := azuremachinepool.MutatorConfig{
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachinePoolCreateMutator, err = azuremachinepool.NewCreateMutator(createMutatorConfig)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachinePoolUpdateMutator *azuremachinepool.UpdateMutator
-	{
-		updateMutatorConfig := azuremachinepool.UpdateMutatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureMachinePoolUpdateMutator, err = azuremachinepool.NewUpdateMutator(updateMutatorConfig)
+		azureMachinePoolMutator, err = azuremachinepool.NewMutator(azureMachinePoolMutatorConfig)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -226,7 +190,7 @@ func mainError() error {
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachinePoolValidator, err = azuremachinepool.NewCreateValidator(azureMachinePoolValidatorConfig)
+		azureMachinePoolValidator, err = azuremachinepool.NewValidator(azureMachinePoolValidatorConfig)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -254,32 +218,20 @@ func mainError() error {
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachineValidator, err = azuremachine.NewCreateValidator(c)
+		azureMachineValidator, err = azuremachine.NewValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var clusterCreateMutator *cluster.CreateMutator
+	var clusterMutator *cluster.Mutator
 	{
-		conf := cluster.CreateMutatorConfig{
+		conf := cluster.MutatorConfig{
 			BaseDomain: cfg.BaseDomain,
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		clusterCreateMutator, err = cluster.NewCreateMutator(conf)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var clusterUpdateMutator *cluster.UpdateMutator
-	{
-		conf := cluster.UpdateMutatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		clusterUpdateMutator, err = cluster.NewUpdateMutator(conf)
+		clusterMutator, err = cluster.NewMutator(conf)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -298,24 +250,13 @@ func mainError() error {
 		}
 	}
 
-	var machinePoolCreateMutator *machinepool.CreateMutator
+	var machinePoolMutator *machinepool.Mutator
 	{
-		c := machinepool.CreateMutatorConfig{
+		c := machinepool.MutatorConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		machinePoolCreateMutator, err = machinepool.NewCreateMutator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolUpdateMutator *machinepool.UpdateMutator
-	{
-		c := machinepool.UpdateMutatorConfig{
-			Logger: newLogger,
-		}
-		machinePoolUpdateMutator, err = machinepool.NewUpdateMutator(c)
+		machinePoolMutator, err = machinepool.NewMutator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -334,24 +275,35 @@ func mainError() error {
 		}
 	}
 
-	var sparkCreateMutator *spark.CreateMutator
+	var sparkCreateMutator *spark.Mutator
 	{
-		c := spark.CreateMutatorConfig{
+		c := spark.MutatorConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		sparkCreateMutator, err = spark.NewCreateMutator(c)
+		sparkCreateMutator, err = spark.NewMutator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var handlerFactory *validator.HandlerFactory
+	var validatorHandlerFactory *validator.HandlerFactory
 	{
 		c := validator.HandlerFactoryConfig{
 			CtrlClient: ctrlClient,
 		}
-		handlerFactory, err = validator.NewHandlerFactory(c)
+		validatorHandlerFactory, err = validator.NewHandlerFactory(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	var mutatorHandlerFactory *mutator.HandlerFactory
+	{
+		c := mutator.HandlerFactoryConfig{
+			CtrlClient: ctrlClient,
+		}
+		mutatorHandlerFactory, err = mutator.NewHandlerFactory(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -360,31 +312,31 @@ func mainError() error {
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
 	// Mutators.
-	handler.Handle("/mutate/azuremachine/create", mutator.Handler(azureMachineCreateMutator))
-	handler.Handle("/mutate/azuremachine/update", mutator.Handler(azureMachineUpdateMutator))
-	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
-	handler.Handle("/mutate/azuremachinepool/update", mutator.Handler(azureMachinePoolUpdateMutator))
-	handler.Handle("/mutate/azurecluster/create", mutator.Handler(azureClusterCreateMutator))
-	handler.Handle("/mutate/azurecluster/update", mutator.Handler(azureClusterUpdateMutator))
-	handler.Handle("/mutate/cluster/create", mutator.Handler(clusterCreateMutator))
-	handler.Handle("/mutate/cluster/update", mutator.Handler(clusterUpdateMutator))
-	handler.Handle("/mutate/machinepool/create", mutator.Handler(machinePoolCreateMutator))
-	handler.Handle("/mutate/machinepool/update", mutator.Handler(machinePoolUpdateMutator))
-	handler.Handle("/mutate/spark/create", mutator.Handler(sparkCreateMutator))
+	handler.Handle("/mutate/azuremachine/create", mutatorHandlerFactory.NewCreateHandler(azureMachineMutator))
+	handler.Handle("/mutate/azuremachine/update", mutatorHandlerFactory.NewUpdateHandler(azureMachineMutator))
+	handler.Handle("/mutate/azuremachinepool/create", mutatorHandlerFactory.NewCreateHandler(azureMachinePoolMutator))
+	handler.Handle("/mutate/azuremachinepool/update", mutatorHandlerFactory.NewUpdateHandler(azureMachinePoolMutator))
+	handler.Handle("/mutate/azurecluster/create", mutatorHandlerFactory.NewCreateHandler(azureClusterMutator))
+	handler.Handle("/mutate/azurecluster/update", mutatorHandlerFactory.NewUpdateHandler(azureClusterMutator))
+	handler.Handle("/mutate/cluster/create", mutatorHandlerFactory.NewCreateHandler(clusterMutator))
+	handler.Handle("/mutate/cluster/update", mutatorHandlerFactory.NewUpdateHandler(clusterMutator))
+	handler.Handle("/mutate/machinepool/create", mutatorHandlerFactory.NewCreateHandler(machinePoolMutator))
+	handler.Handle("/mutate/machinepool/update", mutatorHandlerFactory.NewUpdateHandler(machinePoolMutator))
+	handler.Handle("/mutate/spark/create", mutatorHandlerFactory.NewCreateHandler(sparkCreateMutator))
 
 	// Validators.
-	handler.Handle("/validate/azureconfig/update", handlerFactory.NewUpdateHandler(azureConfigValidator))
-	handler.Handle("/validate/azureclusterconfig/update", handlerFactory.NewUpdateHandler(azureClusterConfigValidator))
-	handler.Handle("/validate/azurecluster/create", handlerFactory.NewCreateHandler(azureClusterValidator))
-	handler.Handle("/validate/azurecluster/update", handlerFactory.NewUpdateHandler(azureClusterValidator))
-	handler.Handle("/validate/azuremachine/create", handlerFactory.NewCreateHandler(azureMachineValidator))
-	handler.Handle("/validate/azuremachine/update", handlerFactory.NewUpdateHandler(azureMachineValidator))
-	handler.Handle("/validate/azuremachinepool/create", handlerFactory.NewCreateHandler(azureMachinePoolValidator))
-	handler.Handle("/validate/azuremachinepool/update", handlerFactory.NewUpdateHandler(azureMachinePoolValidator))
-	handler.Handle("/validate/cluster/create", handlerFactory.NewCreateHandler(clusterValidator))
-	handler.Handle("/validate/cluster/update", handlerFactory.NewUpdateHandler(clusterValidator))
-	handler.Handle("/validate/machinepool/create", handlerFactory.NewCreateHandler(machinePoolValidator))
-	handler.Handle("/validate/machinepool/update", handlerFactory.NewUpdateHandler(machinePoolValidator))
+	handler.Handle("/validate/azureconfig/update", validatorHandlerFactory.NewUpdateHandler(azureConfigValidator))
+	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigValidator))
+	handler.Handle("/validate/azurecluster/create", validatorHandlerFactory.NewCreateHandler(azureClusterValidator))
+	handler.Handle("/validate/azurecluster/update", validatorHandlerFactory.NewUpdateHandler(azureClusterValidator))
+	handler.Handle("/validate/azuremachine/create", validatorHandlerFactory.NewCreateHandler(azureMachineValidator))
+	handler.Handle("/validate/azuremachine/update", validatorHandlerFactory.NewUpdateHandler(azureMachineValidator))
+	handler.Handle("/validate/azuremachinepool/create", validatorHandlerFactory.NewCreateHandler(azureMachinePoolValidator))
+	handler.Handle("/validate/azuremachinepool/update", validatorHandlerFactory.NewUpdateHandler(azureMachinePoolValidator))
+	handler.Handle("/validate/cluster/create", validatorHandlerFactory.NewCreateHandler(clusterValidator))
+	handler.Handle("/validate/cluster/update", validatorHandlerFactory.NewUpdateHandler(clusterValidator))
+	handler.Handle("/validate/machinepool/create", validatorHandlerFactory.NewCreateHandler(machinePoolValidator))
+	handler.Handle("/validate/machinepool/update", validatorHandlerFactory.NewUpdateHandler(machinePoolValidator))
 	handler.HandleFunc("/healthz", healthCheck)
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))

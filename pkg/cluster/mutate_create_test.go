@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -11,11 +10,9 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
@@ -24,15 +21,15 @@ import (
 func TestClusterCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		cluster      []byte
+		cluster      capi.Cluster
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
 
-	clusterNetwork := &v1alpha3.ClusterNetwork{
+	clusterNetwork := &capi.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
 		ServiceDomain: "cluster.local",
-		Services: &v1alpha3.NetworkRanges{
+		Services: &capi.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
 			},
@@ -42,7 +39,7 @@ func TestClusterCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:    "case 0: ControlPlaneEndpoint left empty",
-			cluster: clusterRawObject("ab123", clusterNetwork, "", 0, nil),
+			cluster: clusterObject("ab123", clusterNetwork, "", 0, nil),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -59,13 +56,13 @@ func TestClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         "case 1: ControlPlaneEndpoint has a value",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "api.giantswarm.io", 123, nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:    "case 2: Azure Operator version empty",
-			cluster: clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, map[string]string{label.AzureOperatorVersion: ""}),
+			cluster: clusterObject("ab123", clusterNetwork, "api.giantswarm.io", 123, map[string]string{label.AzureOperatorVersion: ""}),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -114,7 +111,7 @@ func TestClusterCreateMutate(t *testing.T) {
 			}
 
 			// Cluster with both operator annotations.
-			ab123 := &capzv1alpha3.AzureCluster{
+			ab123 := &capz.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -128,14 +125,17 @@ func TestClusterCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateMutator{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			admit, err := NewMutator(MutatorConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.cluster))
+			patches, err := admit.Mutate(context.Background(), &tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -159,23 +159,7 @@ func TestClusterCreateMutate(t *testing.T) {
 	}
 }
 
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "cluster.x-k8s.io/v1alpha3",
-			Resource: "cluster",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
-}
-
-func clusterObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) v1alpha3.Cluster {
+func clusterObject(clusterName string, clusterNetwork *capi.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) capi.Cluster {
 	mergedLabels := map[string]string{
 		"azure-operator.giantswarm.io/version": "5.0.0",
 		"cluster.x-k8s.io/cluster-name":        clusterName,
@@ -187,7 +171,7 @@ func clusterObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, 
 		mergedLabels[k] = v
 	}
 
-	cluster := v1alpha3.Cluster{
+	cluster := capi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
 			APIVersion: "cluster.x-k8s.io/v1alpha3",
@@ -197,19 +181,13 @@ func clusterObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, 
 			Namespace: "default",
 			Labels:    mergedLabels,
 		},
-		Spec: v1alpha3.ClusterSpec{
+		Spec: capi.ClusterSpec{
 			ClusterNetwork: clusterNetwork,
-			ControlPlaneEndpoint: v1alpha3.APIEndpoint{
+			ControlPlaneEndpoint: capi.APIEndpoint{
 				Host: controlPlaneEndpointHost,
 				Port: controlPlaneEndpointPort,
 			},
 		},
 	}
 	return cluster
-}
-
-func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
-	cluster := clusterObject(clusterName, clusterNetwork, controlPlaneEndpointHost, controlPlaneEndpointPort, labels)
-	byt, _ := json.Marshal(cluster)
-	return byt
 }

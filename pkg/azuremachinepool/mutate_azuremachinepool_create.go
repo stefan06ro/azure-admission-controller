@@ -5,75 +5,20 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/giantswarm/microerror"
-	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/azure-admission-controller/internal/patches"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
-	"github.com/giantswarm/azure-admission-controller/pkg/generic"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-type CreateMutator struct {
-	ctrlClient client.Client
-	location   string
-	logger     micrologger.Logger
-	vmcaps     *vmcapabilities.VMSKU
-}
-
-type CreateMutatorConfig struct {
-	CtrlClient client.Client
-	Location   string
-	Logger     micrologger.Logger
-	VMcaps     *vmcapabilities.VMSKU
-}
-
-func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
-	if config.CtrlClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
-	}
-	if config.Location == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
-	}
-	if config.Logger == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
-	}
-	if config.VMcaps == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.VMcaps must not be empty", config)
-	}
-
-	m := &CreateMutator{
-		ctrlClient: config.CtrlClient,
-		location:   config.Location,
-		logger:     config.Logger,
-		vmcaps:     config.VMcaps,
-	}
-
-	return m, nil
-}
-
-func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRequest) ([]mutator.PatchOperation, error) {
+func (m *Mutator) Mutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
-
-	if request.DryRun != nil && *request.DryRun {
-		m.logger.LogCtx(ctx, "level", "debug", "message", "Dry run is not supported. Request processing stopped.")
-		return result, nil
-	}
-
-	azureMPCR := &expcapzv1alpha3.AzureMachinePool{}
-	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMPCR); err != nil {
-		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
-	}
-
-	capi, err := generic.IsCAPIRelease(azureMPCR)
+	azureMPCR, err := key.ToAzureMachinePoolPtr(object)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
-	if capi {
-		return []mutator.PatchOperation{}, nil
-	}
+	azureMPCROriginal := azureMPCR.DeepCopy()
 
 	patch, err := m.ensureLocation(ctx, azureMPCR)
 	if err != nil {
@@ -99,7 +44,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = generic.EnsureReleaseVersionLabel(ctx, m.ctrlClient, azureMPCR.GetObjectMeta())
+	patch, err = mutator.EnsureReleaseVersionLabel(ctx, m.ctrlClient, azureMPCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -107,7 +52,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = generic.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMPCR.GetObjectMeta())
+	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMPCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -118,12 +63,12 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	azureMPCR.Default()
 	{
 		var capiPatches []mutator.PatchOperation
-		capiPatches, err = patches.GenerateFrom(request.Object.Raw, azureMPCR)
+		capiPatches, err = mutator.GenerateFromObjectDiff(azureMPCROriginal, azureMPCR)
 		if err != nil {
 			return []mutator.PatchOperation{}, microerror.Mask(err)
 		}
 
-		capiPatches = patches.SkipForPath("/spec/template/sshPublicKey", capiPatches)
+		capiPatches = mutator.SkipForPath("/spec/template/sshPublicKey", capiPatches)
 
 		result = append(result, capiPatches...)
 	}
@@ -131,15 +76,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	return result, nil
 }
 
-func (m *CreateMutator) Log(keyVals ...interface{}) {
-	m.logger.Log(keyVals...)
-}
-
-func (m *CreateMutator) Resource() string {
-	return "azuremachinepool"
-}
-
-func (m *CreateMutator) ensureStorageAccountType(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
+func (m *Mutator) ensureStorageAccountType(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
 	if mpCR.Spec.Template.OSDisk.ManagedDisk.StorageAccountType == "" {
 		// We need to set the default value as it is missing.
 
@@ -171,7 +108,7 @@ func (m *CreateMutator) ensureStorageAccountType(ctx context.Context, mpCR *expc
 	return nil, nil
 }
 
-func (m *CreateMutator) ensureDataDisks(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
+func (m *Mutator) ensureDataDisks(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
 	if len(mpCR.Spec.Template.DataDisks) > 0 {
 		return nil, nil
 	}
@@ -179,7 +116,7 @@ func (m *CreateMutator) ensureDataDisks(ctx context.Context, mpCR *expcapzv1alph
 	return mutator.PatchAdd("/spec/template/dataDisks", desiredDataDisks), nil
 }
 
-func (m *CreateMutator) ensureLocation(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
+func (m *Mutator) ensureLocation(ctx context.Context, mpCR *expcapzv1alpha3.AzureMachinePool) (*mutator.PatchOperation, error) {
 	if len(mpCR.Spec.Location) > 0 {
 		return nil, nil
 	}

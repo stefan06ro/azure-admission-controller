@@ -71,7 +71,7 @@ var azureOperatorVersionLabelNotFoundError = &microerror.Error{
 	Kind: "azureOperatorVersionLabelNotFoundError",
 }
 
-// IsReleaseLabelNotFoundError asserts azureOperatorVersionLabelNotFoundError.
+// IsAzureOperatorVersionLabelNotFoundError asserts azureOperatorVersionLabelNotFoundError.
 func IsAzureOperatorVersionLabelNotFoundError(err error) bool {
 	return microerror.Cause(err) == azureOperatorVersionLabelNotFoundError
 }

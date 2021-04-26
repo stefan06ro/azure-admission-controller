@@ -9,10 +9,9 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
@@ -22,7 +21,7 @@ import (
 func TestMachinePoolUpdateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		nodePool     []byte
+		nodePool     *capiexp.MachinePool
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -30,7 +29,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     "case 0: set default number of replicas",
-			nodePool: builder.BuildMachinePoolAsJson(),
+			nodePool: builder.BuildMachinePool(),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "replace",
@@ -52,7 +51,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 1: set min replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -74,7 +73,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 2: set max replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -96,7 +95,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 3: set min and max replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -123,7 +122,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 4: set min and max replicas annotation when replicas field is not set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -155,7 +154,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 5: set max replicas annotation when invalid",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMaxSize, "INVALID")),
+			nodePool: builder.BuildMachinePool(builder.Annotation(annotation.NodePoolMaxSize, "INVALID")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "replace",
@@ -182,7 +181,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 6: set min replicas annotation when invalid",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, "INVALID")),
+			nodePool: builder.BuildMachinePool(builder.Annotation(annotation.NodePoolMinSize, "INVALID")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "replace",
@@ -260,15 +259,16 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewUpdateMutator(UpdateMutatorConfig{
-				Logger: newLogger,
+			admit, err := NewMutator(MutatorConfig{
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getUpdateMutateAdmissionRequest(tc.nodePool))
+			patches, err := admit.MutateUpdate(context.Background(), nil, tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -288,20 +288,4 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "machinepool",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

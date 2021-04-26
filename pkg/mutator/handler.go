@@ -15,12 +15,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/azure-admission-controller/pkg/filter"
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 )
 
 type Mutator interface {
-	Log(keyVals ...interface{})
-	Mutate(ctx context.Context, review *v1beta1.AdmissionRequest) ([]PatchOperation, error)
+	generic.Decoder
+	generic.Logger
 	Resource() string
+}
+
+type CreateMutator interface {
+	Mutator
+	Mutate(ctx context.Context, object interface{}) ([]PatchOperation, error)
+}
+
+type UpdateMutator interface {
+	Mutator
+	MutateUpdate(ctx context.Context, oldObject interface{}, object interface{}) ([]PatchOperation, error)
 }
 
 var (
@@ -30,7 +44,85 @@ var (
 	InternalError = errors.New("internal admission controller error")
 )
 
-func Handler(mutator Mutator) http.HandlerFunc {
+type HandlerFactoryConfig struct {
+	CtrlClient client.Client
+}
+
+type HandlerFactory struct {
+	ctrlClient client.Client
+}
+
+func NewHandlerFactory(config HandlerFactoryConfig) (*HandlerFactory, error) {
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+
+	h := &HandlerFactory{
+		ctrlClient: config.CtrlClient,
+	}
+
+	return h, nil
+}
+
+func (h *HandlerFactory) NewCreateHandler(mutator CreateMutator) http.HandlerFunc {
+	mutateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error) {
+		object, err := mutator.Decode(review.Request.Object)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		ok, err := filter.IsCRProcessed(ctx, h.ctrlClient, object.GetObjectMeta())
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		var patch []PatchOperation
+
+		if ok {
+			patch, err = mutator.Mutate(ctx, object)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+		}
+
+		return patch, nil
+	}
+
+	return h.newHandler(mutator, mutateFunc)
+}
+
+func (h *HandlerFactory) NewUpdateHandler(mutator UpdateMutator) http.HandlerFunc {
+	mutateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error) {
+		oldObject, err := mutator.Decode(review.Request.OldObject)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		object, err := mutator.Decode(review.Request.Object)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		ok, err := filter.IsCRProcessed(ctx, h.ctrlClient, object.GetObjectMeta())
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		var patch []PatchOperation
+
+		if ok {
+			patch, err = mutator.MutateUpdate(ctx, oldObject, object)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+		}
+
+		return patch, nil
+	}
+
+	return h.newHandler(mutator, mutateFunc)
+}
+
+func (h *HandlerFactory) newHandler(mutator Mutator, mutateFunc func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error)) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Header.Get("Content-Type") != "application/json" {
 			mutator.Log("level", "error", "message", fmt.Sprintf("invalid content-type: %q", request.Header.Get("Content-Type")))
@@ -51,14 +143,19 @@ func Handler(mutator Mutator) http.HandlerFunc {
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		resourceName := fmt.Sprintf("%s %s/%s", review.Request.Kind, review.Request.Namespace, extractName(review.Request))
 
-		patch, err := mutator.Mutate(request.Context(), review.Request)
-		if err != nil {
-			writeResponse(mutator, writer, errorResponse(review.Request.UID, microerror.Mask(err)))
-			return
+		var patch []PatchOperation
+		if review.Request.DryRun != nil && *review.Request.DryRun {
+			mutator.Log("level", "debug", "message", "Dry run is not supported. Request processing stopped.", "stack", microerror.JSON(err))
+		} else {
+			patch, err = mutateFunc(request.Context(), review)
+			if err != nil {
+				writeResponse(mutator, writer, errorResponse(review.Request.UID, microerror.Mask(err)))
+				return
+			}
 		}
 
+		resourceName := fmt.Sprintf("%s %s/%s", review.Request.Kind, review.Request.Namespace, extractName(review.Request))
 		patchData, err := json.Marshal(patch)
 		if err != nil {
 			mutator.Log("level", "error", "message", fmt.Sprintf("unable to serialize patch for %s", resourceName), "stack", microerror.JSON(err))
