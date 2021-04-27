@@ -5,6 +5,7 @@ import (
 
 	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	corev1alpha1v3 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
 	"github.com/giantswarm/microerror"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
@@ -142,14 +143,14 @@ func ToAzureConfigPtr(v interface{}) (*v1alpha1.AzureConfig, error) {
 	return customObjectPointer, nil
 }
 
-func ToSparkPtr(v interface{}) (*corev1alpha1.Spark, error) {
+func ToSparkPtr(v interface{}) (*corev1alpha1v3.Spark, error) {
 	if v == nil {
-		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1.Spark{}, v)
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1v3.Spark{}, v)
 	}
 
-	customObjectPointer, ok := v.(*corev1alpha1.Spark)
+	customObjectPointer, ok := v.(*corev1alpha1v3.Spark)
 	if !ok {
-		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1.Spark{}, v)
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1v3.Spark{}, v)
 	}
 
 	return customObjectPointer, nil
