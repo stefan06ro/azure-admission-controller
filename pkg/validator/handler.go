@@ -19,15 +19,18 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 )
 
-type CreateValidator interface {
+type Validator interface {
 	generic.Decoder
 	generic.Logger
+}
+
+type CreateValidator interface {
+	Validator
 	Validate(ctx context.Context, object interface{}) error
 }
 
 type UpdateValidator interface {
-	generic.Decoder
-	generic.Logger
+	Validator
 	ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error
 }
 
