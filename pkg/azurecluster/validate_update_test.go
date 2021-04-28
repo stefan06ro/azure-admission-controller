@@ -58,15 +58,18 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 			fakeK8sClient := unittest.FakeK8sClient()
 			ctrlClient := fakeK8sClient.CtrlClient()
 
-			admit := &WebhookHandler{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(ctx, tc.oldAzureCluster, tc.newAzureCluster)
+			// Run admission request to validate AzureCluster updates.
+			err = handler.OnUpdateValidate(ctx, tc.oldAzureCluster, tc.newAzureCluster)
 
 			// Check if the error is the expected one.
 			switch {
