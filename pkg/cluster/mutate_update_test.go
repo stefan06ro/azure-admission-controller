@@ -91,7 +91,7 @@ func TestClusterUpdateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewMutator(MutatorConfig{
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				CtrlClient: ctrlClient,
 				Logger:     newLogger,
@@ -100,8 +100,8 @@ func TestClusterUpdateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.OnUpdateMutate(context.Background(), nil, tc.cluster)
+			// Run admission request to mutate Cluster updates.
+			patches, err := handler.OnUpdateMutate(context.Background(), nil, tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {

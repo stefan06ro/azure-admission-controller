@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	clusterCR, err := key.ToClusterPtr(object)
 	if err != nil {
@@ -18,7 +18,7 @@ func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object inte
 	}
 	clusterCROriginal := clusterCR.DeepCopy()
 
-	patch, err := mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, clusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
+	patch, err := mutator.EnsureComponentVersionLabelFromRelease(ctx, h.ctrlClient, clusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -26,7 +26,7 @@ func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object inte
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, clusterCR.GetObjectMeta(), "cluster-operator", label.ClusterOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, h.ctrlClient, clusterCR.GetObjectMeta(), "cluster-operator", label.ClusterOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

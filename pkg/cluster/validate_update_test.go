@@ -7,21 +7,23 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestClusterUpdateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		oldCluster   v1alpha3.Cluster
-		newCluster   v1alpha3.Cluster
+		oldCluster   capi.Cluster
+		newCluster   capi.Cluster
 		errorMatcher func(err error) bool
 	}
 
-	clusterNetwork := &v1alpha3.ClusterNetwork{
+	clusterNetwork := &capi.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
 		ServiceDomain: "cluster.local",
-		Services: &v1alpha3.NetworkRanges{
+		Services: &capi.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
 			},
@@ -58,10 +60,10 @@ func TestClusterUpdateValidate(t *testing.T) {
 			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
 					ServiceDomain: "cluster.local",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"192.168.0.0/24",
 						},
@@ -78,10 +80,10 @@ func TestClusterUpdateValidate(t *testing.T) {
 			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "api.gigantic.io",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"192.168.0.0/24",
 						},
@@ -98,7 +100,7 @@ func TestClusterUpdateValidate(t *testing.T) {
 			oldCluster: clusterObject("ab123", clusterNetwork, "api.ab123.test.westeurope.azure.gigantic.io", 443, nil),
 			newCluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "cluster.local",
 					Services:      nil,
@@ -123,12 +125,20 @@ func TestClusterUpdateValidate(t *testing.T) {
 				}
 			}
 
-			admit := &Validator{
-				logger: newLogger,
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(context.Background(), &tc.oldCluster, &tc.newCluster)
+			err = handler.OnUpdateValidate(context.Background(), &tc.oldCluster, &tc.newCluster)
 
 			// Check if the error is the expected one.
 			switch {

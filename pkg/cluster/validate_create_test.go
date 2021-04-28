@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -17,14 +17,14 @@ import (
 func TestClusterCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		cluster      v1alpha3.Cluster
+		cluster      capi.Cluster
 		errorMatcher func(err error) bool
 	}
 
-	clusterNetwork := &v1alpha3.ClusterNetwork{
+	clusterNetwork := &capi.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
 		ServiceDomain: "cluster.local",
-		Services: &v1alpha3.NetworkRanges{
+		Services: &capi.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
 			},
@@ -61,10 +61,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 5: ClusterNetwork.APIServerPort wrong",
 			cluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
 					ServiceDomain: "cluster.local",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"172.31.0.0/16",
 						},
@@ -80,10 +80,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 6: ClusterNetwork.ServiceDomain wrong",
 			cluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "api.gigantic.io",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"172.31.0.0/16",
 						},
@@ -99,7 +99,7 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 7: ClusterNetwork.Services nil",
 			cluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "cluster.local",
 					Services:      nil,
@@ -114,10 +114,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 8: ClusterNetwork.CIDRBlocks wrong",
 			cluster: clusterObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "cluster.local",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"192.168.0.0/24",
 						},
@@ -160,14 +160,17 @@ func TestClusterCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &Validator{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.OnCreateValidate(ctx, &tc.cluster)
+			// Run admission request to validate Cluster updates.
+			err = handler.OnCreateValidate(ctx, &tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {

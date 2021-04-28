@@ -6,7 +6,7 @@ import (
 
 	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
 	"github.com/giantswarm/microerror"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/giantswarm/azure-admission-controller/internal/conditions"
@@ -17,7 +17,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	clusterNewCR, err := key.ToClusterPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -52,10 +52,10 @@ func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{},
 		return microerror.Mask(err)
 	}
 
-	return a.validateRelease(ctx, clusterOldCR, clusterNewCR)
+	return h.validateRelease(ctx, clusterOldCR, clusterNewCR)
 }
 
-func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.Cluster) error {
+func validateClusterNetworkUnchanged(old capi.Cluster, new capi.Cluster) error {
 	// Was nil and stayed nil. Not good but not changed so ok from this validator point of view.
 	if old.Spec.ClusterNetwork == nil && new.Spec.ClusterNetwork == nil {
 		return nil
@@ -92,7 +92,7 @@ func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.
 	return nil
 }
 
-func (a *Validator) validateRelease(ctx context.Context, clusterOldCR *capiv1alpha3.Cluster, clusterNewCR *capiv1alpha3.Cluster) error {
+func (h *WebhookHandler) validateRelease(ctx context.Context, clusterOldCR *capi.Cluster, clusterNewCR *capi.Cluster) error {
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the Cluster being updated")
@@ -111,5 +111,5 @@ func (a *Validator) validateRelease(ctx context.Context, clusterOldCR *capiv1alp
 		}
 	}
 
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	return releaseversion.Validate(ctx, h.ctrlClient, oldClusterVersion, newClusterVersion)
 }
