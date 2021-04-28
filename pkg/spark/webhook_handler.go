@@ -12,14 +12,14 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-type WebhookHandlerConfig struct {
-	CtrlClient client.Client
-	Logger     micrologger.Logger
-}
-
 type WebhookHandler struct {
 	ctrlClient client.Client
 	logger     micrologger.Logger
+}
+
+type WebhookHandlerConfig struct {
+	CtrlClient client.Client
+	Logger     micrologger.Logger
 }
 
 func NewWebhookHandler(config WebhookHandlerConfig) (*WebhookHandler, error) {

@@ -17,18 +17,18 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
-type WebhookHandlerConfig struct {
-	CtrlClient client.Client
-	Location   string
-	Logger     micrologger.Logger
-	VMcaps     *vmcapabilities.VMSKU
-}
-
 type WebhookHandler struct {
 	ctrlClient client.Client
 	location   string
 	logger     micrologger.Logger
 	vmcaps     *vmcapabilities.VMSKU
+}
+
+type WebhookHandlerConfig struct {
+	CtrlClient client.Client
+	Location   string
+	Logger     micrologger.Logger
+	VMcaps     *vmcapabilities.VMSKU
 }
 
 func NewWebhookHandler(config WebhookHandlerConfig) (*WebhookHandler, error) {
