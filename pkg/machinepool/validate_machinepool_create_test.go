@@ -222,7 +222,7 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewValidator(ValidatorConfig{
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				CtrlClient: ctrlClient,
 				Logger:     newLogger,
 				VMcaps:     vmcaps,
@@ -231,8 +231,8 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.OnCreateValidate(ctx, tc.machinePool)
+			// Run admission request to validate MachinePool creation.
+			err = handler.OnCreateValidate(ctx, tc.machinePool)
 
 			// Check if the error is the expected one.
 			switch {

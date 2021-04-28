@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	machinePoolCR, err := key.ToMachinePoolPtr(object)
 	if err != nil {
@@ -17,12 +17,12 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 	}
 	machinePoolCROriginal := machinePoolCR.DeepCopy()
 
-	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
+	defaultSpecValues := setDefaultSpecValues(h, machinePoolCR)
 	if defaultSpecValues != nil {
 		result = append(result, defaultSpecValues...)
 	}
 
-	patch, err := mutator.EnsureReleaseVersionLabel(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta())
+	patch, err := mutator.EnsureReleaseVersionLabel(ctx, h.ctrlClient, machinePoolCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -30,7 +30,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta())
+	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, h.ctrlClient, machinePoolCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -38,7 +38,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	autoscalingPatches := ensureAutoscalingAnnotations(m, machinePoolCR)
+	autoscalingPatches := ensureAutoscalingAnnotations(h, machinePoolCR)
 	if autoscalingPatches != nil {
 		result = append(result, autoscalingPatches...)
 	}

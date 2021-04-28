@@ -12,7 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) error {
+func (h *WebhookHandler) OnCreateValidate(ctx context.Context, object interface{}) error {
 	machinePoolNewCR, err := key.ToMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -23,12 +23,12 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = generic.ValidateOrganizationLabelMatchesCluster(ctx, a.ctrlClient, machinePoolNewCR)
+	err = generic.ValidateOrganizationLabelMatchesCluster(ctx, h.ctrlClient, machinePoolNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = a.checkAvailabilityZones(ctx, machinePoolNewCR)
+	err = h.checkAvailabilityZones(ctx, machinePoolNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -36,18 +36,18 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 	return nil
 }
 
-func (a *Validator) checkAvailabilityZones(ctx context.Context, mp *capiexp.MachinePool) error {
+func (h *WebhookHandler) checkAvailabilityZones(ctx context.Context, mp *capiexp.MachinePool) error {
 	// Get the AzureMachinePool CR related to this MachinePool (we need it to get the VM type).
 	if mp.Spec.Template.Spec.InfrastructureRef.Namespace == "" || mp.Spec.Template.Spec.InfrastructureRef.Name == "" {
 		return microerror.Maskf(azureMachinePoolNotFoundError, "MachinePool's InfrastructureRef has to be set")
 	}
 	amp := capzexp.AzureMachinePool{}
-	err := a.ctrlClient.Get(ctx, client.ObjectKey{Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace, Name: mp.Spec.Template.Spec.InfrastructureRef.Name}, &amp)
+	err := h.ctrlClient.Get(ctx, client.ObjectKey{Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace, Name: mp.Spec.Template.Spec.InfrastructureRef.Name}, &amp)
 	if err != nil {
 		return microerror.Maskf(azureMachinePoolNotFoundError, "AzureMachinePool has to be created before the related MachinePool")
 	}
 
-	supportedZones, err := a.vmcaps.SupportedAZs(ctx, amp.Spec.Location, amp.Spec.Template.VMSize)
+	supportedZones, err := h.vmcaps.SupportedAZs(ctx, amp.Spec.Location, amp.Spec.Template.VMSize)
 	if err != nil {
 		return microerror.Mask(err)
 	}

@@ -5,15 +5,17 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -245,7 +247,7 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 			}
 
 			// Cluster with both operator annotations.
-			ab123 := &v1alpha3.Cluster{
+			ab123 := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -259,16 +261,27 @@ func TestMachinePoolUpdateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewMutator(MutatorConfig{
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
+			})
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				CtrlClient: ctrlClient,
 				Logger:     newLogger,
+				VMcaps:     vmcaps,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.OnUpdateMutate(context.Background(), nil, tc.nodePool)
+			// Run admission request to mutate MachinePool updates.
+			patches, err := handler.OnUpdateMutate(context.Background(), nil, tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {

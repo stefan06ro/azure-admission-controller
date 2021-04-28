@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
 	var err error
 	var result []mutator.PatchOperation
 	machinePoolCR, err := key.ToMachinePoolPtr(object)
@@ -20,13 +20,13 @@ func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object inte
 
 	// Values for some optional spec fields could be removed in a CR update, so
 	// here we set them back again to their default values.
-	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
+	defaultSpecValues := setDefaultSpecValues(h, machinePoolCR)
 	if defaultSpecValues != nil {
 		result = append(result, defaultSpecValues...)
 	}
 
 	// Ensure autoscaling annotations are set.
-	patch := ensureAutoscalingAnnotations(m, machinePoolCR)
+	patch := ensureAutoscalingAnnotations(h, machinePoolCR)
 	if patch != nil {
 		result = append(result, patch...)
 	}

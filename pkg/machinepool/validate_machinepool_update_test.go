@@ -62,7 +62,7 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit, err := NewValidator(ValidatorConfig{
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				CtrlClient: ctrlClient,
 				Logger:     newLogger,
 				VMcaps:     vmcaps,
@@ -71,8 +71,8 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(context.Background(), tc.oldNodePool, tc.newNodePool)
+			// Run admission request to validate MachinePool update.
+			err = handler.OnUpdateValidate(context.Background(), tc.oldNodePool, tc.newNodePool)
 
 			// Check if the error is the expected one.
 			switch {
