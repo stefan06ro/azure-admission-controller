@@ -5,12 +5,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -18,7 +20,7 @@ import (
 func TestAzureMachineCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		azureMachine capzv1alpha3.AzureMachine
+		azureMachine capz.AzureMachine
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -74,7 +76,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 			ctrlClient := fakeK8sClient.CtrlClient()
 
 			// Cluster with both operator annotations.
-			ab123 := &capzv1alpha3.AzureCluster{
+			ab123 := &capz.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -89,14 +91,28 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &Mutator{
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
+			})
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.OnCreateMutate(context.Background(), &tc.azureMachine)
+			patches, err := handler.OnCreateMutate(context.Background(), &tc.azureMachine)
 
 			// Check if the error is the expected one.
 			switch {

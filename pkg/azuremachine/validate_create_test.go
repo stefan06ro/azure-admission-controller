@@ -129,15 +129,18 @@ func TestAzureMachineCreateValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &Validator{
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
-				vmcaps:     vmcaps,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnCreateValidate(ctx, &tc.azureMachine)
+			err = handler.OnCreateValidate(ctx, &tc.azureMachine)
 
 			// Check if the error is the expected one.
 			switch {

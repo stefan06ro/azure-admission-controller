@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) error {
+func (h *WebhookHandler) OnCreateValidate(ctx context.Context, object interface{}) error {
 	cr, err := key.ToAzureMachinePtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -22,7 +22,7 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, cr)
+	err = generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, h.ctrlClient, cr)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -32,12 +32,12 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = validateLocation(*cr, a.location)
+	err = validateLocation(*cr, h.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	supportedAZs, err := a.vmcaps.SupportedAZs(ctx, cr.Spec.Location, cr.Spec.VMSize)
+	supportedAZs, err := h.vmcaps.SupportedAZs(ctx, cr.Spec.Location, cr.Spec.VMSize)
 	if err != nil {
 		return microerror.Mask(err)
 	}

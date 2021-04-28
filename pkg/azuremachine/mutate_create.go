@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	azureMachineCR, err := key.ToAzureMachinePtr(object)
 	if err != nil {
@@ -18,7 +18,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 	}
 	azureMachineCROriginal := azureMachineCR.DeepCopy()
 
-	patch, err := m.ensureLocation(ctx, azureMachineCR)
+	patch, err := h.ensureLocation(ctx, azureMachineCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -26,7 +26,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = m.ensureOSDiskCachingType(ctx, azureMachineCR)
+	patch, err = h.ensureOSDiskCachingType(ctx, azureMachineCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -34,7 +34,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, azureMachineCR.GetObjectMeta())
+	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, h.ctrlClient, azureMachineCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -58,9 +58,9 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 	return result, nil
 }
 
-func (m *Mutator) ensureLocation(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
+func (h *WebhookHandler) ensureLocation(ctx context.Context, azureMachine *capz.AzureMachine) (*mutator.PatchOperation, error) {
 	if azureMachine.Spec.Location == "" {
-		return mutator.PatchAdd("/spec/location", m.location), nil
+		return mutator.PatchAdd("/spec/location", h.location), nil
 	}
 
 	return nil, nil

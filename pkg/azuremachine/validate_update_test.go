@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
@@ -11,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -78,13 +80,28 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &Validator{
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
+			})
+			if err != nil {
+				panic(microerror.JSON(err))
+			}
+
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(ctx, &tc.oldAM, &tc.newAM)
+			err = handler.OnUpdateValidate(ctx, &tc.oldAM, &tc.newAM)
 
 			// Check if the error is the expected one.
 			switch {

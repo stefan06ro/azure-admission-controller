@@ -141,19 +141,6 @@ func mainError() error {
 		}
 	}
 
-	var azureMachineMutator *azuremachine.Mutator
-	{
-		azureMachineMutatorConfig := azuremachine.MutatorConfig{
-			CtrlClient: ctrlClient,
-			Location:   cfg.Location,
-			Logger:     newLogger,
-		}
-		azureMachineMutator, err = azuremachine.NewMutator(azureMachineMutatorConfig)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
 	var azureMachinePoolMutator *azuremachinepool.Mutator
 	{
 		azureMachinePoolMutatorConfig := azuremachinepool.MutatorConfig{
@@ -196,15 +183,15 @@ func mainError() error {
 		}
 	}
 
-	var azureMachineValidator *azuremachine.Validator
+	var azureMachineWebhookHandler *azuremachine.WebhookHandler
 	{
-		c := azuremachine.ValidatorConfig{
+		c := azuremachine.WebhookHandlerConfig{
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		azureMachineValidator, err = azuremachine.NewValidator(c)
+		azureMachineWebhookHandler, err = azuremachine.NewWebhookHandler(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -298,8 +285,8 @@ func mainError() error {
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
 	// Mutators.
-	handler.Handle("/mutate/azuremachine/create", mutatorHandlerFactory.NewCreateHandler(azureMachineMutator))
-	handler.Handle("/mutate/azuremachine/update", mutatorHandlerFactory.NewUpdateHandler(azureMachineMutator))
+	handler.Handle("/mutate/azuremachine/create", mutatorHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
+	handler.Handle("/mutate/azuremachine/update", mutatorHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
 	handler.Handle("/mutate/azuremachinepool/create", mutatorHandlerFactory.NewCreateHandler(azureMachinePoolMutator))
 	handler.Handle("/mutate/azuremachinepool/update", mutatorHandlerFactory.NewUpdateHandler(azureMachinePoolMutator))
 	handler.Handle("/mutate/azurecluster/create", mutatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
@@ -315,8 +302,8 @@ func mainError() error {
 	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigValidator))
 	handler.Handle("/validate/azurecluster/create", validatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
 	handler.Handle("/validate/azurecluster/update", validatorHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
-	handler.Handle("/validate/azuremachine/create", validatorHandlerFactory.NewCreateHandler(azureMachineValidator))
-	handler.Handle("/validate/azuremachine/update", validatorHandlerFactory.NewUpdateHandler(azureMachineValidator))
+	handler.Handle("/validate/azuremachine/create", validatorHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
+	handler.Handle("/validate/azuremachine/update", validatorHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
 	handler.Handle("/validate/azuremachinepool/create", validatorHandlerFactory.NewCreateHandler(azureMachinePoolValidator))
 	handler.Handle("/validate/azuremachinepool/update", validatorHandlerFactory.NewUpdateHandler(azureMachinePoolValidator))
 	handler.Handle("/validate/cluster/create", validatorHandlerFactory.NewCreateHandler(clusterValidator))

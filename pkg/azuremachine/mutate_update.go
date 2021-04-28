@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	azureMachineCR, err := key.ToAzureMachinePtr(object)
 	if err != nil {
@@ -17,7 +17,7 @@ func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object inte
 	}
 	azureMachineCROriginal := azureMachineCR.DeepCopy()
 
-	patch, err := m.ensureOSDiskCachingType(ctx, azureMachineCR)
+	patch, err := h.ensureOSDiskCachingType(ctx, azureMachineCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

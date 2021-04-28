@@ -12,7 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureMachineNewCR, err := key.ToAzureMachinePtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -57,5 +57,5 @@ func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{},
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureMachine (after edit)")
 	}
 
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	return releaseversion.Validate(ctx, h.ctrlClient, oldClusterVersion, newClusterVersion)
 }
