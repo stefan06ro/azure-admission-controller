@@ -117,13 +117,13 @@ func mainError() error {
 		}
 	}
 
-	var azureConfigValidator *azureupdate.AzureConfigValidator
+	var azureConfigWebhookHandler *azureupdate.AzureConfigWebhookHandler
 	{
-		azureConfigValidatorConfig := azureupdate.AzureConfigValidatorConfig{
+		c := azureupdate.AzureConfigWebhookHandlerConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		azureConfigValidator, err = azureupdate.NewAzureConfigValidator(azureConfigValidatorConfig)
+		azureConfigWebhookHandler, err = azureupdate.NewAzureConfigWebhookHandler(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -259,7 +259,7 @@ func mainError() error {
 	handler.Handle("/mutate/spark/create", mutatorHandlerFactory.NewCreateHandler(sparkWebhookHandler))
 
 	// Validators.
-	handler.Handle("/validate/azureconfig/update", validatorHandlerFactory.NewUpdateHandler(azureConfigValidator))
+	handler.Handle("/validate/azureconfig/update", validatorHandlerFactory.NewUpdateHandler(azureConfigWebhookHandler))
 	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigWebhookHandler))
 	handler.Handle("/validate/azurecluster/create", validatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
 	handler.Handle("/validate/azurecluster/update", validatorHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))

@@ -19,17 +19,17 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
-type AzureConfigValidator struct {
+type AzureConfigWebhookHandler struct {
 	ctrlClient client.Client
 	logger     micrologger.Logger
 }
 
-type AzureConfigValidatorConfig struct {
+type AzureConfigWebhookHandlerConfig struct {
 	CtrlClient client.Client
 	Logger     micrologger.Logger
 }
 
-func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigValidator, error) {
+func NewAzureConfigWebhookHandler(config AzureConfigWebhookHandlerConfig) (*AzureConfigWebhookHandler, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
@@ -37,15 +37,15 @@ func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigVal
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	admitter := &AzureConfigValidator{
+	handler := &AzureConfigWebhookHandler{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 	}
 
-	return admitter, nil
+	return handler, nil
 }
 
-func (a *AzureConfigValidator) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+func (h *AzureConfigWebhookHandler) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
 	cr := &v1alpha1.AzureConfig{}
 	if _, _, err := validator.Deserializer.Decode(rawObject.Raw, nil, cr); err != nil {
 		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureConfig CR: %v", err)
@@ -54,7 +54,7 @@ func (a *AzureConfigValidator) Decode(rawObject runtime.RawExtension) (metav1.Ob
 	return cr, nil
 }
 
-func (a *AzureConfigValidator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *AzureConfigWebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureConfigNewCR, err := key.ToAzureConfigPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -74,7 +74,7 @@ func (a *AzureConfigValidator) OnUpdateValidate(ctx context.Context, oldObject i
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
+		return releaseversion.Validate(ctx, h.ctrlClient, oldVersion, newVersion)
 	}
 
 	// Don't allow change of Master CIDR.
@@ -92,8 +92,8 @@ func (a *AzureConfigValidator) OnUpdateValidate(ctx context.Context, oldObject i
 	return nil
 }
 
-func (a *AzureConfigValidator) Log(keyVals ...interface{}) {
-	a.logger.Log(keyVals...)
+func (h *AzureConfigWebhookHandler) Log(keyVals ...interface{}) {
+	h.logger.Log(keyVals...)
 }
 
 func validateMasterCIDRUnchanged(old *v1alpha1.AzureConfig, new *v1alpha1.AzureConfig) error {

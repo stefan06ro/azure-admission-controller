@@ -6,7 +6,6 @@ import (
 
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
-
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,13 +120,16 @@ func TestMasterCIDR(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &AzureConfigValidator{
-				ctrlClient: fakeCtrlClient,
-				logger:     newLogger,
+			handler, err := NewAzureConfigWebhookHandler(AzureConfigWebhookHandlerConfig{
+				CtrlClient: fakeCtrlClient,
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(tc.ctx, azureConfigObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigObj("13.0.0", tc.newCIDR, tc.newAZs))
+			err = handler.OnUpdateValidate(tc.ctx, azureConfigObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigObj("13.0.0", tc.newCIDR, tc.newAZs))
 
 			// Check if the error is the expected one.
 			switch {
@@ -375,7 +377,7 @@ func TestAzureConfigValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &AzureConfigValidator{
+			admit := &AzureConfigWebhookHandler{
 				ctrlClient: fakeCtrlClient,
 				logger:     newLogger,
 			}
