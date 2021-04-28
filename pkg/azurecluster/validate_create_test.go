@@ -78,7 +78,7 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &Validator{
+			admit := &WebhookHandler{
 				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				ctrlClient: ctrlClient,
 				location:   "westeurope",

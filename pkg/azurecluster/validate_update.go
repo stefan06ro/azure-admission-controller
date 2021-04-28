@@ -14,7 +14,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureClusterNewCR, err := key.ToAzureClusterPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -44,10 +44,10 @@ func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{},
 		return microerror.Mask(err)
 	}
 
-	return a.validateRelease(ctx, azureClusterOldCR, azureClusterNewCR)
+	return h.validateRelease(ctx, azureClusterOldCR, azureClusterNewCR)
 }
 
-func (a *Validator) validateRelease(ctx context.Context, azureClusterOldCR *capz.AzureCluster, azureClusterNewCR *capz.AzureCluster) error {
+func (h *WebhookHandler) validateRelease(ctx context.Context, azureClusterOldCR *capz.AzureCluster, azureClusterNewCR *capz.AzureCluster) error {
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the AzureCluster being updated")
@@ -58,7 +58,7 @@ func (a *Validator) validateRelease(ctx context.Context, azureClusterOldCR *capz
 	}
 
 	if !newClusterVersion.Equals(oldClusterVersion) {
-		cluster, err := capiutil.GetOwnerCluster(ctx, a.ctrlClient, azureClusterNewCR.ObjectMeta)
+		cluster, err := capiutil.GetOwnerCluster(ctx, h.ctrlClient, azureClusterNewCR.ObjectMeta)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -73,5 +73,5 @@ func (a *Validator) validateRelease(ctx context.Context, azureClusterOldCR *capz
 		}
 	}
 
-	return releaseversion.Validate(ctx, a.ctrlClient, oldClusterVersion, newClusterVersion)
+	return releaseversion.Validate(ctx, h.ctrlClient, oldClusterVersion, newClusterVersion)
 }

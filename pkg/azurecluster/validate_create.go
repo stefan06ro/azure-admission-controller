@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) error {
+func (h *WebhookHandler) OnCreateValidate(ctx context.Context, object interface{}) error {
 	azureClusterCR, err := key.ToAzureClusterPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -24,17 +24,17 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, a.ctrlClient, azureClusterCR)
+	err = generic.ValidateOrganizationLabelContainsExistingOrganization(ctx, h.ctrlClient, azureClusterCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = validateControlPlaneEndpoint(*azureClusterCR, a.baseDomain)
+	err = validateControlPlaneEndpoint(*azureClusterCR, h.baseDomain)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = validateLocation(*azureClusterCR, a.location)
+	err = validateLocation(*azureClusterCR, h.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}

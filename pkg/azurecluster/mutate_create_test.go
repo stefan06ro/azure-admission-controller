@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
@@ -20,7 +20,7 @@ import (
 func TestAzureClusterCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		azureCluster *v1alpha3.AzureCluster
+		azureCluster *capz.AzureCluster
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -118,7 +118,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			}
 
 			// AzureCluster with both operator annotations.
-			ab123 := &v1alpha3.AzureCluster{
+			ab123 := &capz.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -132,7 +132,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewMutator(MutatorConfig{
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				CtrlClient: ctrlClient,
 				Location:   "westeurope",
@@ -143,7 +143,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.OnCreateMutate(context.Background(), tc.azureCluster)
+			patches, err := handler.OnCreateMutate(context.Background(), tc.azureCluster)
 
 			// Check if the error is the expected one.
 			switch {

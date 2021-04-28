@@ -58,7 +58,7 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 			fakeK8sClient := unittest.FakeK8sClient()
 			ctrlClient := fakeK8sClient.CtrlClient()
 
-			admit := &Validator{
+			admit := &WebhookHandler{
 				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				ctrlClient: ctrlClient,
 				location:   "westeurope",

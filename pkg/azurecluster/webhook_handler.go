@@ -6,14 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type MutatorConfig struct {
-	BaseDomain string
-	CtrlClient client.Client
-	Location   string
-	Logger     micrologger.Logger
-}
-
-type Mutator struct {
+type WebhookHandler struct {
 	Decoder
 
 	baseDomain string
@@ -22,7 +15,14 @@ type Mutator struct {
 	logger     micrologger.Logger
 }
 
-func NewMutator(config MutatorConfig) (*Mutator, error) {
+type WebhookHandlerConfig struct {
+	BaseDomain string
+	CtrlClient client.Client
+	Location   string
+	Logger     micrologger.Logger
+}
+
+func NewWebhookHandler(config WebhookHandlerConfig) (*WebhookHandler, error) {
 	if config.BaseDomain == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.BaseDomain must not be empty", config)
 	}
@@ -36,22 +36,22 @@ func NewMutator(config MutatorConfig) (*Mutator, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
 
-	v := &Mutator{
+	v := &WebhookHandler{
+		Decoder: Decoder{},
+
 		baseDomain: config.BaseDomain,
 		ctrlClient: config.CtrlClient,
 		location:   config.Location,
 		logger:     config.Logger,
-
-		Decoder: Decoder{},
 	}
 
 	return v, nil
 }
 
-func (m *Mutator) Log(keyVals ...interface{}) {
-	m.logger.Log(keyVals...)
+func (h *WebhookHandler) Log(keyVals ...interface{}) {
+	h.logger.Log(keyVals...)
 }
 
-func (m *Mutator) Resource() string {
+func (h *WebhookHandler) Resource() string {
 	return "azurecluster"
 }

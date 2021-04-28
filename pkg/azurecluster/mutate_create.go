@@ -5,13 +5,13 @@ import (
 
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	azureClusterCR, err := key.ToAzureClusterPtr(object)
 	if err != nil {
@@ -19,7 +19,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 	}
 	azureClusterCROriginal := azureClusterCR.DeepCopy()
 
-	patch, err := m.ensureControlPlaneEndpointHost(ctx, azureClusterCR)
+	patch, err := h.ensureControlPlaneEndpointHost(ctx, azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -27,7 +27,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = m.ensureControlPlaneEndpointPort(ctx, azureClusterCR)
+	patch, err = h.ensureControlPlaneEndpointPort(ctx, azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -35,7 +35,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = m.ensureLocation(ctx, azureClusterCR)
+	patch, err = h.ensureLocation(ctx, azureClusterCR)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -51,7 +51,7 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, h.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -76,15 +76,15 @@ func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mut
 	return result, nil
 }
 
-func (m *Mutator) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (h *WebhookHandler) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Host == "" {
-		return mutator.PatchAdd("/spec/controlPlaneEndpoint/host", key.GetControlPlaneEndpointHost(clusterCR.Name, m.baseDomain)), nil
+		return mutator.PatchAdd("/spec/controlPlaneEndpoint/host", key.GetControlPlaneEndpointHost(clusterCR.Name, h.baseDomain)), nil
 	}
 
 	return nil, nil
 }
 
-func (m *Mutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (h *WebhookHandler) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Port == 0 {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/port", key.ControlPlaneEndpointPort), nil
 	}
@@ -92,9 +92,9 @@ func (m *Mutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR 
 	return nil, nil
 }
 
-func (m *Mutator) ensureLocation(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (h *WebhookHandler) ensureLocation(ctx context.Context, azureCluster *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if azureCluster.Spec.Location == "" {
-		return mutator.PatchAdd("/spec/location", m.location), nil
+		return mutator.PatchAdd("/spec/location", h.location), nil
 	}
 
 	return nil, nil
