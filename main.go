@@ -221,23 +221,23 @@ func mainError() error {
 		}
 	}
 
-	var validatorHandlerFactory *validator.HandlerFactory
+	var validatorHttpHandlerFactory *validator.HttpHandlerFactory
 	{
-		c := validator.HandlerFactoryConfig{
+		c := validator.HttpHandlerFactoryConfig{
 			CtrlClient: ctrlClient,
 		}
-		validatorHandlerFactory, err = validator.NewHandlerFactory(c)
+		validatorHttpHandlerFactory, err = validator.NewHttpHandlerFactory(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 	}
 
-	var mutatorHandlerFactory *mutator.HandlerFactory
+	var mutatorHttpHandlerFactory *mutator.HttpHandlerFactory
 	{
-		c := mutator.HandlerFactoryConfig{
+		c := mutator.HttpHandlerFactoryConfig{
 			CtrlClient: ctrlClient,
 		}
-		mutatorHandlerFactory, err = mutator.NewHandlerFactory(c)
+		mutatorHttpHandlerFactory, err = mutator.NewHttpHandlerFactory(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -246,31 +246,31 @@ func mainError() error {
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
 	// Mutators.
-	handler.Handle("/mutate/azuremachine/create", mutatorHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
-	handler.Handle("/mutate/azuremachine/update", mutatorHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
-	handler.Handle("/mutate/azuremachinepool/create", mutatorHandlerFactory.NewCreateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/mutate/azuremachinepool/update", mutatorHandlerFactory.NewUpdateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/mutate/azurecluster/create", mutatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
-	handler.Handle("/mutate/azurecluster/update", mutatorHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
-	handler.Handle("/mutate/cluster/create", mutatorHandlerFactory.NewCreateHandler(clusterWebhookHandler))
-	handler.Handle("/mutate/cluster/update", mutatorHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/mutate/machinepool/create", mutatorHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
-	handler.Handle("/mutate/machinepool/update", mutatorHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
-	handler.Handle("/mutate/spark/create", mutatorHandlerFactory.NewCreateHandler(sparkWebhookHandler))
+	handler.Handle("/mutate/azuremachine/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(azureMachineWebhookHandler))
+	handler.Handle("/mutate/azuremachine/update", mutatorHttpHandlerFactory.NewHttpUpdateHandler(azureMachineWebhookHandler))
+	handler.Handle("/mutate/azuremachinepool/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(azureMachinePoolWebhookHandler))
+	handler.Handle("/mutate/azuremachinepool/update", mutatorHttpHandlerFactory.NewHttpUpdateHandler(azureMachinePoolWebhookHandler))
+	handler.Handle("/mutate/azurecluster/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(azureClusterWebhookHandler))
+	handler.Handle("/mutate/azurecluster/update", mutatorHttpHandlerFactory.NewHttpUpdateHandler(azureClusterWebhookHandler))
+	handler.Handle("/mutate/cluster/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(clusterWebhookHandler))
+	handler.Handle("/mutate/cluster/update", mutatorHttpHandlerFactory.NewHttpUpdateHandler(clusterWebhookHandler))
+	handler.Handle("/mutate/machinepool/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(machinePoolWebhookHandler))
+	handler.Handle("/mutate/machinepool/update", mutatorHttpHandlerFactory.NewHttpUpdateHandler(machinePoolWebhookHandler))
+	handler.Handle("/mutate/spark/create", mutatorHttpHandlerFactory.NewHttpCreateHandler(sparkWebhookHandler))
 
 	// Validators.
-	handler.Handle("/validate/azureconfig/update", validatorHandlerFactory.NewUpdateHandler(azureConfigWebhookHandler))
-	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigWebhookHandler))
-	handler.Handle("/validate/azurecluster/create", validatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
-	handler.Handle("/validate/azurecluster/update", validatorHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
-	handler.Handle("/validate/azuremachine/create", validatorHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
-	handler.Handle("/validate/azuremachine/update", validatorHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
-	handler.Handle("/validate/azuremachinepool/create", validatorHandlerFactory.NewCreateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/validate/azuremachinepool/update", validatorHandlerFactory.NewUpdateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/validate/cluster/create", validatorHandlerFactory.NewCreateHandler(clusterWebhookHandler))
-	handler.Handle("/validate/cluster/update", validatorHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/validate/machinepool/create", validatorHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
-	handler.Handle("/validate/machinepool/update", validatorHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
+	handler.Handle("/validate/azureconfig/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(azureConfigWebhookHandler))
+	handler.Handle("/validate/azureclusterconfig/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(azureClusterConfigWebhookHandler))
+	handler.Handle("/validate/azurecluster/create", validatorHttpHandlerFactory.NewCreateHttpHandler(azureClusterWebhookHandler))
+	handler.Handle("/validate/azurecluster/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(azureClusterWebhookHandler))
+	handler.Handle("/validate/azuremachine/create", validatorHttpHandlerFactory.NewCreateHttpHandler(azureMachineWebhookHandler))
+	handler.Handle("/validate/azuremachine/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(azureMachineWebhookHandler))
+	handler.Handle("/validate/azuremachinepool/create", validatorHttpHandlerFactory.NewCreateHttpHandler(azureMachinePoolWebhookHandler))
+	handler.Handle("/validate/azuremachinepool/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(azureMachinePoolWebhookHandler))
+	handler.Handle("/validate/cluster/create", validatorHttpHandlerFactory.NewCreateHttpHandler(clusterWebhookHandler))
+	handler.Handle("/validate/cluster/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(clusterWebhookHandler))
+	handler.Handle("/validate/machinepool/create", validatorHttpHandlerFactory.NewCreateHttpHandler(machinePoolWebhookHandler))
+	handler.Handle("/validate/machinepool/update", validatorHttpHandlerFactory.NewUpdateHttpHandler(machinePoolWebhookHandler))
 	handler.HandleFunc("/healthz", healthCheck)
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))
