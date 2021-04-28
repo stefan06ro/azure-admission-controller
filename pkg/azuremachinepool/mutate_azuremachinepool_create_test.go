@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -169,7 +169,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			}
 
 			// Cluster with both operator annotations.
-			ab123 := &v1alpha3.Cluster{
+			ab123 := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -183,15 +183,18 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &Mutator{
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
-				vmcaps:     vmcaps,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.OnCreateMutate(context.Background(), tc.nodePool)
+			patches, err := handler.OnCreateMutate(context.Background(), tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {

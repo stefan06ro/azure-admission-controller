@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) error {
+func (h *WebhookHandler) OnCreateValidate(ctx context.Context, object interface{}) error {
 	azureMPNewCR, err := key.ToAzureMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -20,22 +20,22 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = generic.ValidateOrganizationLabelMatchesCluster(ctx, a.ctrlClient, azureMPNewCR)
+	err = generic.ValidateOrganizationLabelMatchesCluster(ctx, h.ctrlClient, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	err = checkInstanceTypeIsValid(ctx, h.vmcaps, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = checkAcceleratedNetworking(ctx, a.vmcaps, azureMPNewCR)
+	err = checkAcceleratedNetworking(ctx, h.vmcaps, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = checkStorageAccountTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	err = checkStorageAccountTypeIsValid(ctx, h.vmcaps, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -50,7 +50,7 @@ func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) er
 		return microerror.Mask(err)
 	}
 
-	err = checkLocation(*azureMPNewCR, a.location)
+	err = checkLocation(*azureMPNewCR, h.location)
 	if err != nil {
 		return microerror.Mask(err)
 	}

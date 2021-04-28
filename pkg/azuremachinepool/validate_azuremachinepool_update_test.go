@@ -14,6 +14,7 @@ import (
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachinePoolUpdateValidate(t *testing.T) {
@@ -185,6 +186,10 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
+
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
 			stubbedSKUs := map[string]compute.ResourceSku{
 				"Standard_D4_v3": {
 					Name: to.StringPtr("Standard_D4_v3"),
@@ -280,13 +285,18 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &Validator{
-				logger: newLogger,
-				vmcaps: vmcaps,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(context.Background(), tc.oldNodePool, tc.newNodePool)
+			err = handler.OnUpdateValidate(context.Background(), tc.oldNodePool, tc.newNodePool)
 
 			// Check if the error is the expected one.
 			switch {

@@ -11,7 +11,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureMPNewCR, err := key.ToAzureMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -31,27 +31,27 @@ func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{},
 		return microerror.Mask(err)
 	}
 
-	err = checkInstanceTypeIsValid(ctx, a.vmcaps, azureMPNewCR)
+	err = checkInstanceTypeIsValid(ctx, h.vmcaps, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = a.checkAcceleratedNetworkingUpdateIsValid(ctx, azureMPOldCR, azureMPNewCR)
+	err = h.checkAcceleratedNetworkingUpdateIsValid(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = a.checkInstanceTypeChangeIsValid(ctx, azureMPOldCR, azureMPNewCR)
+	err = h.checkInstanceTypeChangeIsValid(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = a.checkSpotVMOptionsUnchanged(ctx, azureMPOldCR, azureMPNewCR)
+	err = h.checkSpotVMOptionsUnchanged(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	err = a.checkStorageAccountTypeUnchanged(ctx, azureMPOldCR, azureMPNewCR)
+	err = h.checkStorageAccountTypeUnchanged(ctx, azureMPOldCR, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -74,7 +74,7 @@ func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{},
 	return nil
 }
 
-func (a *Validator) checkAcceleratedNetworkingUpdateIsValid(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
+func (h *WebhookHandler) checkAcceleratedNetworkingUpdateIsValid(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
 	if hasAcceleratedNetworkingPropertyChanged(ctx, azureMPOldCR, azureMPNewCR) {
 		return microerror.Maskf(acceleratedNetworkingWasChangedError, "It is not possible to change the AcceleratedNetworking on an existing node pool")
 	}
@@ -83,7 +83,7 @@ func (a *Validator) checkAcceleratedNetworkingUpdateIsValid(ctx context.Context,
 		return nil
 	}
 
-	err := checkAcceleratedNetworking(ctx, a.vmcaps, azureMPNewCR)
+	err := checkAcceleratedNetworking(ctx, h.vmcaps, azureMPNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -91,14 +91,14 @@ func (a *Validator) checkAcceleratedNetworkingUpdateIsValid(ctx context.Context,
 	return nil
 }
 
-func (a *Validator) checkInstanceTypeChangeIsValid(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
+func (h *WebhookHandler) checkInstanceTypeChangeIsValid(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
 	// Check if the instance type has changed.
 	if azureMPOldCR.Spec.Template.VMSize != azureMPNewCR.Spec.Template.VMSize {
-		oldPremium, err := a.vmcaps.HasCapability(ctx, azureMPOldCR.Spec.Location, azureMPOldCR.Spec.Template.VMSize, vmcapabilities.CapabilityPremiumIO)
+		oldPremium, err := h.vmcaps.HasCapability(ctx, azureMPOldCR.Spec.Location, azureMPOldCR.Spec.Template.VMSize, vmcapabilities.CapabilityPremiumIO)
 		if err != nil {
 			return microerror.Mask(err)
 		}
-		newPremium, err := a.vmcaps.HasCapability(ctx, azureMPNewCR.Spec.Location, azureMPNewCR.Spec.Template.VMSize, vmcapabilities.CapabilityPremiumIO)
+		newPremium, err := h.vmcaps.HasCapability(ctx, azureMPNewCR.Spec.Location, azureMPNewCR.Spec.Template.VMSize, vmcapabilities.CapabilityPremiumIO)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -113,7 +113,7 @@ func (a *Validator) checkInstanceTypeChangeIsValid(ctx context.Context, azureMPO
 	return nil
 }
 
-func (a *Validator) checkSpotVMOptionsUnchanged(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
+func (h *WebhookHandler) checkSpotVMOptionsUnchanged(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
 
 	switch {
 	case (azureMPOldCR.Spec.Template.SpotVMOptions == nil && azureMPNewCR.Spec.Template.SpotVMOptions == nil):
@@ -136,7 +136,7 @@ func (a *Validator) checkSpotVMOptionsUnchanged(ctx context.Context, azureMPOldC
 }
 
 // Checks if the storage account type of the osDisk is changed. This is never allowed.
-func (a *Validator) checkStorageAccountTypeUnchanged(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
+func (h *WebhookHandler) checkStorageAccountTypeUnchanged(ctx context.Context, azureMPOldCR *capzexp.AzureMachinePool, azureMPNewCR *capzexp.AzureMachinePool) error {
 	if azureMPOldCR.Spec.Template.OSDisk.ManagedDisk.StorageAccountType != azureMPNewCR.Spec.Template.OSDisk.ManagedDisk.StorageAccountType {
 		return microerror.Maskf(storageAccountWasChangedError, "Changing the storage account type of the OS disk is not allowed.")
 	}
