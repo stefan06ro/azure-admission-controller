@@ -52,7 +52,7 @@ func (a *AzureClusterConfigValidator) Decode(rawObject runtime.RawExtension) (me
 	return cr, nil
 }
 
-func (a *AzureClusterConfigValidator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (a *AzureClusterConfigValidator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureClusterConfigNewCR, err := key.ToAzureClusterConfigPtr(object)
 	if err != nil {
 		return microerror.Mask(err)

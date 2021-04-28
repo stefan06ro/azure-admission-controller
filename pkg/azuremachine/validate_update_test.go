@@ -84,7 +84,7 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.ValidateUpdate(ctx, &tc.oldAM, &tc.newAM)
+			err = admit.OnUpdateValidate(ctx, &tc.oldAM, &tc.newAM)
 
 			// Check if the error is the expected one.
 			switch {

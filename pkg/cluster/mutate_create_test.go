@@ -135,7 +135,7 @@ func TestClusterCreateMutate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), &tc.cluster)
+			patches, err := admit.OnCreateMutate(context.Background(), &tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {

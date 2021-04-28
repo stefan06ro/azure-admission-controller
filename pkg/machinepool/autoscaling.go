@@ -21,7 +21,7 @@ func escapeJSONPatchString(input string) string {
 
 // ensureAutoscalingAnnotations ensures the custom annotations used to determine the min and max replicas for
 // the cluster autoscaler are set in the Machinepool CR.
-func ensureAutoscalingAnnotations(m mutator.Mutator, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
+func ensureAutoscalingAnnotations(m mutator.WebhookHandler, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
 
 	// The replicas field could not be set, we default to 1.

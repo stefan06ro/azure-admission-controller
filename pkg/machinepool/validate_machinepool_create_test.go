@@ -232,7 +232,7 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, tc.machinePool)
+			err = admit.OnCreateValidate(ctx, tc.machinePool)
 
 			// Check if the error is the expected one.
 			switch {

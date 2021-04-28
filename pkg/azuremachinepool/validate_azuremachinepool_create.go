@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) Validate(ctx context.Context, object interface{}) error {
+func (a *Validator) OnCreateValidate(ctx context.Context, object interface{}) error {
 	azureMPNewCR, err := key.ToAzureMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)

@@ -54,7 +54,7 @@ func (a *AzureConfigValidator) Decode(rawObject runtime.RawExtension) (metav1.Ob
 	return cr, nil
 }
 
-func (a *AzureConfigValidator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (a *AzureConfigValidator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureConfigNewCR, err := key.ToAzureConfigPtr(object)
 	if err != nil {
 		return microerror.Mask(err)

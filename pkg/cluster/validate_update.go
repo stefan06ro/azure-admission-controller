@@ -17,7 +17,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	clusterNewCR, err := key.ToClusterPtr(object)
 	if err != nil {
 		return microerror.Mask(err)

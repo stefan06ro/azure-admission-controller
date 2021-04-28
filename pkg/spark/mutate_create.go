@@ -41,7 +41,7 @@ func NewMutator(config MutatorConfig) (*Mutator, error) {
 	return m, nil
 }
 
-func (m *Mutator) Mutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
+func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	sparkCR, err := key.ToSparkPtr(object)
 	if err != nil {

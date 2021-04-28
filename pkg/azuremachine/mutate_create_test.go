@@ -96,7 +96,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), &tc.azureMachine)
+			patches, err := admit.OnCreateMutate(context.Background(), &tc.azureMachine)
 
 			// Check if the error is the expected one.
 			switch {

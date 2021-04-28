@@ -21,20 +21,20 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 )
 
-type Mutator interface {
+type WebhookHandler interface {
 	generic.Decoder
 	generic.Logger
 	Resource() string
 }
 
-type CreateMutator interface {
-	Mutator
-	Mutate(ctx context.Context, object interface{}) ([]PatchOperation, error)
+type WebhookCreateHandler interface {
+	WebhookHandler
+	OnCreateMutate(ctx context.Context, object interface{}) ([]PatchOperation, error)
 }
 
-type UpdateMutator interface {
-	Mutator
-	MutateUpdate(ctx context.Context, oldObject interface{}, object interface{}) ([]PatchOperation, error)
+type WebhookUpdateHandler interface {
+	WebhookHandler
+	OnUpdateMutate(ctx context.Context, oldObject interface{}, object interface{}) ([]PatchOperation, error)
 }
 
 var (
@@ -64,7 +64,7 @@ func NewHandlerFactory(config HandlerFactoryConfig) (*HandlerFactory, error) {
 	return h, nil
 }
 
-func (h *HandlerFactory) NewCreateHandler(mutator CreateMutator) http.HandlerFunc {
+func (h *HandlerFactory) NewCreateHandler(mutator WebhookCreateHandler) http.HandlerFunc {
 	mutateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error) {
 		object, err := mutator.Decode(review.Request.Object)
 		if err != nil {
@@ -79,7 +79,7 @@ func (h *HandlerFactory) NewCreateHandler(mutator CreateMutator) http.HandlerFun
 		var patch []PatchOperation
 
 		if ok {
-			patch, err = mutator.Mutate(ctx, object)
+			patch, err = mutator.OnCreateMutate(ctx, object)
 			if err != nil {
 				return nil, microerror.Mask(err)
 			}
@@ -91,7 +91,7 @@ func (h *HandlerFactory) NewCreateHandler(mutator CreateMutator) http.HandlerFun
 	return h.newHandler(mutator, mutateFunc)
 }
 
-func (h *HandlerFactory) NewUpdateHandler(mutator UpdateMutator) http.HandlerFunc {
+func (h *HandlerFactory) NewUpdateHandler(mutator WebhookUpdateHandler) http.HandlerFunc {
 	mutateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error) {
 		oldObject, err := mutator.Decode(review.Request.OldObject)
 		if err != nil {
@@ -110,7 +110,7 @@ func (h *HandlerFactory) NewUpdateHandler(mutator UpdateMutator) http.HandlerFun
 		var patch []PatchOperation
 
 		if ok {
-			patch, err = mutator.MutateUpdate(ctx, oldObject, object)
+			patch, err = mutator.OnUpdateMutate(ctx, oldObject, object)
 			if err != nil {
 				return nil, microerror.Mask(err)
 			}
@@ -122,7 +122,7 @@ func (h *HandlerFactory) NewUpdateHandler(mutator UpdateMutator) http.HandlerFun
 	return h.newHandler(mutator, mutateFunc)
 }
 
-func (h *HandlerFactory) newHandler(mutator Mutator, mutateFunc func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error)) http.HandlerFunc {
+func (h *HandlerFactory) newHandler(mutator WebhookHandler, mutateFunc func(ctx context.Context, review v1beta1.AdmissionReview) ([]PatchOperation, error)) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Header.Get("Content-Type") != "application/json" {
 			mutator.Log("level", "error", "message", fmt.Sprintf("invalid content-type: %q", request.Header.Get("Content-Type")))
@@ -194,7 +194,7 @@ func extractName(request *v1beta1.AdmissionRequest) string {
 	return "<unknown>"
 }
 
-func writeResponse(mutator Mutator, writer http.ResponseWriter, response *v1beta1.AdmissionResponse) {
+func writeResponse(mutator WebhookHandler, writer http.ResponseWriter, response *v1beta1.AdmissionResponse) {
 	resp, err := json.Marshal(v1beta1.AdmissionReview{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AdmissionReview",

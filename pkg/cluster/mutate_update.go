@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) MutateUpdate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
+func (m *Mutator) OnUpdateMutate(ctx context.Context, _ interface{}, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	clusterCR, err := key.ToClusterPtr(object)
 	if err != nil {

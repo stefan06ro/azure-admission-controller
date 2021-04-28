@@ -127,7 +127,7 @@ func TestMasterCIDR(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.ValidateUpdate(tc.ctx, azureConfigObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigObj("13.0.0", tc.newCIDR, tc.newAZs))
+			err = admit.OnUpdateValidate(tc.ctx, azureConfigObj("13.0.0", tc.oldCIDR, tc.oldAZs), azureConfigObj("13.0.0", tc.newCIDR, tc.newAZs))
 
 			// Check if the error is the expected one.
 			switch {
@@ -387,7 +387,7 @@ func TestAzureConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.ValidateUpdate(tc.ctx, azureConfigObj(tc.oldVersion, "10.0.0.0/24", nil), azureConfigObj(tc.newVersion, "10.0.0.0/24", nil))
+			err = admit.OnUpdateValidate(tc.ctx, azureConfigObj(tc.oldVersion, "10.0.0.0/24", nil), azureConfigObj(tc.newVersion, "10.0.0.0/24", nil))
 
 			// Check if the error is the expected one.
 			switch {

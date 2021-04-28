@@ -270,7 +270,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.ValidateUpdate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
+			err = admit.OnUpdateValidate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {

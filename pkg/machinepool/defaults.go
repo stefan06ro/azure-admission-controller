@@ -10,7 +10,7 @@ const defaultReplicas int64 = 1
 
 // setDefaultSpecValues checks if some optional field is not set, and sets
 // default values defined by upstream Cluster API.
-func setDefaultSpecValues(m mutator.Mutator, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
+func setDefaultSpecValues(m mutator.WebhookHandler, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
 
 	return patches

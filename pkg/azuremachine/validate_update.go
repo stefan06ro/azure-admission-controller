@@ -12,7 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func (a *Validator) ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (a *Validator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureMachineNewCR, err := key.ToAzureMachinePtr(object)
 	if err != nil {
 		return microerror.Mask(err)

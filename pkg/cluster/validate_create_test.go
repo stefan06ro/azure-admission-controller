@@ -167,7 +167,7 @@ func TestClusterCreateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, &tc.cluster)
+			err = admit.OnCreateValidate(ctx, &tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {

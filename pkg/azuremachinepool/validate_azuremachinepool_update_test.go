@@ -286,7 +286,7 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.ValidateUpdate(context.Background(), tc.oldNodePool, tc.newNodePool)
+			err = admit.OnUpdateValidate(context.Background(), tc.oldNodePool, tc.newNodePool)
 
 			// Check if the error is the expected one.
 			switch {

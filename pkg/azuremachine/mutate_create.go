@@ -10,7 +10,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func (m *Mutator) Mutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
+func (m *Mutator) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
 	azureMachineCR, err := key.ToAzureMachinePtr(object)
 	if err != nil {

@@ -19,19 +19,19 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 )
 
-type Validator interface {
+type WebhookHandler interface {
 	generic.Decoder
 	generic.Logger
 }
 
-type CreateValidator interface {
-	Validator
-	Validate(ctx context.Context, object interface{}) error
+type WebhookCreateHandler interface {
+	WebhookHandler
+	OnCreateValidate(ctx context.Context, object interface{}) error
 }
 
-type UpdateValidator interface {
-	Validator
-	ValidateUpdate(ctx context.Context, oldObject interface{}, object interface{}) error
+type WebhookUpdateHandler interface {
+	WebhookHandler
+	OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error
 }
 
 var (
@@ -60,7 +60,7 @@ func NewHandlerFactory(config HandlerFactoryConfig) (*HandlerFactory, error) {
 	return h, nil
 }
 
-func (h *HandlerFactory) NewCreateHandler(validator CreateValidator) http.HandlerFunc {
+func (h *HandlerFactory) NewCreateHandler(validator WebhookCreateHandler) http.HandlerFunc {
 	validateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) error {
 		object, err := validator.Decode(review.Request.Object)
 		if err != nil {
@@ -73,7 +73,7 @@ func (h *HandlerFactory) NewCreateHandler(validator CreateValidator) http.Handle
 		}
 
 		if ok {
-			err = validator.Validate(ctx, object)
+			err = validator.OnCreateValidate(ctx, object)
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -85,7 +85,7 @@ func (h *HandlerFactory) NewCreateHandler(validator CreateValidator) http.Handle
 	return h.newHandler(validator, validateFunc)
 }
 
-func (h *HandlerFactory) NewUpdateHandler(validator UpdateValidator) http.HandlerFunc {
+func (h *HandlerFactory) NewUpdateHandler(validator WebhookUpdateHandler) http.HandlerFunc {
 	validateFunc := func(ctx context.Context, review v1beta1.AdmissionReview) error {
 		object, err := validator.Decode(review.Request.Object)
 		if err != nil {
@@ -102,7 +102,7 @@ func (h *HandlerFactory) NewUpdateHandler(validator UpdateValidator) http.Handle
 			if err != nil {
 				return microerror.Mask(err)
 			}
-			err = validator.ValidateUpdate(ctx, oldObject, object)
+			err = validator.OnUpdateValidate(ctx, oldObject, object)
 			if err != nil {
 				return microerror.Mask(err)
 			}

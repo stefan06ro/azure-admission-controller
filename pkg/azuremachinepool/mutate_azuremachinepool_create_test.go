@@ -191,7 +191,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), tc.nodePool)
+			patches, err := admit.OnCreateMutate(context.Background(), tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {
