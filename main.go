@@ -129,13 +129,13 @@ func mainError() error {
 		}
 	}
 
-	var azureClusterConfigValidator *azureupdate.AzureClusterConfigValidator
+	var azureClusterConfigWebhookHandler *azureupdate.AzureClusterConfigWebhookHandler
 	{
-		azureClusterConfigValidatorConfig := azureupdate.AzureClusterConfigValidatorConfig{
+		c := azureupdate.AzureClusterConfigWebhookHandlerConfig{
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
-		azureClusterConfigValidator, err = azureupdate.NewAzureClusterConfigValidator(azureClusterConfigValidatorConfig)
+		azureClusterConfigWebhookHandler, err = azureupdate.NewAzureClusterConfigWebhookHandler(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -260,7 +260,7 @@ func mainError() error {
 
 	// Validators.
 	handler.Handle("/validate/azureconfig/update", validatorHandlerFactory.NewUpdateHandler(azureConfigValidator))
-	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigValidator))
+	handler.Handle("/validate/azureclusterconfig/update", validatorHandlerFactory.NewUpdateHandler(azureClusterConfigWebhookHandler))
 	handler.Handle("/validate/azurecluster/create", validatorHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
 	handler.Handle("/validate/azurecluster/update", validatorHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
 	handler.Handle("/validate/azuremachine/create", validatorHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))

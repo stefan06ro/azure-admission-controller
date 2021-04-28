@@ -10,13 +10,13 @@ import (
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	expcapiv1alpha3 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake" //nolint:staticcheck
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -210,7 +210,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			scheme := runtime.NewScheme()
-			err = v1.AddToScheme(scheme)
+			err = corev1.AddToScheme(scheme)
 			if err != nil {
 				panic(err)
 			}
@@ -218,19 +218,19 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			err = expcapiv1alpha3.AddToScheme(scheme)
+			err = capiexp.AddToScheme(scheme)
 			if err != nil {
 				panic(err)
 			}
-			err = expcapzv1alpha3.AddToScheme(scheme)
+			err = capzexp.AddToScheme(scheme)
 			if err != nil {
 				panic(err)
 			}
-			err = capiv1alpha3.AddToScheme(scheme)
+			err = capi.AddToScheme(scheme)
 			if err != nil {
 				panic(err)
 			}
-			err = capzv1alpha3.AddToScheme(scheme)
+			err = capz.AddToScheme(scheme)
 			if err != nil {
 				panic(err)
 			}
@@ -245,9 +245,12 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 
 			ctrlClient := fake.NewFakeClientWithScheme(scheme)
 
-			admit := &AzureClusterConfigValidator{
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			handler, err := NewAzureClusterConfigWebhookHandler(AzureClusterConfigWebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Create needed releases.
@@ -270,7 +273,7 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			err = admit.OnUpdateValidate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
+			err = handler.OnUpdateValidate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {

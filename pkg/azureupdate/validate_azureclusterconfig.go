@@ -17,17 +17,17 @@ import (
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
-type AzureClusterConfigValidator struct {
+type AzureClusterConfigWebhookHandler struct {
 	ctrlClient client.Client
 	logger     micrologger.Logger
 }
 
-type AzureClusterConfigValidatorConfig struct {
+type AzureClusterConfigWebhookHandlerConfig struct {
 	CtrlClient client.Client
 	Logger     micrologger.Logger
 }
 
-func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*AzureClusterConfigValidator, error) {
+func NewAzureClusterConfigWebhookHandler(config AzureClusterConfigWebhookHandlerConfig) (*AzureClusterConfigWebhookHandler, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
@@ -35,7 +35,7 @@ func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	azureClusterValidator := &AzureClusterConfigValidator{
+	azureClusterValidator := &AzureClusterConfigWebhookHandler{
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 	}
@@ -43,7 +43,7 @@ func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*
 	return azureClusterValidator, nil
 }
 
-func (a *AzureClusterConfigValidator) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+func (h *AzureClusterConfigWebhookHandler) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
 	cr := &corev1alpha1.AzureClusterConfig{}
 	if _, _, err := validator.Deserializer.Decode(rawObject.Raw, nil, cr); err != nil {
 		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
@@ -52,7 +52,7 @@ func (a *AzureClusterConfigValidator) Decode(rawObject runtime.RawExtension) (me
 	return cr, nil
 }
 
-func (a *AzureClusterConfigValidator) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+func (h *AzureClusterConfigWebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
 	azureClusterConfigNewCR, err := key.ToAzureClusterConfigPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
@@ -72,14 +72,14 @@ func (a *AzureClusterConfigValidator) OnUpdateValidate(ctx context.Context, oldO
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
+		return releaseversion.Validate(ctx, h.ctrlClient, oldVersion, newVersion)
 	}
 
 	return nil
 }
 
-func (a *AzureClusterConfigValidator) Log(keyVals ...interface{}) {
-	a.logger.Log(keyVals...)
+func (h *AzureClusterConfigWebhookHandler) Log(keyVals ...interface{}) {
+	h.logger.Log(keyVals...)
 }
 
 func getSemver(version string) (semver.Version, error) {
