@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2021-05-10
+
 ### Changed
 
 - Don't validate objects if they are being deleted.
@@ -270,7 +272,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.3.2...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.3.2...v2.4.0
 [2.3.2]: https://github.com/giantswarm/azure-admission-controller/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/giantswarm/azure-admission-controller/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.2.0...v2.3.0
