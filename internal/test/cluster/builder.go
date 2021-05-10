@@ -31,6 +31,22 @@ func Labels(labels map[string]string) BuilderOption {
 	}
 }
 
+func ControlPlaneEndpoint(controlPlaneEndpointHost string, controlPlaneEndpointPort int32) BuilderOption {
+	return func(cluster *capiv1alpha3.Cluster) *capiv1alpha3.Cluster {
+		cluster.Spec.ControlPlaneEndpoint.Host = controlPlaneEndpointHost
+		cluster.Spec.ControlPlaneEndpoint.Port = controlPlaneEndpointPort
+		return cluster
+	}
+}
+
+func WithDeletionTimestamp() BuilderOption {
+	return func(cluster *capiv1alpha3.Cluster) *capiv1alpha3.Cluster {
+		now := metav1.Now()
+		cluster.ObjectMeta.SetDeletionTimestamp(&now)
+		return cluster
+	}
+}
+
 func BuildCluster(opts ...BuilderOption) *capiv1alpha3.Cluster {
 	clusterName := test.GenerateName()
 	cluster := &capiv1alpha3.Cluster{

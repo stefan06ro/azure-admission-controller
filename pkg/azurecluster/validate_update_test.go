@@ -40,6 +40,12 @@ func TestAzureClusterUpdateValidate(t *testing.T) {
 			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
 			errorMatcher:    IsControlPlaneEndpointWasChangedError,
 		},
+		{
+			name:            "case 2: port changed but object is being deleted",
+			oldAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443)),
+			newAzureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80), builder.WithDeletionTimestamp()),
+			errorMatcher:    nil,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -82,6 +82,14 @@ func VMSize(vmsize string) BuilderOption {
 	}
 }
 
+func WithDeletionTimestamp() BuilderOption {
+	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+		now := metav1.Now()
+		azureMachinePool.ObjectMeta.SetDeletionTimestamp(&now)
+		return azureMachinePool
+	}
+}
+
 func BuildAzureMachinePool(opts ...BuilderOption) *expcapzv1alpha3.AzureMachinePool {
 	nodepoolName := test.GenerateName()
 	azureMachinePool := &expcapzv1alpha3.AzureMachinePool{

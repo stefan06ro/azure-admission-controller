@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
+
+	builder "github.com/giantswarm/azure-admission-controller/internal/test/cluster"
 )
 
 func TestClusterUpdateValidate(t *testing.T) {
@@ -111,6 +113,12 @@ func TestClusterUpdateValidate(t *testing.T) {
 				nil,
 			),
 			errorMatcher: IsClusterNetworkWasChangedError,
+		},
+		{
+			name:         "case 7: host changed but object is being deleted",
+			oldCluster:   builder.BuildClusterAsJson(builder.Name("ab123"), builder.WithDeletionTimestamp(), builder.ControlPlaneEndpoint("api.ab123.test.westeurope.azure.gigantic.io", 443)),
+			newCluster:   builder.BuildClusterAsJson(builder.Name("ab123"), builder.WithDeletionTimestamp(), builder.ControlPlaneEndpoint("api.azure.gigantic.io", 443)),
+			errorMatcher: nil,
 		},
 	}
 	for _, tc := range testCases {

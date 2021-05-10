@@ -53,6 +53,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
 
+	if !azureClusterNewCR.GetDeletionTimestamp().IsZero() {
+		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+		return nil
+	}
+
 	capi, err := generic.IsCAPIRelease(azureClusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)

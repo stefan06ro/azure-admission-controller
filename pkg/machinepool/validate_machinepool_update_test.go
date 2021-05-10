@@ -34,6 +34,12 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"2"})),
 			errorMatcher: IsFailureDomainWasChangedError,
 		},
+		{
+			name:         "case 2: FailureDomains changed but object is being deleted",
+			oldNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"1"})),
+			newNodePool:  builder.BuildMachinePoolAsJson(builder.FailureDomains([]string{"2"}), builder.WithDeletionTimestamp()),
+			errorMatcher: nil,
+		},
 	}
 
 	for _, tc := range testCases {

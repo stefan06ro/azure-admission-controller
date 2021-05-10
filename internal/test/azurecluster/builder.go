@@ -56,6 +56,14 @@ func ControlPlaneEndpoint(controlPlaneEndpointHost string, controlPlaneEndpointP
 	}
 }
 
+func WithDeletionTimestamp() BuilderOption {
+	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+		now := metav1.Now()
+		azureCluster.ObjectMeta.SetDeletionTimestamp(&now)
+		return azureCluster
+	}
+}
+
 func BuildAzureCluster(opts ...BuilderOption) *capzv1alpha3.AzureCluster {
 	clusterName := test.GenerateName()
 	azureCluster := &capzv1alpha3.AzureCluster{

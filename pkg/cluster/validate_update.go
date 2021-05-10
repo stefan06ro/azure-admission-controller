@@ -56,6 +56,11 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
 
+	if !clusterNewCR.GetDeletionTimestamp().IsZero() {
+		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+		return nil
+	}
+
 	capi, err := generic.IsCAPIRelease(clusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)

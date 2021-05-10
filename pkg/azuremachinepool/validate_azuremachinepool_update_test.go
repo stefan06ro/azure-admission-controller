@@ -173,6 +173,12 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
 			errorMatcher: nil,
 		},
+		{
+			name:         "case 21: changed location but object is being deleted",
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("westeurope")),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("northeastitaly"), builder.WithDeletionTimestamp()),
+			errorMatcher: nil,
+		},
 	}
 
 	for _, tc := range testCases {

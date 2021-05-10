@@ -66,6 +66,14 @@ func Annotation(name, val string) BuilderOption {
 	}
 }
 
+func WithDeletionTimestamp() BuilderOption {
+	return func(machinePool *expcapiv1alpha3.MachinePool) *expcapiv1alpha3.MachinePool {
+		now := metav1.Now()
+		machinePool.ObjectMeta.SetDeletionTimestamp(&now)
+		return machinePool
+	}
+}
+
 func BuildMachinePool(opts ...BuilderOption) *expcapiv1alpha3.MachinePool {
 	nodepoolName := test.GenerateName()
 	machinePool := &expcapiv1alpha3.MachinePool{
