@@ -53,6 +53,11 @@ func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.Ad
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
 	}
 
+	if !azureConfigNewCR.GetDeletionTimestamp().IsZero() {
+		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+		return nil
+	}
+
 	oldVersion, err := semverhelper.GetSemverFromLabels(azureConfigOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureConfig (before edit)")

@@ -51,6 +51,11 @@ func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1b
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
 	}
 
+	if !AzureClusterConfigNewCR.GetDeletionTimestamp().IsZero() {
+		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+		return nil
+	}
+
 	oldVersion, err := getSemver(AzureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (before edit)")
