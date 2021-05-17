@@ -1,3 +1,5 @@
+// +build liveinstallation,validate
+
 package validateliveresources
 
 import (
