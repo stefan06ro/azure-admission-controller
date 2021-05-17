@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,8 +44,10 @@ func (h *WebhookHandler) checkAvailabilityZones(ctx context.Context, mp *capiexp
 	}
 	amp := capzexp.AzureMachinePool{}
 	err := h.ctrlClient.Get(ctx, client.ObjectKey{Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace, Name: mp.Spec.Template.Spec.InfrastructureRef.Name}, &amp)
-	if err != nil {
-		return microerror.Maskf(azureMachinePoolNotFoundError, "AzureMachinePool has to be created before the related MachinePool")
+	if apierrors.IsNotFound(err) {
+		return microerror.Maskf(azureMachinePoolNotFoundError, "AzureMachinePool %s/%s has to be created before the related MachinePool", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name)
+	} else if err != nil {
+		return microerror.Mask(err)
 	}
 
 	supportedZones, err := h.vmcaps.SupportedAZs(ctx, amp.Spec.Location, amp.Spec.Template.VMSize)
