@@ -22,7 +22,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	k8s.io/api v0.18.18
-	k8s.io/apiextensions-apiserver v0.18.9
+	k8s.io/apiextensions-apiserver v0.18.18
 	k8s.io/apimachinery v0.18.18
 	k8s.io/client-go v0.18.18
 	sigs.k8s.io/cluster-api v0.3.16
