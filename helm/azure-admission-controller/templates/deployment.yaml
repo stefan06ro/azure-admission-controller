@@ -27,7 +27,7 @@ spec:
       serviceAccountName: {{ include "resource.default.name"  . }}
       containers:
         - name: {{ include "name" . }}
-          image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.registry.domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
           env:
           - name: AZURE_CLIENT_ID
             valueFrom:
@@ -53,8 +53,8 @@ spec:
             - ./azure-admission-controller
             - --tls-cert-file=/certs/ca.crt
             - --tls-key-file=/certs/tls.key
-            - --base-domain={{ .Values.Installation.V1.Guest.Kubernetes.API.EndpointBase }}
-            - --location={{ .Values.Installation.V1.Provider.Azure.Location }}
+            - --base-domain={{ .Values.cluster.baseDomain }}
+            - --location={{ .Values.azure.location }}
           volumeMounts:
           - name: {{ include "name" . }}-certificates
             mountPath: "/certs"
