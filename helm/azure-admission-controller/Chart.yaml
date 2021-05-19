@@ -6,4 +6,3 @@ version: [[ .Version ]]
 appVersion: [[ .AppVersion ]]
 annotations:
   application.giantswarm.io/team: "celestial"
-  config.giantswarm.io/version: 1.x.x

@@ -1,25 +1,7 @@
-project:
-  branch: "[[ .Branch ]]"
-  commit: "[[ .SHA ]]"
-
 image:
   name: "giantswarm/azure-admission-controller"
   tag: "[[ .Version ]]"
 
-azure:
-  location: ""
-
-azureOperatorSecret:
-  service:
-    azure:
-      clientID: ""
-      clientSecret: ""
-      sptenantID: ""
-      subscriptionID: ""
-      tenantID: ""
-
-cluster:
-  baseDomain: ""
-
-registry:
-  domain: ""
+project:
+  branch: "[[ .Branch ]]"
+  commit: "[[ .SHA ]]"
