@@ -3,18 +3,18 @@ package azurecluster
 import (
 	"reflect"
 
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-func ensureAPIServerLB(cr *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
-	apiServerLB := capzv1alpha3.LoadBalancerSpec{
+func ensureAPIServerLB(cr *capz.AzureCluster) (*mutator.PatchOperation, error) {
+	apiServerLB := capz.LoadBalancerSpec{
 		Name: key.APIServerLBName(cr.Name),
-		SKU:  capzv1alpha3.SKU(key.APIServerLBSKU()),
-		Type: capzv1alpha3.LBType(key.APIServerLBType()),
-		FrontendIPs: []capzv1alpha3.FrontendIP{
+		SKU:  capz.SKU(key.APIServerLBSKU()),
+		Type: capz.LBType(key.APIServerLBType()),
+		FrontendIPs: []capz.FrontendIP{
 			{Name: key.APIServerLBFrontendIPName(cr.Name)},
 		},
 	}

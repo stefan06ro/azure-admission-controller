@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -117,7 +117,7 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		{
 			name:        "case 13: change datadisks",
 			oldNodePool: builder.BuildAzureMachinePoolAsJson(),
-			newNodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capzv1alpha3.DataDisk{
+			newNodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capz.DataDisk{
 				{
 					NameSuffix: "docker",
 					DiskSizeGB: 30,
@@ -139,20 +139,20 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		},
 		{
 			name:         "case 15: disable spot instance configuration",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
 			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
 			name:         "case 16: enable spot instance configuration",
 			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
 			name:         "case 17: change spot instance price configuration",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
@@ -163,14 +163,14 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		},
 		{
 			name:         "case 19: keep spot instances price configuration unknown",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: nil})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: nil})),
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 20: keep spot instances price configuration unchanged",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capzv1alpha3.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
 			errorMatcher: nil,
 		},
 		{

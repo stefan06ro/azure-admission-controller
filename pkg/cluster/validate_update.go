@@ -8,7 +8,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,8 +47,8 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 }
 
 func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	clusterNewCR := &capiv1alpha3.Cluster{}
-	clusterOldCR := &capiv1alpha3.Cluster{}
+	clusterNewCR := &capi.Cluster{}
+	clusterOldCR := &capi.Cluster{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, clusterNewCR); err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
@@ -101,7 +101,7 @@ func (a *UpdateValidator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
 }
 
-func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.Cluster) error {
+func validateClusterNetworkUnchanged(old capi.Cluster, new capi.Cluster) error {
 	// Was nil and stayed nil. Not good but not changed so ok from this validator point of view.
 	if old.Spec.ClusterNetwork == nil && new.Spec.ClusterNetwork == nil {
 		return nil
@@ -138,7 +138,7 @@ func validateClusterNetworkUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.
 	return nil
 }
 
-func (a *UpdateValidator) validateRelease(ctx context.Context, clusterOldCR *capiv1alpha3.Cluster, clusterNewCR *capiv1alpha3.Cluster) error {
+func (a *UpdateValidator) validateRelease(ctx context.Context, clusterOldCR *capi.Cluster, clusterNewCR *capi.Cluster) error {
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(clusterOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the Cluster being updated")

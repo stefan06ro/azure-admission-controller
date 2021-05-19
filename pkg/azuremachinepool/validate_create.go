@@ -6,7 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -53,7 +53,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 }
 
 func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	azureMPNewCR := &expcapzv1alpha3.AzureMachinePool{}
+	azureMPNewCR := &capzexp.AzureMachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureMPNewCR); err != nil {
 		return microerror.Maskf(parsingFailedError, "unable to parse azureMachinePool CR: %v", err)
 	}

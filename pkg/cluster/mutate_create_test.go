@@ -14,8 +14,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
@@ -29,10 +29,10 @@ func TestClusterCreateMutate(t *testing.T) {
 		errorMatcher func(err error) bool
 	}
 
-	clusterNetwork := &v1alpha3.ClusterNetwork{
+	clusterNetwork := &capi.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
 		ServiceDomain: "cluster.local",
-		Services: &v1alpha3.NetworkRanges{
+		Services: &capi.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
 			},
@@ -114,7 +114,7 @@ func TestClusterCreateMutate(t *testing.T) {
 			}
 
 			// Cluster with both operator annotations.
-			ab123 := &capzv1alpha3.AzureCluster{
+			ab123 := &capz.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -175,7 +175,7 @@ func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	return req
 }
 
-func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
+func clusterRawObject(clusterName string, clusterNetwork *capi.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
 	mergedLabels := map[string]string{
 		"azure-operator.giantswarm.io/version": "5.0.0",
 		"cluster.x-k8s.io/cluster-name":        clusterName,
@@ -187,7 +187,7 @@ func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwor
 		mergedLabels[k] = v
 	}
 
-	mp := v1alpha3.Cluster{
+	mp := capi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
 			APIVersion: "cluster.x-k8s.io/v1alpha3",
@@ -197,9 +197,9 @@ func clusterRawObject(clusterName string, clusterNetwork *v1alpha3.ClusterNetwor
 			Namespace: "default",
 			Labels:    mergedLabels,
 		},
-		Spec: v1alpha3.ClusterSpec{
+		Spec: capi.ClusterSpec{
 			ClusterNetwork: clusterNetwork,
-			ControlPlaneEndpoint: v1alpha3.APIEndpoint{
+			ControlPlaneEndpoint: capi.APIEndpoint{
 				Host: controlPlaneEndpointHost,
 				Port: controlPlaneEndpointPort,
 			},

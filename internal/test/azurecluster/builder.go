@@ -6,24 +6,24 @@ import (
 
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/test"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-type BuilderOption func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster
+type BuilderOption func(azureCluster *capz.AzureCluster) *capz.AzureCluster
 
 func Name(name string) BuilderOption {
-	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+	return func(azureCluster *capz.AzureCluster) *capz.AzureCluster {
 		azureCluster.ObjectMeta.Name = name
-		azureCluster.Labels[capiv1alpha3.ClusterLabelName] = name
+		azureCluster.Labels[capi.ClusterLabelName] = name
 		azureCluster.Labels[label.Cluster] = name
 		azureCluster.Spec.ResourceGroup = name
 		azureCluster.Spec.ControlPlaneEndpoint.Host = fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", name)
 		azureCluster.Spec.NetworkSpec.APIServerLB.Name = key.APIServerLBName(name)
-		azureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs = []capzv1alpha3.FrontendIP{
+		azureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs = []capz.FrontendIP{
 			{
 				Name: key.APIServerLBFrontendIPName(name),
 			},
@@ -33,7 +33,7 @@ func Name(name string) BuilderOption {
 }
 
 func Labels(labels map[string]string) BuilderOption {
-	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+	return func(azureCluster *capz.AzureCluster) *capz.AzureCluster {
 		for k, v := range labels {
 			azureCluster.Labels[k] = v
 		}
@@ -42,14 +42,14 @@ func Labels(labels map[string]string) BuilderOption {
 }
 
 func Location(location string) BuilderOption {
-	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+	return func(azureCluster *capz.AzureCluster) *capz.AzureCluster {
 		azureCluster.Spec.Location = location
 		return azureCluster
 	}
 }
 
 func ControlPlaneEndpoint(controlPlaneEndpointHost string, controlPlaneEndpointPort int32) BuilderOption {
-	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+	return func(azureCluster *capz.AzureCluster) *capz.AzureCluster {
 		azureCluster.Spec.ControlPlaneEndpoint.Host = controlPlaneEndpointHost
 		azureCluster.Spec.ControlPlaneEndpoint.Port = controlPlaneEndpointPort
 		return azureCluster
@@ -57,54 +57,54 @@ func ControlPlaneEndpoint(controlPlaneEndpointHost string, controlPlaneEndpointP
 }
 
 func WithDeletionTimestamp() BuilderOption {
-	return func(azureCluster *capzv1alpha3.AzureCluster) *capzv1alpha3.AzureCluster {
+	return func(azureCluster *capz.AzureCluster) *capz.AzureCluster {
 		now := metav1.Now()
 		azureCluster.ObjectMeta.SetDeletionTimestamp(&now)
 		return azureCluster
 	}
 }
 
-func BuildAzureCluster(opts ...BuilderOption) *capzv1alpha3.AzureCluster {
+func BuildAzureCluster(opts ...BuilderOption) *capz.AzureCluster {
 	clusterName := test.GenerateName()
-	azureCluster := &capzv1alpha3.AzureCluster{
+	azureCluster := &capz.AzureCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureCluster",
-			APIVersion: capzv1alpha3.GroupVersion.String(),
+			APIVersion: capz.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "org-giantswarm",
 			Labels: map[string]string{
-				label.AzureOperatorVersion:    "5.0.0",
-				capiv1alpha3.ClusterLabelName: clusterName,
-				label.Cluster:                 clusterName,
-				label.Organization:            "giantswarm",
-				label.ReleaseVersion:          "13.0.0-alpha4",
+				label.AzureOperatorVersion: "5.0.0",
+				capi.ClusterLabelName:      clusterName,
+				label.Cluster:              clusterName,
+				label.Organization:         "giantswarm",
+				label.ReleaseVersion:       "13.0.0-alpha4",
 			},
 		},
-		Spec: capzv1alpha3.AzureClusterSpec{
+		Spec: capz.AzureClusterSpec{
 			ResourceGroup: clusterName,
 			Location:      "westeurope",
-			ControlPlaneEndpoint: capiv1alpha3.APIEndpoint{
+			ControlPlaneEndpoint: capi.APIEndpoint{
 				Host: fmt.Sprintf("api.%s.k8s.test.westeurope.azure.gigantic.io", clusterName),
 				Port: 443,
 			},
-			NetworkSpec: capzv1alpha3.NetworkSpec{
-				Subnets: capzv1alpha3.Subnets{
-					&capzv1alpha3.SubnetSpec{
+			NetworkSpec: capz.NetworkSpec{
+				Subnets: capz.Subnets{
+					&capz.SubnetSpec{
 						Role: "control-plane",
 						Name: key.MasterSubnetName(clusterName),
 					},
-					&capzv1alpha3.SubnetSpec{
+					&capz.SubnetSpec{
 						Role: "node",
 						Name: clusterName,
 					},
 				},
-				APIServerLB: capzv1alpha3.LoadBalancerSpec{
+				APIServerLB: capz.LoadBalancerSpec{
 					Name: key.APIServerLBName(clusterName),
-					SKU:  capzv1alpha3.SKU(key.APIServerLBSKU()),
-					Type: capzv1alpha3.LBType(key.APIServerLBType()),
-					FrontendIPs: []capzv1alpha3.FrontendIP{
+					SKU:  capz.SKU(key.APIServerLBSKU()),
+					Type: capz.LBType(key.APIServerLBType()),
+					FrontendIPs: []capz.FrontendIP{
 						{
 							Name: key.APIServerLBFrontendIPName(clusterName),
 						},

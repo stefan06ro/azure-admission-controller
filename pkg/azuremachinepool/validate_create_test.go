@@ -14,8 +14,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -72,7 +72,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 	{
 		testCases = append(testCases, testCase{
 			name: fmt.Sprintf("case %d: data disks already set", len(testCases)),
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.DataDisks([]capzv1alpha3.DataDisk{
+			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.DataDisks([]capz.DataDisk{
 				{
 					NameSuffix: "docker",
 					DiskSizeGB: 50,
@@ -130,7 +130,7 @@ func TestAzureMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Create cluster CR.
-			cluster := &capiv1alpha3.Cluster{
+			cluster := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "ab123",
 					Labels: map[string]string{

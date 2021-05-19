@@ -4,12 +4,12 @@ import (
 	"reflect"
 
 	"github.com/giantswarm/microerror"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-func validateClusterNetwork(cluster capiv1alpha3.Cluster) error {
+func validateClusterNetwork(cluster capi.Cluster) error {
 	if cluster.Spec.ClusterNetwork == nil {
 		return microerror.Maskf(emptyClusterNetworkError, "ClusterNetwork can't be null")
 	}
@@ -33,7 +33,7 @@ func validateClusterNetwork(cluster capiv1alpha3.Cluster) error {
 	return nil
 }
 
-func validateControlPlaneEndpoint(cluster capiv1alpha3.Cluster, baseDomain string) error {
+func validateControlPlaneEndpoint(cluster capi.Cluster, baseDomain string) error {
 	host := key.GetControlPlaneEndpointHost(cluster.Name, baseDomain)
 	if cluster.Spec.ControlPlaneEndpoint.Host != host {
 		return microerror.Maskf(invalidControlPlaneEndpointHostError, "ControlPlaneEndpoint.Host can only be set to %s", host)
@@ -46,7 +46,7 @@ func validateControlPlaneEndpoint(cluster capiv1alpha3.Cluster, baseDomain strin
 	return nil
 }
 
-func validateControlPlaneEndpointUnchanged(old capiv1alpha3.Cluster, new capiv1alpha3.Cluster) error {
+func validateControlPlaneEndpointUnchanged(old capi.Cluster, new capi.Cluster) error {
 	if !reflect.DeepEqual(old.Spec.ControlPlaneEndpoint, new.Spec.ControlPlaneEndpoint) {
 		return microerror.Maskf(controlPlaneEndpointWasChangedError, "ControlPlaneEndpoint can't be changed.")
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/patches"
@@ -49,7 +49,7 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	azureMachineCR := &v1alpha3.AzureMachine{}
+	azureMachineCR := &capz.AzureMachine{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureMachineCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse AzureMachine CR: %v", err)
 	}
@@ -94,7 +94,7 @@ func (m *UpdateMutator) Resource() string {
 	return "azuremachine"
 }
 
-func (m *UpdateMutator) ensureOSDiskCachingType(ctx context.Context, azureMachine *v1alpha3.AzureMachine) (*mutator.PatchOperation, error) {
+func (m *UpdateMutator) ensureOSDiskCachingType(ctx context.Context, azureMachine *capz.AzureMachine) (*mutator.PatchOperation, error) {
 	if len(azureMachine.Spec.OSDisk.CachingType) < 1 {
 		return mutator.PatchAdd("/spec/osDisk/cachingType", key.OSDiskCachingType()), nil
 	}

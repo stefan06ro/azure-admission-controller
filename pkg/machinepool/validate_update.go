@@ -7,7 +7,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	"sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/validator"
@@ -34,11 +34,11 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 }
 
 func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	machinePoolNewCR := &v1alpha3.MachinePool{}
+	machinePoolNewCR := &capiexp.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
 		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
-	machinePoolOldCR := &v1alpha3.MachinePool{}
+	machinePoolOldCR := &capiexp.MachinePool{}
 	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, machinePoolOldCR); err != nil {
 		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
 	}
@@ -78,7 +78,7 @@ func (a *UpdateValidator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
 }
 
-func checkAvailabilityZonesUnchanged(ctx context.Context, oldMP *v1alpha3.MachinePool, newMP *v1alpha3.MachinePool) error {
+func checkAvailabilityZonesUnchanged(ctx context.Context, oldMP *capiexp.MachinePool, newMP *capiexp.MachinePool) error {
 	if len(oldMP.Spec.FailureDomains) != len(newMP.Spec.FailureDomains) {
 		return microerror.Maskf(failureDomainWasChangedError, "Changing FailureDomains (availability zones) is not allowed.")
 	}

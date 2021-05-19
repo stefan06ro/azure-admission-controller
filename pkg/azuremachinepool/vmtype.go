@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 )
@@ -14,7 +14,7 @@ const (
 	minCPUs   = 4
 )
 
-func checkInstanceTypeIsValid(ctx context.Context, vmcaps *vmcapabilities.VMSKU, azureMachinePool *expcapzv1alpha3.AzureMachinePool) error {
+func checkInstanceTypeIsValid(ctx context.Context, vmcaps *vmcapabilities.VMSKU, azureMachinePool *capzexp.AzureMachinePool) error {
 	memory, err := vmcaps.Memory(ctx, azureMachinePool.Spec.Location, azureMachinePool.Spec.Template.VMSize)
 	if err != nil {
 		return microerror.Mask(err)

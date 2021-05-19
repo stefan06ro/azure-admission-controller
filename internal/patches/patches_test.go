@@ -9,7 +9,7 @@ import (
 
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 func TestGenerateFrom(t *testing.T) {
@@ -21,15 +21,15 @@ func TestGenerateFrom(t *testing.T) {
 	}{
 		{
 			name:            "case 0 finds no difference between identical objects",
-			originalObject:  &capiv1alpha3.Cluster{},
-			currentObject:   &capiv1alpha3.Cluster{},
+			originalObject:  &capi.Cluster{},
+			currentObject:   &capi.Cluster{},
 			expectedPatches: []mutator.PatchOperation{},
 		},
 		{
 			name:           "case 1 finds the differences between two compatible objects",
-			originalObject: &capiv1alpha3.Cluster{},
-			currentObject: &capiv1alpha3.Cluster{
-				Spec: capiv1alpha3.ClusterSpec{ClusterNetwork: &capiv1alpha3.ClusterNetwork{Services: &capiv1alpha3.NetworkRanges{CIDRBlocks: []string{"1", "2", "3"}}}},
+			originalObject: &capi.Cluster{},
+			currentObject: &capi.Cluster{
+				Spec: capi.ClusterSpec{ClusterNetwork: &capi.ClusterNetwork{Services: &capi.NetworkRanges{CIDRBlocks: []string{"1", "2", "3"}}}},
 			},
 			expectedPatches: []mutator.PatchOperation{
 				{

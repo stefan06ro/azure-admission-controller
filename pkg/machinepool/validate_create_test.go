@@ -13,8 +13,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -178,14 +178,14 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 
 			// Create AzureMachinePool.
 			if tc.vmType != "" {
-				amp := &expcapzv1alpha3.AzureMachinePool{
+				amp := &capzexp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      machinePoolName,
 						Namespace: machinePoolNamespace,
 					},
-					Spec: expcapzv1alpha3.AzureMachinePoolSpec{
+					Spec: capzexp.AzureMachinePoolSpec{
 						Location: "westeurope",
-						Template: expcapzv1alpha3.AzureMachineTemplate{
+						Template: capzexp.AzureMachineTemplate{
 							VMSize: tc.vmType,
 						},
 					},
@@ -209,7 +209,7 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			}
 
 			// Create cluster CR.
-			cluster := &capiv1alpha3.Cluster{
+			cluster := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "ab123",
 					Labels: map[string]string{

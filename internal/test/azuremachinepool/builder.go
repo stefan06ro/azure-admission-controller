@@ -8,45 +8,45 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/test"
 )
 
-type BuilderOption func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool
+type BuilderOption func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool
 
 func AcceleratedNetworking(acceleratedNetworking *bool) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Template.AcceleratedNetworking = acceleratedNetworking
 		return azureMachinePool
 	}
 }
 
 func Cluster(clusterName string) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
-		azureMachinePool.Labels[capiv1alpha3.ClusterLabelName] = clusterName
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
+		azureMachinePool.Labels[capi.ClusterLabelName] = clusterName
 		return azureMachinePool
 	}
 }
 
-func DataDisks(dataDisks []capzv1alpha3.DataDisk) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+func DataDisks(dataDisks []capz.DataDisk) BuilderOption {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Template.DataDisks = dataDisks
 		return azureMachinePool
 	}
 }
 
 func Location(location string) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Location = location
 		return azureMachinePool
 	}
 }
 
 func Organization(org string) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Labels[label.Organization] = org
 		azureMachinePool.Namespace = fmt.Sprintf("org-%s", org)
 		return azureMachinePool
@@ -54,68 +54,68 @@ func Organization(org string) BuilderOption {
 }
 
 func Name(name string) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.ObjectMeta.Name = name
 		azureMachinePool.Labels[label.MachinePool] = name
 		return azureMachinePool
 	}
 }
 
-func SpotVMOptions(opts *capzv1alpha3.SpotVMOptions) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+func SpotVMOptions(opts *capz.SpotVMOptions) BuilderOption {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Template.SpotVMOptions = opts
 		return azureMachinePool
 	}
 }
 
 func StorageAccountType(storageAccountType compute.StorageAccountTypes) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Template.OSDisk.ManagedDisk.StorageAccountType = string(storageAccountType)
 		return azureMachinePool
 	}
 }
 
 func VMSize(vmsize string) BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		azureMachinePool.Spec.Template.VMSize = vmsize
 		return azureMachinePool
 	}
 }
 
 func WithDeletionTimestamp() BuilderOption {
-	return func(azureMachinePool *expcapzv1alpha3.AzureMachinePool) *expcapzv1alpha3.AzureMachinePool {
+	return func(azureMachinePool *capzexp.AzureMachinePool) *capzexp.AzureMachinePool {
 		now := metav1.Now()
 		azureMachinePool.ObjectMeta.SetDeletionTimestamp(&now)
 		return azureMachinePool
 	}
 }
 
-func BuildAzureMachinePool(opts ...BuilderOption) *expcapzv1alpha3.AzureMachinePool {
+func BuildAzureMachinePool(opts ...BuilderOption) *capzexp.AzureMachinePool {
 	nodepoolName := test.GenerateName()
-	azureMachinePool := &expcapzv1alpha3.AzureMachinePool{
+	azureMachinePool := &capzexp.AzureMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodepoolName,
 			Namespace: "org-giantswarm",
 			Labels: map[string]string{
-				label.AzureOperatorVersion:    "5.0.0",
-				label.Cluster:                 "ab123",
-				capiv1alpha3.ClusterLabelName: "ab123",
-				label.MachinePool:             nodepoolName,
-				label.Organization:            "giantswarm",
-				label.ReleaseVersion:          "13.0.0",
+				label.AzureOperatorVersion: "5.0.0",
+				label.Cluster:              "ab123",
+				capi.ClusterLabelName:      "ab123",
+				label.MachinePool:          nodepoolName,
+				label.Organization:         "giantswarm",
+				label.ReleaseVersion:       "13.0.0",
 			},
 		},
-		Spec: expcapzv1alpha3.AzureMachinePoolSpec{
+		Spec: capzexp.AzureMachinePoolSpec{
 			Location: "westeurope",
-			Template: expcapzv1alpha3.AzureMachineTemplate{
+			Template: capzexp.AzureMachineTemplate{
 				VMSize: "Standard_D4_v3",
-				OSDisk: capzv1alpha3.OSDisk{
-					ManagedDisk: capzv1alpha3.ManagedDisk{
+				OSDisk: capz.OSDisk{
+					ManagedDisk: capz.ManagedDisk{
 						StorageAccountType: "Standard_LRS",
 					},
 				},
 				AcceleratedNetworking: to.BoolPtr(true),
-				DataDisks: []capzv1alpha3.DataDisk{
+				DataDisks: []capz.DataDisk{
 					{
 						NameSuffix: "docker",
 						DiskSizeGB: 100,

@@ -8,7 +8,7 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/normalize"
@@ -58,9 +58,9 @@ func ValidateOrganizationLabelMatchesCluster(ctx context.Context, ctrlClient cli
 		return microerror.Maskf(clusterLabelNotFoundError, "CR doesn't contain Cluster label %#q", label.Cluster)
 	}
 
-	cluster := capiv1alpha3.Cluster{}
+	cluster := capi.Cluster{}
 	{
-		clusters := &capiv1alpha3.ClusterList{}
+		clusters := &capi.ClusterList{}
 		err := ctrlClient.List(ctx, clusters, client.MatchingLabels{label.Cluster: clusterName})
 		if err != nil {
 			return microerror.Mask(err)

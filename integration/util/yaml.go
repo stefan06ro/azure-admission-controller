@@ -14,10 +14,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	expcapiv1alpha3 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -98,15 +98,15 @@ func unmarshal(bs []byte) (runtime.Object, error) {
 	case "Organization":
 		obj = new(securityv1alpha1.Organization)
 	case "Cluster":
-		obj = new(capiv1alpha3.Cluster)
+		obj = new(capi.Cluster)
 	case "MachinePool":
-		obj = new(expcapiv1alpha3.MachinePool)
+		obj = new(capiexp.MachinePool)
 	case "AzureCluster":
-		obj = new(capzv1alpha3.AzureCluster)
+		obj = new(capz.AzureCluster)
 	case "AzureMachine":
-		obj = new(capzv1alpha3.AzureMachine)
+		obj = new(capz.AzureMachine)
 	case "AzureMachinePool":
-		obj = new(expcapzv1alpha3.AzureMachinePool)
+		obj = new(capzexp.AzureMachinePool)
 	case "Release":
 		obj = new(releasev1alpha1.Release)
 	case "Spark":

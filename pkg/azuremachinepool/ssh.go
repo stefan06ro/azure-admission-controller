@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
-	expcapzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
-func checkSSHKeyIsEmpty(ctx context.Context, mp *expcapzv1alpha3.AzureMachinePool) error {
+func checkSSHKeyIsEmpty(ctx context.Context, mp *capzexp.AzureMachinePool) error {
 	if mp.Spec.Template.SSHPublicKey != "" {
 		return microerror.Maskf(sshFieldIsSetError, "AzureMachinePool.Spec.Template.SSHPublicKey is unsupported and must be empty.")
 	}

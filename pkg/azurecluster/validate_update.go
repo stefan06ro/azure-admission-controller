@@ -6,7 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -44,8 +44,8 @@ func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) 
 }
 
 func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	azureClusterNewCR := &capzv1alpha3.AzureCluster{}
-	azureClusterOldCR := &capzv1alpha3.AzureCluster{}
+	azureClusterNewCR := &capz.AzureCluster{}
+	azureClusterOldCR := &capz.AzureCluster{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureClusterNewCR); err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
@@ -93,7 +93,7 @@ func (a *UpdateValidator) Log(keyVals ...interface{}) {
 	a.logger.Log(keyVals...)
 }
 
-func (a *UpdateValidator) validateRelease(ctx context.Context, azureClusterOldCR *capzv1alpha3.AzureCluster, azureClusterNewCR *capzv1alpha3.AzureCluster) error {
+func (a *UpdateValidator) validateRelease(ctx context.Context, azureClusterOldCR *capz.AzureCluster, azureClusterNewCR *capz.AzureCluster) error {
 	oldClusterVersion, err := semverhelper.GetSemverFromLabels(azureClusterOldCR.Labels)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from the AzureCluster being updated")

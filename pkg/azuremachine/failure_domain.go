@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/giantswarm/microerror"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
-func validateFailureDomain(azureMachine capzv1alpha3.AzureMachine, supportedAZs []string) error {
+func validateFailureDomain(azureMachine capz.AzureMachine, supportedAZs []string) error {
 	// No failure domain specified.
 	if azureMachine.Spec.FailureDomain == nil || *azureMachine.Spec.FailureDomain == "" {
 		return nil
@@ -30,7 +30,7 @@ func validateFailureDomain(azureMachine capzv1alpha3.AzureMachine, supportedAZs 
 	return microerror.Maskf(unsupportedFailureDomainError, supportedAZsMsg)
 }
 
-func validateFailureDomainUnchanged(old capzv1alpha3.AzureMachine, new capzv1alpha3.AzureMachine) error {
+func validateFailureDomainUnchanged(old capz.AzureMachine, new capz.AzureMachine) error {
 	// Was unspecified, stays unspecified.
 	if old.Spec.FailureDomain == nil && new.Spec.FailureDomain == nil {
 		return nil

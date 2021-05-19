@@ -7,7 +7,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -57,7 +57,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	clusterCR := &capiv1alpha3.Cluster{}
+	clusterCR := &capi.Cluster{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, clusterCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(errors.ParsingFailedError, "unable to parse Cluster CR: %v", err)
 	}
@@ -124,13 +124,13 @@ func (m *CreateMutator) Resource() string {
 	return "cluster"
 }
 
-func (m *CreateMutator) ensureClusterNetwork(ctx context.Context, clusterCR *capiv1alpha3.Cluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureClusterNetwork(ctx context.Context, clusterCR *capi.Cluster) (*mutator.PatchOperation, error) {
 	// Ensure ClusterNetwork is set.
 	if clusterCR.Spec.ClusterNetwork == nil {
-		clusterNetwork := capiv1alpha3.ClusterNetwork{
+		clusterNetwork := capi.ClusterNetwork{
 			APIServerPort: to.Int32Ptr(key.ControlPlaneEndpointPort),
 			ServiceDomain: key.ServiceDomain(),
-			Services: &capiv1alpha3.NetworkRanges{
+			Services: &capi.NetworkRanges{
 				CIDRBlocks: []string{
 					key.ClusterNetworkServiceCIDR,
 				},
@@ -143,7 +143,7 @@ func (m *CreateMutator) ensureClusterNetwork(ctx context.Context, clusterCR *cap
 	return nil, nil
 }
 
-func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capiv1alpha3.Cluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capi.Cluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Host == "" {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/host", key.GetControlPlaneEndpointHost(clusterCR.Name, m.baseDomain)), nil
 	}
@@ -151,7 +151,7 @@ func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clus
 	return nil, nil
 }
 
-func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capiv1alpha3.Cluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capi.Cluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Port == 0 {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/port", key.ControlPlaneEndpointPort), nil
 	}

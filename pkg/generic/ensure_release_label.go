@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/giantswarm/apiextensions/v2/pkg/label"
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-
-	"github.com/giantswarm/apiextensions/v2/pkg/label"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -44,7 +43,7 @@ func getLabelValueFromAzureCluster(ctx context.Context, ctrlClient client.Client
 	}
 
 	// Retrieve the `AzureCluster` CR related to this object.
-	cluster := &v1alpha3.AzureCluster{}
+	cluster := &capz.AzureCluster{}
 	{
 		err := ctrlClient.Get(ctx, client.ObjectKey{Name: clusterID, Namespace: meta.GetNamespace()}, cluster)
 		if apierrors.IsNotFound(err) {

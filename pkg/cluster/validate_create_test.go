@@ -11,7 +11,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -23,10 +23,10 @@ func TestClusterCreateValidate(t *testing.T) {
 		errorMatcher func(err error) bool
 	}
 
-	clusterNetwork := &v1alpha3.ClusterNetwork{
+	clusterNetwork := &capi.ClusterNetwork{
 		APIServerPort: to.Int32Ptr(443),
 		ServiceDomain: "cluster.local",
-		Services: &v1alpha3.NetworkRanges{
+		Services: &capi.NetworkRanges{
 			CIDRBlocks: []string{
 				"172.31.0.0/16",
 			},
@@ -63,10 +63,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 5: ClusterNetwork.APIServerPort wrong",
 			cluster: clusterRawObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(80),
 					ServiceDomain: "cluster.local",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"172.31.0.0/16",
 						},
@@ -82,10 +82,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 6: ClusterNetwork.ServiceDomain wrong",
 			cluster: clusterRawObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "api.gigantic.io",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"172.31.0.0/16",
 						},
@@ -101,7 +101,7 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 7: ClusterNetwork.Services nil",
 			cluster: clusterRawObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "cluster.local",
 					Services:      nil,
@@ -116,10 +116,10 @@ func TestClusterCreateValidate(t *testing.T) {
 			name: "case 8: ClusterNetwork.CIDRBlocks wrong",
 			cluster: clusterRawObject(
 				"ab123",
-				&v1alpha3.ClusterNetwork{
+				&capi.ClusterNetwork{
 					APIServerPort: to.Int32Ptr(443),
 					ServiceDomain: "cluster.local",
-					Services: &v1alpha3.NetworkRanges{
+					Services: &capi.NetworkRanges{
 						CIDRBlocks: []string{
 							"192.168.0.0/24",
 						},

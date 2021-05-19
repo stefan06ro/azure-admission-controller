@@ -7,7 +7,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -63,7 +63,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		return result, nil
 	}
 
-	azureClusterCR := &capzv1alpha3.AzureCluster{}
+	azureClusterCR := &capz.AzureCluster{}
 	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, azureClusterCR); err != nil {
 		return []mutator.PatchOperation{}, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
@@ -141,7 +141,7 @@ func (m *CreateMutator) Resource() string {
 	return "azurecluster"
 }
 
-func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clusterCR *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Host == "" {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/host", key.GetControlPlaneEndpointHost(clusterCR.Name, m.baseDomain)), nil
 	}
@@ -149,7 +149,7 @@ func (m *CreateMutator) ensureControlPlaneEndpointHost(ctx context.Context, clus
 	return nil, nil
 }
 
-func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clusterCR *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if clusterCR.Spec.ControlPlaneEndpoint.Port == 0 {
 		return mutator.PatchAdd("/spec/controlPlaneEndpoint/port", key.ControlPlaneEndpointPort), nil
 	}
@@ -157,7 +157,7 @@ func (m *CreateMutator) ensureControlPlaneEndpointPort(ctx context.Context, clus
 	return nil, nil
 }
 
-func (m *CreateMutator) ensureLocation(ctx context.Context, azureCluster *capzv1alpha3.AzureCluster) (*mutator.PatchOperation, error) {
+func (m *CreateMutator) ensureLocation(ctx context.Context, azureCluster *capz.AzureCluster) (*mutator.PatchOperation, error) {
 	if azureCluster.Spec.Location == "" {
 		return mutator.PatchAdd("/spec/location", m.location), nil
 	}

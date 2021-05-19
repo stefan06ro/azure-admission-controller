@@ -12,14 +12,14 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
-func TestMachinePoolCreateMutate(t *testing.T) {
+func TestMachinePoolUpdateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
 		nodePool     []byte
@@ -153,6 +153,60 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			},
 			errorMatcher: nil,
 		},
+		{
+			name:     "case 5: set max replicas annotation when invalid",
+			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMaxSize, "INVALID")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "replace",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-max-size",
+					Value:     "1",
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     float64(1),
+				},
+			},
+			errorMatcher: nil,
+		},
+		{
+			name:     "case 6: set min replicas annotation when invalid",
+			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, "INVALID")),
+			patches: []mutator.PatchOperation{
+				{
+					Operation: "replace",
+					Path:      "/metadata/annotations/cluster.k8s.io~1cluster-api-autoscaler-node-group-min-size",
+					Value:     "1",
+				},
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/cluster.x-k8s.io~1cluster-name",
+					Value:     "",
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/minReadySeconds",
+					Value:     float64(0),
+				},
+				{
+					Operation: "add",
+					Path:      "/spec/replicas",
+					Value:     float64(1),
+				},
+			},
+			errorMatcher: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -192,7 +246,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			}
 
 			// Cluster with both operator annotations.
-			ab123 := &v1alpha3.Cluster{
+			ab123 := &capi.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ab123",
 					Namespace: "default",
@@ -206,16 +260,15 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewCreateMutator(CreateMutatorConfig{
-				CtrlClient: ctrlClient,
-				Logger:     newLogger,
+			admit, err := NewUpdateMutator(UpdateMutatorConfig{
+				Logger: newLogger,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.nodePool))
+			patches, err := admit.Mutate(context.Background(), getUpdateMutateAdmissionRequest(tc.nodePool))
 
 			// Check if the error is the expected one.
 			switch {
@@ -237,13 +290,13 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 	}
 }
 
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
+func getUpdateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
 	req := &v1beta1.AdmissionRequest{
 		Resource: metav1.GroupVersionResource{
 			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
 			Resource: "machinepool",
 		},
-		Operation: v1beta1.Create,
+		Operation: v1beta1.Update,
 		Object: runtime.RawExtension{
 			Raw:    newMP,
 			Object: nil,

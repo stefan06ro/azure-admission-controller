@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	providerv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func azureMachineRawObject(sshKey string, location string, failureDomain *string, labels map[string]string) []byte {
@@ -20,7 +20,7 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 	for k, v := range labels {
 		mergedLabels[k] = v
 	}
-	mp := providerv1alpha3.AzureMachine{
+	mp := capz.AzureMachine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachine",
 			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
@@ -30,11 +30,11 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 			Namespace: "default",
 			Labels:    mergedLabels,
 		},
-		Spec: providerv1alpha3.AzureMachineSpec{
-			AvailabilityZone: providerv1alpha3.AvailabilityZone{},
+		Spec: capz.AzureMachineSpec{
+			AvailabilityZone: capz.AvailabilityZone{},
 			FailureDomain:    failureDomain,
-			Image: &providerv1alpha3.Image{
-				Marketplace: &providerv1alpha3.AzureMarketplaceImage{
+			Image: &capz.Image{
+				Marketplace: &capz.AzureMarketplaceImage{
 					Publisher:       "kinvolk",
 					Offer:           "flatcar-container-linux-free",
 					SKU:             "stable",
@@ -43,11 +43,11 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 				},
 			},
 			Location: location,
-			OSDisk: providerv1alpha3.OSDisk{
+			OSDisk: capz.OSDisk{
 				OSType:      "Linux",
 				CachingType: "ReadWrite",
 				DiskSizeGB:  50,
-				ManagedDisk: providerv1alpha3.ManagedDisk{
+				ManagedDisk: capz.ManagedDisk{
 					StorageAccountType: "Premium_LRS",
 				},
 			},

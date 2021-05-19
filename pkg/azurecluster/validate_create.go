@@ -6,7 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
@@ -53,7 +53,7 @@ func NewCreateValidator(config CreateValidatorConfig) (*CreateValidator, error) 
 }
 
 func (a *CreateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	azureClusterCR := &capzv1alpha3.AzureCluster{}
+	azureClusterCR := &capz.AzureCluster{}
 	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureClusterCR); err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureCluster CR: %v", err)
 	}
