@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When importing `sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3` use `capz` as package alias.
 - When importing `sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3` use `capzexp` as package alias.
 - Remove package names from some file names.
+- Move labels mutator functions to `pkg/mutator`.
 
 ## [2.7.0] - 2021-05-19
 

@@ -1,4 +1,4 @@
-package generic
+package mutator
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
-	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -21,7 +20,7 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 	testCases := []struct {
 		name         string
 		meta         metav1.Object
-		patch        *mutator.PatchOperation
+		patch        *PatchOperation
 		errorMatcher func(error) bool
 	}{
 		{
@@ -51,7 +50,7 @@ func Test_EnsureReleaseLabel(t *testing.T) {
 		{
 			name: "case 4: release wasn't set, cluster CR found, release label present",
 			meta: newObjectWithRelease(to.StringPtr("ab123"), nil),
-			patch: &mutator.PatchOperation{
+			patch: &PatchOperation{
 				Operation: "add",
 				Path:      "/metadata/labels/release.giantswarm.io~1version",
 				Value:     "13.0.0",

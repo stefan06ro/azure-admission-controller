@@ -4,6 +4,9 @@ import (
 	"context"
 	"strconv"
 	"testing"
+
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCAPIReleaseLabel(t *testing.T) {
@@ -60,4 +63,29 @@ func TestCAPIReleaseLabel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newObjectWithRelease(clusterID *string, release *string) metav1.Object {
+	obj := &GenericObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ab123",
+			Namespace: "default",
+			Labels: map[string]string{
+				"azure-operator.giantswarm.io/version": "5.0.0",
+				"cluster.x-k8s.io/cluster-name":        "ab123",
+				"cluster.x-k8s.io/control-plane":       "true",
+				"giantswarm.io/machine-pool":           "ab123",
+			},
+		},
+	}
+
+	if clusterID != nil {
+		obj.Labels[label.Cluster] = *clusterID
+	}
+
+	if release != nil {
+		obj.Labels[label.ReleaseVersion] = *release
+	}
+
+	return obj
 }

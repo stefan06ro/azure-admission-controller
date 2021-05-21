@@ -1,4 +1,4 @@
-package generic
+package mutator
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
-	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
@@ -20,13 +19,13 @@ func Test_EnsureComponentVersionLabel(t *testing.T) {
 	testCases := []struct {
 		name         string
 		meta         metav1.Object
-		patch        *mutator.PatchOperation
+		patch        *PatchOperation
 		errorMatcher func(error) bool
 	}{
 		{
 			name: "case 0: azure operator label missing",
 			meta: newObjectWithLabels(to.StringPtr("ab123"), nil),
-			patch: &mutator.PatchOperation{
+			patch: &PatchOperation{
 				Operation: "add",
 				Path:      "/metadata/labels/azure-operator.giantswarm.io~1version",
 				Value:     "5.0.0",
