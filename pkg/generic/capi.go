@@ -3,7 +3,7 @@ package generic
 import (
 	"strings"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/label"
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 
 	"github.com/blang/semver"

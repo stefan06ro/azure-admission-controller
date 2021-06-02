@@ -2,7 +2,7 @@ package releaseversion
 
 import (
 	"github.com/blang/semver"
-	"github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
+	"github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 )
 
 type release struct {

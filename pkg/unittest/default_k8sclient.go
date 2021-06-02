@@ -1,14 +1,14 @@
 package unittest
 
 import (
-	corev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/core/v1alpha1"
-	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	releasev1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/release/v1alpha1"
-	securityv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/security/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
-	fakeg8s "github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned/fake"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8scrdclient"
+	corev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
+	providerv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/provider/v1alpha1"
+	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
+	securityv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/security/v1alpha1"
+	"github.com/giantswarm/apiextensions/v3/pkg/clientset/versioned"
+	fakeg8s "github.com/giantswarm/apiextensions/v3/pkg/clientset/versioned/fake"
+	"github.com/giantswarm/k8sclient/v5/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v5/pkg/k8scrdclient"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"

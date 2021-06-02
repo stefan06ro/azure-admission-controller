@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade `apiextensions/v2` -> `apiextensions/v3`.
+- Upgrade `k8sclient/v4` -> `k8sclient/v5`.
 - When importing `sigs.k8s.io/cluster-api/api/v1alpha3` use `capi` as package alias.
 - When importing `sigs.k8s.io/cluster-api/exp/api/v1alpha3` use `capiexp` as package alias.
 - When importing `sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3` use `capz` as package alias.
