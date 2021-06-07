@@ -85,6 +85,10 @@ func (f *fakeK8sClient) CRDClient() k8scrdclient.Interface {
 	return nil
 }
 
+func (f *fakeK8sClient) CtrlCache() client.Reader {
+	return f.ctrlClient
+}
+
 func (f *fakeK8sClient) CtrlClient() client.Client {
 	return f.ctrlClient
 }

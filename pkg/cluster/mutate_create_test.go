@@ -96,8 +96,7 @@ func TestClusterCreateMutate(t *testing.T) {
 
 			release13 := &v1alpha1.Release{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "v13.0.0-alpha4",
-					Namespace: "default",
+					Name: "v13.0.0-alpha4",
 				},
 				Spec: v1alpha1.ReleaseSpec{
 					Components: []v1alpha1.ReleaseSpecComponent{

@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetComponentVersionsFromRelease(ctx context.Context, ctrlClient client.Client, releaseVersion string) (map[string]string, error) {
+func GetComponentVersionsFromRelease(ctx context.Context, ctrlReader client.Reader, releaseVersion string) (map[string]string, error) {
 	// Release CR always starts with a "v".
 	if !strings.HasPrefix(releaseVersion, "v") {
 		releaseVersion = fmt.Sprintf("v%s", releaseVersion)
@@ -20,7 +20,7 @@ func GetComponentVersionsFromRelease(ctx context.Context, ctrlClient client.Clie
 	// Retrieve the `Release` CR.
 	release := &releasev1alpha1.Release{}
 	{
-		err := ctrlClient.Get(ctx, client.ObjectKey{Name: releaseVersion, Namespace: "default"}, release)
+		err := ctrlReader.Get(ctx, client.ObjectKey{Name: releaseVersion}, release)
 		if apierrors.IsNotFound(err) {
 			return nil, microerror.Maskf(releaseNotFoundError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
 		} else if err != nil {

@@ -29,13 +29,13 @@ func CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx context.Context, ctrlCl
 	return nil, nil
 }
 
-func EnsureComponentVersionLabelFromRelease(ctx context.Context, ctrlClient client.Client, meta metav1.Object, componentName string, labelName string) (*PatchOperation, error) {
+func EnsureComponentVersionLabelFromRelease(ctx context.Context, ctrlReader client.Reader, meta metav1.Object, componentName string, labelName string) (*PatchOperation, error) {
 	var releaseVersion = meta.GetLabels()[label.ReleaseVersion]
 	if releaseVersion == "" {
 		return nil, microerror.Maskf(releaseLabelNotFoundError, "Cannot find label %#q in CR. Can't continue.", label.ReleaseVersion)
 	}
 
-	componentVersions, err := release.GetComponentVersionsFromRelease(ctx, ctrlClient, releaseVersion)
+	componentVersions, err := release.GetComponentVersionsFromRelease(ctx, ctrlReader, releaseVersion)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

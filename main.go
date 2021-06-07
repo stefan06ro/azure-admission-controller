@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,11 +20,14 @@ import (
 	"github.com/giantswarm/k8sclient/v5/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/giantswarm/azure-admission-controller/config"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
@@ -61,6 +65,7 @@ func mainError() error {
 	}
 
 	var ctrlClient client.Client
+	var k8sClient k8sclient.Interface
 	{
 		restConfig, err := restclient.InClusterConfig()
 		if err != nil {
@@ -84,12 +89,47 @@ func mainError() error {
 			RestConfig: restConfig,
 		}
 
-		k8sClient, err := k8sclient.NewClients(c)
+		k8sClient, err = k8sclient.NewClients(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 
 		ctrlClient = k8sClient.CtrlClient()
+	}
+
+	var ctrlCache cache.Cache
+	{
+		mapper, err := apiutil.NewDynamicRESTMapper(rest.CopyConfig(k8sClient.RESTConfig()))
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		o := cache.Options{
+			Scheme: k8sClient.Scheme(),
+			Mapper: mapper,
+		}
+
+		ctrlCache, err = cache.New(k8sClient.RESTConfig(), o)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		go func() {
+			// XXX: This orphaned throw-away stop channel is very ugly, but
+			// will go away once `controller-runtime` library is updated. In
+			// 0.8.x it's `context.Context` instead of channel.
+			err = ctrlCache.Start(make(<-chan struct{}))
+			if err != nil {
+				// XXX: Due to asynchronous nature, there's no reasonable way
+				// to return error from here, hence panic().
+				panic(err)
+			}
+		}()
+
+		ok := ctrlCache.WaitForCacheSync(make(<-chan struct{}))
+		if !ok {
+			return microerror.Mask(errors.New("couldn't wait for cache sync"))
+		}
 	}
 
 	var resourceSkusClient compute.ResourceSkusClient
@@ -133,6 +173,7 @@ func mainError() error {
 	{
 		conf := azurecluster.CreateMutatorConfig{
 			BaseDomain: cfg.BaseDomain,
+			CtrlCache:  ctrlCache,
 			CtrlClient: ctrlClient,
 			Location:   cfg.Location,
 			Logger:     newLogger,
@@ -146,6 +187,7 @@ func mainError() error {
 	var azureClusterUpdateMutator *azurecluster.UpdateMutator
 	{
 		conf := azurecluster.UpdateMutatorConfig{
+			CtrlCache:  ctrlCache,
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}
@@ -312,6 +354,7 @@ func mainError() error {
 	var clusterUpdateMutator *cluster.UpdateMutator
 	{
 		conf := cluster.UpdateMutatorConfig{
+			CtrlCache:  ctrlCache,
 			CtrlClient: ctrlClient,
 			Logger:     newLogger,
 		}

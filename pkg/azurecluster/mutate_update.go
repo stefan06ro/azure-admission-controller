@@ -16,16 +16,21 @@ import (
 )
 
 type UpdateMutator struct {
+	ctrlCache  ctrl.Reader
 	ctrlClient ctrl.Client
 	logger     micrologger.Logger
 }
 
 type UpdateMutatorConfig struct {
+	CtrlCache  ctrl.Reader
 	CtrlClient ctrl.Client
 	Logger     micrologger.Logger
 }
 
 func NewUpdateMutator(config UpdateMutatorConfig) (*UpdateMutator, error) {
+	if config.CtrlCache == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlCache must not be empty", config)
+	}
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
@@ -34,6 +39,7 @@ func NewUpdateMutator(config UpdateMutatorConfig) (*UpdateMutator, error) {
 	}
 
 	m := &UpdateMutator{
+		ctrlCache:  config.CtrlCache,
 		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 	}
@@ -70,7 +76,7 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlCache, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -78,7 +84,7 @@ func (m *UpdateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "cluster-operator", label.ClusterOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlCache, azureClusterCR.GetObjectMeta(), "cluster-operator", label.ClusterOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

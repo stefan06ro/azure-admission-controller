@@ -19,6 +19,7 @@ import (
 
 type CreateMutator struct {
 	baseDomain string
+	ctrlCache  client.Reader
 	ctrlClient client.Client
 	location   string
 	logger     micrologger.Logger
@@ -26,6 +27,7 @@ type CreateMutator struct {
 
 type CreateMutatorConfig struct {
 	BaseDomain string
+	CtrlCache  client.Reader
 	CtrlClient client.Client
 	Location   string
 	Logger     micrologger.Logger
@@ -34,6 +36,9 @@ type CreateMutatorConfig struct {
 func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 	if config.BaseDomain == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.BaseDomain must not be empty", config)
+	}
+	if config.CtrlCache == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlCache must not be empty", config)
 	}
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
@@ -47,6 +52,7 @@ func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
 
 	v := &CreateMutator{
 		baseDomain: config.BaseDomain,
+		ctrlCache:  config.CtrlCache,
 		ctrlClient: config.CtrlClient,
 		location:   config.Location,
 		logger:     config.Logger,
@@ -108,7 +114,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlClient, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, m.ctrlCache, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
