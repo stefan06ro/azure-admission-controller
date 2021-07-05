@@ -152,7 +152,7 @@ func Test_TryFindReleaseForObject(t *testing.T) {
 	testCases := []struct {
 		name           string
 		inputRelease   string
-		object         metav1.Object
+		object         metav1.ObjectMetaAccessor
 		ownerCluster   capi.Cluster
 		expectedResult bool
 	}{
@@ -215,8 +215,8 @@ func Test_TryFindReleaseForObject(t *testing.T) {
 			ctrlClient := newFakeClient()
 			loadReleases(t, ctrlClient, tc.inputRelease)
 
-			clusterGetter := func(metav1.Object) capi.Cluster {
-				return tc.ownerCluster
+			clusterGetter := func(_ metav1.ObjectMetaAccessor) (capi.Cluster, bool, error) {
+				return tc.ownerCluster, true, nil
 			}
 
 			_, ok, err := TryFindReleaseForObject(ctx, ctrlClient, tc.object, clusterGetter)

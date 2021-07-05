@@ -4,11 +4,11 @@ import (
 	"github.com/giantswarm/microerror"
 )
 
-var releaseNotFoundError = &microerror.Error{
-	Kind: "releaseNotFoundError",
+var ReleaseNotFoundError = &microerror.Error{
+	Kind: "ReleaseNotFoundError",
 }
 
-// IsReleaseNotFoundError asserts releaseNotFoundError.
+// IsReleaseNotFoundError asserts ReleaseNotFoundError.
 func IsReleaseNotFoundError(err error) bool {
-	return microerror.Cause(err) == releaseNotFoundError
+	return microerror.Cause(err) == ReleaseNotFoundError
 }

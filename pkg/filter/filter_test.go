@@ -245,9 +245,9 @@ func Test_IsObjectReconciledByLegacyRelease(t *testing.T) {
 			ctrlClient := newFakeClient()
 			loadReleases(t, ctrlClient)
 
-			clusterGetter := func(metav1.Object) capi.Cluster {
+			clusterGetter := func(_ metav1.ObjectMetaAccessor) (capi.Cluster, bool, error) {
 				if tc.ownerCluster == nil {
-					return capi.Cluster{}
+					return capi.Cluster{}, false, nil
 				}
 
 				cluster, ok := tc.ownerCluster.(*capi.Cluster)
@@ -255,7 +255,7 @@ func Test_IsObjectReconciledByLegacyRelease(t *testing.T) {
 					t.Fatalf("Owner cluster is not a Cluster CR, check test inputs, got %T, expected *Cluster.", tc.ownerCluster)
 				}
 
-				return *cluster
+				return *cluster, true, nil
 			}
 
 			result, err := IsObjectReconciledByLegacyRelease(ctx, ctrlClient, tc.inputCR, clusterGetter)
@@ -342,6 +342,7 @@ func newFakeClient() client.Client {
 
 type object interface {
 	metav1.Object
+	metav1.ObjectMetaAccessor
 	runtime.Object
 }
 

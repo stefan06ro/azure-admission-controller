@@ -10,8 +10,9 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 )
 
 const (
@@ -26,16 +27,20 @@ const (
 // then it tries to get release.giantswarm.io/version label from the Cluster CR.
 //
 // Finally, it fetches the release CR by the release name.
-func TryFindReleaseForObject(ctx context.Context, ctrlReader client.Reader, objectMeta metav1.Object, ownerClusterGetter func(metav1.Object) capi.Cluster) (releasev1alpha1.Release, bool, error) {
+func TryFindReleaseForObject(ctx context.Context, ctrlReader client.Reader, object metav1.ObjectMetaAccessor, ownerClusterGetter generic.OwnerClusterGetter) (releasev1alpha1.Release, bool, error) {
 	// Try to get release label from the CR
 	var releaseVersionLabel string
-	if objectMeta.GetLabels() != nil && objectMeta.GetLabels()[label.ReleaseVersion] != "" {
+	if object.GetObjectMeta().GetLabels() != nil && object.GetObjectMeta().GetLabels()[label.ReleaseVersion] != "" {
 		// Get release label from the object itself
-		releaseVersionLabel = objectMeta.GetLabels()[label.ReleaseVersion]
+		releaseVersionLabel = object.GetObjectMeta().GetLabels()[label.ReleaseVersion]
 	} else {
 		// Get release label from the Cluster CR
-		cluster := ownerClusterGetter(objectMeta)
-		if cluster.Labels != nil && cluster.Labels[label.ReleaseVersion] != "" {
+		cluster, ok, err := ownerClusterGetter(object)
+		if err != nil {
+			return releasev1alpha1.Release{}, false, microerror.Mask(err)
+		}
+
+		if ok && cluster.Labels != nil && cluster.Labels[label.ReleaseVersion] != "" {
 			releaseVersionLabel = cluster.Labels[label.ReleaseVersion]
 		}
 	}
@@ -65,7 +70,7 @@ func FindRelease(ctx context.Context, ctrlReader client.Reader, releaseVersion s
 	{
 		err := ctrlReader.Get(ctx, client.ObjectKey{Name: releaseVersion}, &release)
 		if apierrors.IsNotFound(err) {
-			return releasev1alpha1.Release{}, microerror.Maskf(releaseNotFoundError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
+			return releasev1alpha1.Release{}, microerror.Maskf(ReleaseNotFoundError, "Looking for Release %s but it was not found. Can't continue.", releaseVersion)
 		} else if err != nil {
 			return releasev1alpha1.Release{}, microerror.Mask(err)
 		}
