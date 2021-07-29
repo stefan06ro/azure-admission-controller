@@ -5,3 +5,22 @@ image:
 project:
   branch: "[[ .Branch ]]"
   commit: "[[ .SHA ]]"
+
+workloadCluster:
+  kubernetes:
+    api:
+      endpointBase: k8s.test.westeurope.azure.gigantic.io
+
+provider:
+  location: westeurope
+
+registry:
+  domain: docker.io
+
+azureSecret:
+  service:
+    azure:
+      clientID: ""
+      clientSecret: ""
+      tenantID: ""
+      subscriptionID: ""

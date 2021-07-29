@@ -27,34 +27,34 @@ spec:
       serviceAccountName: {{ include "resource.default.name"  . }}
       containers:
         - name: {{ include "name" . }}
-          image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.registry.domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
           env:
           - name: AZURE_CLIENT_ID
             valueFrom:
               secretKeyRef:
                 name: {{ include "resource.default.name"  . }}
-                key: clientid
+                key: clientID
           - name: AZURE_CLIENT_SECRET
             valueFrom:
               secretKeyRef:
                 name: {{ include "resource.default.name"  . }}
-                key: clientsecret
+                key: clientSecret
           - name: AZURE_TENANT_ID
             valueFrom:
               secretKeyRef:
                 name: {{ include "resource.default.name"  . }}
-                key: tenantid
+                key: tenantID
           - name: AZURE_SUBSCRIPTION_ID
             valueFrom:
               secretKeyRef:
                 name: {{ include "resource.default.name"  . }}
-                key: subscriptionid
+                key: subscriptionID
           args:
             - ./azure-admission-controller
             - --tls-cert-file=/certs/ca.crt
             - --tls-key-file=/certs/tls.key
-            - --base-domain={{ .Values.Installation.V1.Guest.Kubernetes.API.EndpointBase }}
-            - --location={{ .Values.Installation.V1.Provider.Azure.Location }}
+            - --base-domain={{ .Values.workloadCluster.kubernetes.api.endpointBase }}
+            - --location={{ .Values.provider.location }}
           volumeMounts:
           - name: {{ include "name" . }}-certificates
             mountPath: "/certs"

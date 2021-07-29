@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove package names from some file names.
 - Move labels mutator functions to `pkg/mutator`.
 - Add new `WebhookHandler` interfaces for validation and mutation.
+- Prepare helm values to configuration management.
+- Update architect-orb to v4.0.0.
 
 ## [2.7.0] - 2021-05-19
 

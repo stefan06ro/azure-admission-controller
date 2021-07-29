@@ -7,25 +7,22 @@ import (
 	"github.com/giantswarm/microerror"
 )
 
-const Template = `Installation:
-  V1:
-    Guest:
-      Kubernetes:
-        API:
-          EndpointBase: k8s.test.westeurope.azure.gigantic.io
-    Provider:
-      Azure:
-        Location: westeurope
-    Registry:
-      Domain: quay.io
-    Secret:
-      Credentiald:
-        Azure:
-          CredentialDefault:
-            ClientID: {{.ClientID}}
-            ClientSecret: {{.ClientSecret}}
-            TenantID: {{.TenantID}}
-            SubscriptionID: {{.SubscriptionID}}
+const Template = `workloadCluster:
+  kubernetes:
+    api:
+      endpointBase: k8s.test.westeurope.azure.gigantic.io
+provider:
+  location: westeurope
+registry:
+  domain: quay.io
+
+azureSecret:
+  service:
+    azure:
+      clientID: {{.ClientID}}
+      clientSecret: {{.ClientSecret}}
+      tenantID: {{.TenantID}}
+      subscriptionID: {{.SubscriptionID}}
 `
 
 type Credentials struct {
