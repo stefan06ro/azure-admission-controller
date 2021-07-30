@@ -10,10 +10,9 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
@@ -25,7 +24,7 @@ import (
 func TestAzureMachinePoolCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		nodePool     []byte
+		nodePool     *capzexp.AzureMachinePool
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -33,7 +32,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     "case 0: unset storage account type with premium VM",
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4s_v3"), builder.StorageAccountType("")),
+			nodePool: builder.BuildAzureMachinePool(builder.VMSize("Standard_D4s_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -45,7 +44,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 1: unset storage account type with standard VM",
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.VMSize("Standard_D4_v3"), builder.StorageAccountType("")),
+			nodePool: builder.BuildAzureMachinePool(builder.VMSize("Standard_D4_v3"), builder.StorageAccountType("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -57,7 +56,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 2: set data disks",
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capz.DataDisk{})),
+			nodePool: builder.BuildAzureMachinePool(builder.DataDisks([]capz.DataDisk{})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -69,7 +68,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 3: set location",
-			nodePool: builder.BuildAzureMachinePoolAsJson(builder.Location("")),
+			nodePool: builder.BuildAzureMachinePool(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -184,15 +183,19 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateMutator{
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
-				vmcaps:     vmcaps,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.nodePool))
+			// Run mutating webhook handler on AzureMachinePool creation.
+			patches, err := handler.OnCreateMutate(ctx, tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -212,20 +215,4 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

@@ -8,14 +8,13 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azuremachinepool"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureMachinePoolUpdateValidate(t *testing.T) {
@@ -30,94 +29,94 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 	standardStorageInstanceType := "Standard_D4_v3"
 	type testCase struct {
 		name         string
-		oldNodePool  []byte
-		newNodePool  []byte
+		oldNodePool  *capzexp.AzureMachinePool
+		newNodePool  *capzexp.AzureMachinePool
 		errorMatcher func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
 			name:         "case 0: AcceleratedNetworking is enabled in CR and we don't change it or the instance type",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 1: AcceleratedNetworking is disabled in CR and we don't change it or the instance type",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 2: Enabled and try disabling it, keeping same instance type",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 3: Enabled, try updating to new instance type that supports it",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[1]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[1]), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Enabled, try updating to new instance type that does NOT supports it",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(unsupportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(unsupportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: IsVmsizeDoesNotSupportAcceleratedNetworkingError,
 		},
 		{
 			name:         "case 5: Disabled and try enabling it",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 6: changed from nil to true",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 7: changed from true to nil",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(true))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 8: changed from nil to false",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 9: changed from false to nil",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(to.BoolPtr(false))),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(supportedInstanceType[0]), builder.AcceleratedNetworking(nil)),
 			errorMatcher: IsAcceleratedNetworkingWasChangedError,
 		},
 		{
 			name:         "case 10: changed from premium to standard storage",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(premiumStorageInstanceType)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(standardStorageInstanceType)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(premiumStorageInstanceType)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(standardStorageInstanceType)),
 			errorMatcher: IsSwitchToVmSizeThatDoesNotSupportAcceleratedNetworkingError,
 		},
 		{
 			name:         "case 11: changed from standard to premium storage",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(standardStorageInstanceType)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.VMSize(premiumStorageInstanceType)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.VMSize(standardStorageInstanceType)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.VMSize(premiumStorageInstanceType)),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 12: change storage account type",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.StorageAccountType(compute.StorageAccountTypesStandardLRS)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.StorageAccountType(compute.StorageAccountTypesPremiumLRS)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.StorageAccountType(compute.StorageAccountTypesStandardLRS)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.StorageAccountType(compute.StorageAccountTypesPremiumLRS)),
 			errorMatcher: IsStorageAccountWasChangedError,
 		},
 		{
 			name:        "case 13: change datadisks",
-			oldNodePool: builder.BuildAzureMachinePoolAsJson(),
-			newNodePool: builder.BuildAzureMachinePoolAsJson(builder.DataDisks([]capz.DataDisk{
+			oldNodePool: builder.BuildAzureMachinePool(),
+			newNodePool: builder.BuildAzureMachinePool(builder.DataDisks([]capz.DataDisk{
 				{
 					NameSuffix: "docker",
 					DiskSizeGB: 30,
@@ -133,50 +132,50 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 		},
 		{
 			name:         "case 14: changed location",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("westeurope")),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("northeastitaly")),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.Location("westeurope")),
+			newNodePool:  builder.BuildAzureMachinePool(builder.Location("northeastitaly")),
 			errorMatcher: IsLocationWasChangedError,
 		},
 		{
 			name:         "case 15: disable spot instance configuration",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(nil)),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
 			name:         "case 16: enable spot instance configuration",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(nil)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
 			name:         "case 17: change spot instance price configuration",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("-1")})),
 			errorMatcher: IsSpotVMOptionsWasChangedError,
 		},
 		{
 			name:         "case 18: keep spot instances disabled",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(nil)),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(nil)),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(nil)),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 19: keep spot instances price configuration unknown",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: nil})),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 20: keep spot instances price configuration unchanged",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
+			newNodePool:  builder.BuildAzureMachinePool(builder.SpotVMOptions(&capz.SpotVMOptions{MaxPrice: toQuantityPtr("1.24322")})),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 21: changed location but object is being deleted",
-			oldNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("westeurope")),
-			newNodePool:  builder.BuildAzureMachinePoolAsJson(builder.Location("northeastitaly"), builder.WithDeletionTimestamp()),
+			oldNodePool:  builder.BuildAzureMachinePool(builder.Location("westeurope")),
+			newNodePool:  builder.BuildAzureMachinePool(builder.Location("northeastitaly"), builder.WithDeletionTimestamp()),
 			errorMatcher: nil,
 		},
 	}
@@ -193,6 +192,11 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 					panic(microerror.JSON(err))
 				}
 			}
+
+			ctx := context.Background()
+			fakeK8sClient := unittest.FakeK8sClient()
+			ctrlClient := fakeK8sClient.CtrlClient()
+
 			stubbedSKUs := map[string]compute.ResourceSku{
 				"Standard_D4_v3": {
 					Name: to.StringPtr("Standard_D4_v3"),
@@ -288,13 +292,19 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 				panic(microerror.JSON(err))
 			}
 
-			admit := &UpdateValidator{
-				logger: newLogger,
-				vmcaps: vmcaps,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(context.Background(), getUpdateAdmissionRequest(tc.oldNodePool, tc.newNodePool))
+			// Run validating webhook handler on AzureMachinePool update.
+			err = handler.OnUpdateValidate(ctx, tc.oldNodePool, tc.newNodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -309,26 +319,6 @@ func TestAzureMachinePoolUpdateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateAdmissionRequest(oldMP []byte, newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachinepool",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    oldMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }
 
 func toQuantityPtr(d string) *resource.Quantity {
