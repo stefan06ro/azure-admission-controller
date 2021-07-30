@@ -7,73 +7,89 @@ import (
 	corev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
-	"github.com/giantswarm/azure-admission-controller/pkg/validator"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-type AzureClusterConfigValidator struct {
+type AzureClusterConfigWebhookHandler struct {
 	ctrlClient client.Client
+	decoder    runtime.Decoder
 	logger     micrologger.Logger
 }
 
-type AzureClusterConfigValidatorConfig struct {
+type AzureClusterConfigWebhookHandlerConfig struct {
 	CtrlClient client.Client
+	Decoder    runtime.Decoder
 	Logger     micrologger.Logger
 }
 
-func NewAzureClusterConfigValidator(config AzureClusterConfigValidatorConfig) (*AzureClusterConfigValidator, error) {
+func NewAzureClusterConfigWebhookHandler(config AzureClusterConfigWebhookHandlerConfig) (*AzureClusterConfigWebhookHandler, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Decoder == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Decoder must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	azureClusterValidator := &AzureClusterConfigValidator{
+	webhookHandler := &AzureClusterConfigWebhookHandler{
 		ctrlClient: config.CtrlClient,
+		decoder:    config.Decoder,
 		logger:     config.Logger,
 	}
 
-	return azureClusterValidator, nil
+	return webhookHandler, nil
 }
 
-func (a *AzureClusterConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	AzureClusterConfigNewCR := &corev1alpha1.AzureClusterConfig{}
-	AzureClusterConfigOldCR := &corev1alpha1.AzureClusterConfig{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, AzureClusterConfigNewCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
-	}
-	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, AzureClusterConfigOldCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
+func (h *AzureClusterConfigWebhookHandler) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+	cr := &corev1alpha1.AzureClusterConfig{}
+	if _, _, err := h.decoder.Decode(rawObject.Raw, nil, cr); err != nil {
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureClusterConfig CR: %v", err)
 	}
 
-	if !AzureClusterConfigNewCR.GetDeletionTimestamp().IsZero() {
-		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+	return cr, nil
+}
+
+func (h *AzureClusterConfigWebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+	azureClusterConfigNewCR, err := key.ToAzureClusterConfigPtr(object)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	if !azureClusterConfigNewCR.GetDeletionTimestamp().IsZero() {
+		h.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
 		return nil
 	}
 
-	oldVersion, err := getSemver(AzureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
+	azureClusterConfigOldCR, err := key.ToAzureClusterConfigPtr(oldObject)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	oldVersion, err := getSemver(azureClusterConfigOldCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (before edit)")
 	}
-	newVersion, err := getSemver(AzureClusterConfigNewCR.Spec.Guest.ReleaseVersion)
+	newVersion, err := getSemver(azureClusterConfigNewCR.Spec.Guest.ReleaseVersion)
 	if err != nil {
 		return microerror.Maskf(errors.ParsingFailedError, "unable to parse version from AzureClusterConfig (after edit)")
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
+		return releaseversion.Validate(ctx, h.ctrlClient, oldVersion, newVersion)
 	}
 
 	return nil
 }
 
-func (a *AzureClusterConfigValidator) Log(keyVals ...interface{}) {
-	a.logger.Log(keyVals...)
+func (h *AzureClusterConfigWebhookHandler) Log(keyVals ...interface{}) {
+	h.logger.Log(keyVals...)
 }
 
 func getSemver(version string) (semver.Version, error) {

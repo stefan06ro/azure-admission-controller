@@ -2,7 +2,6 @@ package azureupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,6 +21,7 @@ import (
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
+	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
 
 func TestAzureClusterConfigValidate(t *testing.T) {
@@ -247,9 +246,13 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 
 			ctrlClient := fake.NewFakeClientWithScheme(scheme)
 
-			admit := &AzureClusterConfigValidator{
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			handler, err := NewAzureClusterConfigWebhookHandler(AzureClusterConfigWebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			// Create needed releases.
@@ -271,8 +274,8 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(tc.ctx, getClusterConfigAdmissionRequest(tc.oldVersion, tc.newVersion))
+			// Run validating webhook handler on AzureClusterConfig update.
+			err = handler.OnUpdateValidate(tc.ctx, azureClusterConfigObj(tc.oldVersion), azureClusterConfigObj(tc.newVersion))
 
 			// Check if the error is the expected one.
 			switch {
@@ -289,32 +292,8 @@ func TestAzureClusterConfigValidate(t *testing.T) {
 	}
 }
 
-func getClusterConfigAdmissionRequest(oldVersion string, newVersion string) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
-			Version: "infrastructure.giantswarm.io/v1alpha2",
-			Kind:    "AzureClusterUpgrade",
-		},
-		Resource: metav1.GroupVersionResource{
-			Version:  "core.giantswarm.io/v1alpha1",
-			Resource: "azureclusterconfigs",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    azureClusterConfigRawObj(newVersion),
-			Object: nil,
-		},
-		OldObject: runtime.RawExtension{
-			Raw:    azureClusterConfigRawObj(oldVersion),
-			Object: nil,
-		},
-	}
-
-	return req
-}
-
-func azureClusterConfigRawObj(version string) []byte {
-	azureclusterconfig := corev1alpha1.AzureClusterConfig{
+func azureClusterConfigObj(version string) *corev1alpha1.AzureClusterConfig {
+	azureClusterConfig := corev1alpha1.AzureClusterConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureClusterConfig",
 			APIVersion: "core.giantswarm.io/v1alpha1",
@@ -333,6 +312,6 @@ func azureClusterConfigRawObj(version string) []byte {
 			VersionBundle: corev1alpha1.AzureClusterConfigSpecVersionBundle{},
 		},
 	}
-	byt, _ := json.Marshal(azureclusterconfig)
-	return byt
+
+	return &azureClusterConfig
 }

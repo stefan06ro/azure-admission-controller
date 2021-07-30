@@ -127,3 +127,16 @@ func ToSparkPtr(v interface{}) (*corev1alpha1v3.Spark, error) {
 
 	return customObjectPointer, nil
 }
+
+func ToAzureClusterConfigPtr(v interface{}) (*corev1alpha1v3.AzureClusterConfig, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1v3.AzureClusterConfig{}, v)
+	}
+
+	customObjectPointer, ok := v.(*corev1alpha1v3.AzureClusterConfig)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1v3.AzureClusterConfig{}, v)
+	}
+
+	return customObjectPointer, nil
+}
