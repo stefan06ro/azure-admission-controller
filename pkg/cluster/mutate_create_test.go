@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -11,9 +10,7 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
@@ -24,7 +21,7 @@ import (
 func TestClusterCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		cluster      []byte
+		cluster      *capi.Cluster
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -42,7 +39,7 @@ func TestClusterCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:    "case 0: ControlPlaneEndpoint left empty",
-			cluster: clusterRawObject("ab123", clusterNetwork, "", 0, nil),
+			cluster: clusterObject("ab123", clusterNetwork, "", 0, nil),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -59,13 +56,13 @@ func TestClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         "case 1: ControlPlaneEndpoint has a value",
-			cluster:      clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, nil),
+			cluster:      clusterObject("ab123", clusterNetwork, "api.giantswarm.io", 123, nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:    "case 2: Azure Operator version empty",
-			cluster: clusterRawObject("ab123", clusterNetwork, "api.giantswarm.io", 123, map[string]string{label.AzureOperatorVersion: ""}),
+			cluster: clusterObject("ab123", clusterNetwork, "api.giantswarm.io", 123, map[string]string{label.AzureOperatorVersion: ""}),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -127,14 +124,19 @@ func TestClusterCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateMutator{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlClient: ctrlClient,
-				logger:     newLogger,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlClient: ctrlClient,
+				CtrlReader: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.cluster))
+			// Run mutating webhook handler on Cluster creation.
+			patches, err := handler.OnCreateMutate(context.Background(), tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -158,23 +160,7 @@ func TestClusterCreateMutate(t *testing.T) {
 	}
 }
 
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "cluster.x-k8s.io/v1alpha3",
-			Resource: "cluster",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
-}
-
-func clusterRawObject(clusterName string, clusterNetwork *capi.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) []byte {
+func clusterObject(clusterName string, clusterNetwork *capi.ClusterNetwork, controlPlaneEndpointHost string, controlPlaneEndpointPort int32, labels map[string]string) *capi.Cluster {
 	mergedLabels := map[string]string{
 		"azure-operator.giantswarm.io/version": "5.0.0",
 		"cluster.x-k8s.io/cluster-name":        clusterName,
@@ -186,7 +172,7 @@ func clusterRawObject(clusterName string, clusterNetwork *capi.ClusterNetwork, c
 		mergedLabels[k] = v
 	}
 
-	mp := capi.Cluster{
+	cluster := capi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
 			APIVersion: "cluster.x-k8s.io/v1alpha3",
@@ -204,6 +190,5 @@ func clusterRawObject(clusterName string, clusterNetwork *capi.ClusterNetwork, c
 			},
 		},
 	}
-	byt, _ := json.Marshal(mp)
-	return byt
+	return &cluster
 }

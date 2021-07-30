@@ -8,9 +8,8 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/cluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
@@ -20,7 +19,7 @@ import (
 func TestClusterUpdateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		cluster      []byte
+		cluster      *capi.Cluster
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -28,7 +27,7 @@ func TestClusterUpdateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:    "case 0: Wrong azure-operator component label",
-			cluster: builder.BuildClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "4.2.0", "cluster-operator.giantswarm.io/version": "0.23.11"})),
+			cluster: builder.BuildCluster(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "4.2.0", "cluster-operator.giantswarm.io/version": "0.23.11"})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -40,7 +39,7 @@ func TestClusterUpdateMutate(t *testing.T) {
 		},
 		{
 			name:    "case 0: Wrong azure-operator component label",
-			cluster: builder.BuildClusterAsJson(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "5.1.0", "cluster-operator.giantswarm.io/version": "0.23.10"})),
+			cluster: builder.BuildCluster(builder.Name("ab123"), builder.Labels(map[string]string{"release.giantswarm.io/version": "v13.1.0", "azure-operator.giantswarm.io/version": "5.1.0", "cluster-operator.giantswarm.io/version": "0.23.10"})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -91,17 +90,19 @@ func TestClusterUpdateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewUpdateMutator(UpdateMutatorConfig{
-				CtrlCache:  ctrlClient,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
 				CtrlClient: ctrlClient,
+				CtrlReader: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
 				Logger:     newLogger,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getUpdateMutateAdmissionRequest(tc.cluster))
+			// Run mutation webhook handler on Cluster update.
+			patches, err := handler.OnUpdateMutate(context.Background(), nil, tc.cluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -123,20 +124,4 @@ func TestClusterUpdateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getUpdateMutateAdmissionRequest(newCluster []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "cluster.x-k8s.io/v1alpha3",
-			Resource: "cluster",
-		},
-		Operation: v1beta1.Update,
-		Object: runtime.RawExtension{
-			Raw:    newCluster,
-			Object: nil,
-		},
-	}
-
-	return req
 }

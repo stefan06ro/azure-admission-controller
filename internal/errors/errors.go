@@ -148,3 +148,12 @@ func IgnoreCAPIErrorForField(field string, err error) error {
 
 	return err
 }
+
+var WrongTypeError = &microerror.Error{
+	Kind: "WrongTypeError",
+}
+
+// IsWrongTypeError asserts wrongTypeError.
+func IsWrongTypeError(err error) bool {
+	return microerror.Cause(err) == WrongTypeError
+}

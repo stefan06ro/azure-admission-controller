@@ -39,6 +39,37 @@ func GenerateFrom(originalJSON []byte, current runtime.Object) ([]mutator.PatchO
 	return patches, nil
 }
 
+func GenerateFromObjectDiff(original runtime.Object, current runtime.Object) ([]mutator.PatchOperation, error) {
+	originalJSON, err := json.Marshal(original)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+	currentJSON, err := json.Marshal(current)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
+	var patches []mutator.PatchOperation
+	{
+		var jsonPatches []jsonpatch.JsonPatchOperation
+		jsonPatches, err = jsonpatch.CreatePatch(originalJSON, currentJSON)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		patches = make([]mutator.PatchOperation, 0, len(jsonPatches))
+		for _, patch := range jsonPatches {
+			patches = append(patches, mutator.PatchOperation(patch))
+		}
+
+		sort.SliceStable(patches, func(i, j int) bool {
+			return patches[i].Path < patches[j].Path
+		})
+	}
+
+	return patches, nil
+}
+
 func SkipForPath(path string, patches []mutator.PatchOperation) []mutator.PatchOperation {
 	var modifiedPatches []mutator.PatchOperation
 	{

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Release is considered to be "legacy" if it contains azure-operator.
 - Unit tests for functions from `release` package.
 - `HttpHandlerFactory` for creating HTTP handlers that are using new webhook handlers.
+- Cluster webhook handler that replaces mutators and validators.
 
 ### Changed
 
