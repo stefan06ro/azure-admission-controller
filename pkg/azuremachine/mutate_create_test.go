@@ -5,14 +5,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -20,7 +20,7 @@ import (
 func TestAzureMachineCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		azureMachine []byte
+		azureMachine *capz.AzureMachine
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -28,7 +28,7 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: Location empty",
-			azureMachine: azureMachineRawObject("ab132", "", nil, nil),
+			azureMachine: azureMachineObject("ab132", "", nil, nil),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -40,13 +40,13 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 		},
 		{
 			name:         "case 1: Location has value",
-			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, nil),
+			azureMachine: azureMachineObject("ab132", "westeurope", nil, nil),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 2: Azure Operator version label empty",
-			azureMachine: azureMachineRawObject("ab132", "westeurope", nil, map[string]string{label.AzureOperatorVersion: ""}),
+			azureMachine: azureMachineObject("ab132", "westeurope", nil, map[string]string{label.AzureOperatorVersion: ""}),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -91,14 +91,29 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateMutator{
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.azureMachine))
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Location:   "westeurope",
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Run mutating webhook handler on AzureMachine creation.
+			patches, err := handler.OnCreateMutate(ctx, tc.azureMachine)
 
 			// Check if the error is the expected one.
 			switch {
@@ -120,20 +135,4 @@ func TestAzureMachineCreateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azuremachine",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

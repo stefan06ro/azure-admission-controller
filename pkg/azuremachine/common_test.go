@@ -1,13 +1,11 @@
 package azuremachine
 
 import (
-	"encoding/json"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
-func azureMachineRawObject(sshKey string, location string, failureDomain *string, labels map[string]string) []byte {
+func azureMachineObject(sshKey string, location string, failureDomain *string, labels map[string]string) *capz.AzureMachine {
 	mergedLabels := map[string]string{
 		"azure-operator.giantswarm.io/version": "5.0.0",
 		"giantswarm.io/cluster":                "ab123",
@@ -20,7 +18,7 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 	for k, v := range labels {
 		mergedLabels[k] = v
 	}
-	mp := capz.AzureMachine{
+	am := capz.AzureMachine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureMachine",
 			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
@@ -55,6 +53,6 @@ func azureMachineRawObject(sshKey string, location string, failureDomain *string
 			VMSize:       "Standard_D4s_v3",
 		},
 	}
-	byt, _ := json.Marshal(mp)
-	return byt
+
+	return &am
 }

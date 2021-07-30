@@ -100,3 +100,16 @@ func ToAzureMachinePoolPtr(v interface{}) (*capzexp.AzureMachinePool, error) {
 
 	return customObjectPointer, nil
 }
+
+func ToAzureMachinePtr(v interface{}) (*capz.AzureMachine, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capz.AzureMachine{}, v)
+	}
+
+	customObjectPointer, ok := v.(*capz.AzureMachine)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capz.AzureMachine{}, v)
+	}
+
+	return customObjectPointer, nil
+}
