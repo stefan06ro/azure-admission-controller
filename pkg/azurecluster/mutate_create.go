@@ -52,7 +52,7 @@ func (h *WebhookHandler) OnCreateMutate(ctx context.Context, object interface{})
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, h.ctrlCache, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
+	patch, err = mutator.EnsureComponentVersionLabelFromRelease(ctx, h.ctrlReader, azureClusterCR.GetObjectMeta(), "azure-operator", label.AzureOperatorVersion)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}

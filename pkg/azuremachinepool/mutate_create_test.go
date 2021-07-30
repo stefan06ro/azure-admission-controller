@@ -136,7 +136,7 @@ func TestAzureMachinePoolCreateMutate(t *testing.T) {
 					},
 				},
 			}
-			stubAPI := NewStubAPI(stubbedSKUs)
+			stubAPI := unittest.NewResourceSkuStubAPI(stubbedSKUs)
 			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
 				Azure:  stubAPI,
 				Logger: newLogger,

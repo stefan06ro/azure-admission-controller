@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
@@ -80,8 +79,7 @@ func TestAzureMachineUpdateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stubbedSKUs := map[string]compute.ResourceSku{}
-			stubAPI := NewStubAPI(stubbedSKUs)
+			stubAPI := unittest.NewEmptyResourceSkuStubAPI()
 			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
 				Azure:  stubAPI,
 				Logger: newLogger,

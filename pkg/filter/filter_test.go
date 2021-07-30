@@ -10,6 +10,7 @@ import (
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/provider/v1alpha1"
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
+	"github.com/giantswarm/micrologger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -242,6 +243,7 @@ func Test_IsObjectReconciledByLegacyRelease(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Log(tc.name)
 			ctx := context.Background()
+			logger, _ := micrologger.New(micrologger.Config{})
 			ctrlClient := newFakeClient()
 			loadReleases(t, ctrlClient)
 
@@ -258,7 +260,7 @@ func Test_IsObjectReconciledByLegacyRelease(t *testing.T) {
 				return *cluster, true, nil
 			}
 
-			result, err := IsObjectReconciledByLegacyRelease(ctx, ctrlClient, tc.inputCR, clusterGetter)
+			result, err := IsObjectReconciledByLegacyRelease(ctx, logger, ctrlClient, tc.inputCR, clusterGetter)
 			if err != nil {
 				t.Fatalf("Error when calling IsObjectReconciledByLegacyRelease: %#v", err)
 			}

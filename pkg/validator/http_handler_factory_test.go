@@ -15,6 +15,7 @@ import (
 	releasev1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
+	"github.com/giantswarm/micrologger"
 	admission "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -89,6 +90,7 @@ func TestHttpHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var err error
 			ctx := context.Background()
+			logger, _ := micrologger.New(micrologger.Config{})
 			fakeK8sClient := unittest.FakeK8sClient()
 			ctrlClient := fakeK8sClient.CtrlClient()
 			loadReleases(t, ctx, ctrlClient)
@@ -104,8 +106,9 @@ func TestHttpHandler(t *testing.T) {
 			var httpHandlerFactory *HttpHandlerFactory
 			{
 				c := HttpHandlerFactoryConfig{
-					CtrlCache:  ctrlClient, // Passing client here, for the sake of simpler test code
+					CtrlReader: ctrlClient, // Passing client here, for the sake of simpler test code
 					CtrlClient: ctrlClient,
+					Logger:     logger,
 				}
 				httpHandlerFactory, err = NewHttpHandlerFactory(c)
 				if err != nil {

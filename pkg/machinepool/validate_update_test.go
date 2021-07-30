@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -60,8 +59,7 @@ func TestMachinePoolUpdateValidate(t *testing.T) {
 			fakeK8sClient := unittest.FakeK8sClient()
 			ctrlClient := fakeK8sClient.CtrlClient()
 
-			stubbedSKUs := map[string]compute.ResourceSku{}
-			stubAPI := NewStubAPI(stubbedSKUs)
+			stubAPI := unittest.NewEmptyResourceSkuStubAPI()
 			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
 				Azure:  stubAPI,
 				Logger: newLogger,

@@ -92,7 +92,7 @@ func TestAzureClusterUpdateMutate(t *testing.T) {
 
 			handler, err := NewWebhookHandler(WebhookHandlerConfig{
 				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				CtrlCache:  ctrlClient,
+				CtrlReader: ctrlClient,
 				CtrlClient: ctrlClient,
 				Decoder:    unittest.NewFakeDecoder(),
 				Location:   "westeurope",

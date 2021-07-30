@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
@@ -207,8 +206,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stubbedSKUs := map[string]compute.ResourceSku{}
-			stubAPI := NewStubAPI(stubbedSKUs)
+			stubAPI := unittest.NewEmptyResourceSkuStubAPI()
 			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
 				Azure:  stubAPI,
 				Logger: newLogger,

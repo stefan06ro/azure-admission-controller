@@ -106,6 +106,10 @@ func (h *AzureConfigWebhookHandler) Log(keyVals ...interface{}) {
 	h.logger.Log(keyVals...)
 }
 
+func (h *AzureConfigWebhookHandler) Resource() string {
+	return "azureconfig"
+}
+
 func validateMasterCIDRUnchanged(old *v1alpha1.AzureConfig, new *v1alpha1.AzureConfig) error {
 	if old.Spec.Azure.VirtualNetwork.MasterSubnetCIDR != "" && old.Spec.Azure.VirtualNetwork.MasterSubnetCIDR != new.Spec.Azure.VirtualNetwork.MasterSubnetCIDR {
 		return microerror.Maskf(masterCIDRChangeError, "Spec.Azure.VirtualNetwork.MasterSubnetCIDR change disallowed")

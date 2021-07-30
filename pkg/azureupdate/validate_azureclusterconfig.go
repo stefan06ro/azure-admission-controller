@@ -92,6 +92,10 @@ func (h *AzureClusterConfigWebhookHandler) Log(keyVals ...interface{}) {
 	h.logger.Log(keyVals...)
 }
 
+func (h *AzureClusterConfigWebhookHandler) Resource() string {
+	return "azureclusterconfig"
+}
+
 func getSemver(version string) (semver.Version, error) {
 	return semver.ParseTolerant(version)
 }

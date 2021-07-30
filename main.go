@@ -20,8 +20,6 @@ import (
 	"github.com/giantswarm/k8sclient/v5/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -31,18 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
-	"github.com/giantswarm/azure-admission-controller/config"
 	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
-	"github.com/giantswarm/azure-admission-controller/pkg/azurecluster"
-	"github.com/giantswarm/azure-admission-controller/pkg/azuremachine"
-	"github.com/giantswarm/azure-admission-controller/pkg/azuremachinepool"
-	"github.com/giantswarm/azure-admission-controller/pkg/azureupdate"
-	"github.com/giantswarm/azure-admission-controller/pkg/cluster"
-	"github.com/giantswarm/azure-admission-controller/pkg/machinepool"
-	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
+	"github.com/giantswarm/azure-admission-controller/pkg/app"
+	"github.com/giantswarm/azure-admission-controller/pkg/config"
 	"github.com/giantswarm/azure-admission-controller/pkg/project"
-	"github.com/giantswarm/azure-admission-controller/pkg/spark"
-	"github.com/giantswarm/azure-admission-controller/pkg/validator"
 )
 
 func main() {
@@ -134,10 +124,6 @@ func mainError() error {
 		}
 	}
 
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-	universalDeserializer := codecs.UniversalDeserializer()
-
 	var resourceSkusClient compute.ResourceSkusClient
 	{
 		settings, err := auth.GetSettingsFromEnvironment()
@@ -163,173 +149,15 @@ func mainError() error {
 		}
 	}
 
-	var azureConfigWebhookHandler *azureupdate.AzureConfigWebhookHandler
-	{
-		c := azureupdate.AzureConfigWebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Logger:     newLogger,
-		}
-		azureConfigWebhookHandler, err = azureupdate.NewAzureConfigWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterWebhookHandler *azurecluster.WebhookHandler
-	{
-		c := azurecluster.WebhookHandlerConfig{
-			BaseDomain: cfg.BaseDomain,
-			CtrlCache:  ctrlCache,
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Location:   cfg.Location,
-			Logger:     newLogger,
-		}
-		azureClusterWebhookHandler, err = azurecluster.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterConfigValidator *azureupdate.AzureClusterConfigWebhookHandler
-	{
-		c := azureupdate.AzureClusterConfigWebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Logger:     newLogger,
-		}
-		azureClusterConfigValidator, err = azureupdate.NewAzureClusterConfigWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachineWebhookHandler *azuremachine.WebhookHandler
-	{
-		c := azuremachine.WebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Location:   cfg.Location,
-			Logger:     newLogger,
-			VMcaps:     vmcaps,
-		}
-		azureMachineWebhookHandler, err = azuremachine.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureMachinePoolWebhookHandler *azuremachinepool.WebhookHandler
-	{
-		c := azuremachinepool.WebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Location:   cfg.Location,
-			Logger:     newLogger,
-			VMcaps:     vmcaps,
-		}
-		azureMachinePoolWebhookHandler, err = azuremachinepool.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var clusterWebhookHandler *cluster.WebhookHandler
-	{
-		c := cluster.WebhookHandlerConfig{
-			BaseDomain: cfg.BaseDomain,
-			CtrlClient: ctrlClient,
-			CtrlReader: ctrlCache,
-			Decoder:    universalDeserializer,
-			Logger:     newLogger,
-		}
-		clusterWebhookHandler, err = cluster.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolWebhookHandler *machinepool.WebhookHandler
-	{
-		c := machinepool.WebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Logger:     newLogger,
-			VMcaps:     vmcaps,
-		}
-		machinePoolWebhookHandler, err = machinepool.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var sparkWebhookHandler *spark.WebhookHandler
-	{
-		c := spark.WebhookHandlerConfig{
-			CtrlClient: ctrlClient,
-			Decoder:    universalDeserializer,
-			Logger:     newLogger,
-		}
-		sparkWebhookHandler, err = spark.NewWebhookHandler(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var validatorHttpHandlerFactory *validator.HttpHandlerFactory
-	{
-		c := validator.HttpHandlerFactoryConfig{
-			CtrlClient: ctrlClient,
-			CtrlCache:  ctrlCache,
-		}
-		validatorHttpHandlerFactory, err = validator.NewHttpHandlerFactory(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var mutatorHttpHandlerFactory *mutator.HttpHandlerFactory
-	{
-		c := mutator.HttpHandlerFactoryConfig{
-			CtrlClient: ctrlClient,
-			CtrlCache:  ctrlCache,
-		}
-		mutatorHttpHandlerFactory, err = mutator.NewHttpHandlerFactory(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
 	// Here we register our endpoints.
 	handler := http.NewServeMux()
-	// Mutators.
-	handler.Handle("/mutate/azuremachine/create", mutatorHttpHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
-	handler.Handle("/mutate/azuremachine/update", mutatorHttpHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
-	handler.Handle("/mutate/azuremachinepool/create", mutatorHttpHandlerFactory.NewCreateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/mutate/azuremachinepool/update", mutatorHttpHandlerFactory.NewUpdateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/mutate/azurecluster/create", mutatorHttpHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
-	handler.Handle("/mutate/azurecluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
-	handler.Handle("/mutate/cluster/create", mutatorHttpHandlerFactory.NewCreateHandler(clusterWebhookHandler))
-	handler.Handle("/mutate/cluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/mutate/machinepool/create", mutatorHttpHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
-	handler.Handle("/mutate/machinepool/update", mutatorHttpHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
-	handler.Handle("/mutate/spark/create", mutatorHttpHandlerFactory.NewCreateHandler(sparkWebhookHandler))
-
-	// Validators.
-	handler.Handle("/validate/azureconfig/update", validatorHttpHandlerFactory.NewUpdateHandler(azureConfigWebhookHandler))
-	handler.Handle("/validate/azureclusterconfig/update", validatorHttpHandlerFactory.NewUpdateHandler(azureClusterConfigValidator))
-	handler.Handle("/validate/azurecluster/create", validatorHttpHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
-	handler.Handle("/validate/azurecluster/update", validatorHttpHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
-	handler.Handle("/validate/azuremachine/create", validatorHttpHandlerFactory.NewCreateHandler(azureMachineWebhookHandler))
-	handler.Handle("/validate/azuremachine/update", validatorHttpHandlerFactory.NewUpdateHandler(azureMachineWebhookHandler))
-	handler.Handle("/validate/azuremachinepool/create", validatorHttpHandlerFactory.NewCreateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/validate/azuremachinepool/update", validatorHttpHandlerFactory.NewUpdateHandler(azureMachinePoolWebhookHandler))
-	handler.Handle("/validate/cluster/create", validatorHttpHandlerFactory.NewCreateHandler(clusterWebhookHandler))
-	handler.Handle("/validate/cluster/update", validatorHttpHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/validate/machinepool/create", validatorHttpHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
-	handler.Handle("/validate/machinepool/update", validatorHttpHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
 	handler.HandleFunc("/healthz", healthCheck)
+
+	// Register all webhook handlers
+	err = app.RegisterWebhookHandlers(handler, cfg, newLogger, ctrlClient, ctrlCache, vmcaps)
+	if err != nil {
+		return microerror.Mask(err)
+	}
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))
 	serve(cfg, handler)

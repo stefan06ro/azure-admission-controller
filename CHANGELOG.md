@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add new `WebhookHandler` interfaces for validation and mutation.
 - Prepare helm values to configuration management.
 - Update architect-orb to v4.0.0.
+- All webhook handlers (previously mutators and validators) are now created in `pkg/app` package.
+- The webhook handlers are not added to HTTP handler manually. Now for all handlers we check which wehbook handler
+  interfaces are implementing, and according to that we add appropriate HTTP handlers.
+- Resource SKU stub API has been moved to `pkg/unittests` since it was being used in multiple places.
 
 ## [2.7.0] - 2021-05-19
 

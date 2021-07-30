@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/giantswarm/microerror"
+	"github.com/giantswarm/micrologger"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -18,27 +19,33 @@ import (
 )
 
 type HttpHandlerFactoryConfig struct {
-	CtrlCache  client.Reader
+	CtrlReader client.Reader
 	CtrlClient client.Client
+	Logger     micrologger.Logger
 }
 
 // HttpHandlerFactory creates HTTP handlers for mutating create and update requests.
 type HttpHandlerFactory struct {
-	ctrlCache  client.Reader
+	ctrlReader client.Reader
 	ctrlClient client.Client
+	logger     micrologger.Logger
 }
 
 func NewHttpHandlerFactory(config HttpHandlerFactoryConfig) (*HttpHandlerFactory, error) {
-	if config.CtrlCache == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlCache must not be empty", config)
+	if config.CtrlReader == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlReader must not be empty", config)
 	}
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
+	if config.Logger == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
+	}
 
 	h := &HttpHandlerFactory{
-		ctrlCache:  config.CtrlCache,
+		ctrlReader: config.CtrlReader,
 		ctrlClient: config.CtrlClient,
+		logger:     config.Logger,
 	}
 
 	return h, nil
@@ -63,7 +70,7 @@ func (h *HttpHandlerFactory) NewCreateHandler(mutator WebhookCreateHandler) http
 		}
 
 		// Check if the CR should be mutated by the azure-admission-controller.
-		ok, err := filter.IsObjectReconciledByLegacyRelease(ctx, h.ctrlCache, object, ownerClusterGetter)
+		ok, err := filter.IsObjectReconciledByLegacyRelease(ctx, h.logger, h.ctrlReader, object, ownerClusterGetter)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -103,7 +110,7 @@ func (h *HttpHandlerFactory) NewUpdateHandler(mutator WebhookUpdateHandler) http
 		}
 
 		// Check if the CR should be mutated by the azure-admission-controller.
-		ok, err := filter.IsObjectReconciledByLegacyRelease(ctx, h.ctrlCache, object, ownerClusterGetter)
+		ok, err := filter.IsObjectReconciledByLegacyRelease(ctx, h.logger, h.ctrlReader, object, ownerClusterGetter)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}

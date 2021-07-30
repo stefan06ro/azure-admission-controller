@@ -9,6 +9,7 @@ import (
 type WebhookHandlerBase interface {
 	generic.Decoder
 	generic.Logger
+	Resource() string
 }
 
 type WebhookCreateHandler interface {

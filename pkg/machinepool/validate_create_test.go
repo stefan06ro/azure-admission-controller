@@ -162,7 +162,7 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 					},
 				},
 			}
-			stubAPI := NewStubAPI(stubbedSKUs)
+			stubAPI := unittest.NewResourceSkuStubAPI(stubbedSKUs)
 			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
 				Azure:  stubAPI,
 				Logger: newLogger,
@@ -248,16 +248,4 @@ func TestMachinePoolCreateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-type StubAPI struct {
-	stubbedSKUs map[string]compute.ResourceSku
-}
-
-func NewStubAPI(stubbedSKUs map[string]compute.ResourceSku) vmcapabilities.API {
-	return &StubAPI{stubbedSKUs: stubbedSKUs}
-}
-
-func (s *StubAPI) List(_ context.Context, _ string) (map[string]compute.ResourceSku, error) {
-	return s.stubbedSKUs, nil
 }
