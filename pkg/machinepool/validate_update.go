@@ -5,55 +5,25 @@ import (
 	"sort"
 
 	"github.com/giantswarm/microerror"
-	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
-	"github.com/giantswarm/azure-admission-controller/pkg/validator"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-type UpdateValidator struct {
-	logger micrologger.Logger
-}
-
-type UpdateValidatorConfig struct {
-	Logger micrologger.Logger
-}
-
-func NewUpdateValidator(config UpdateValidatorConfig) (*UpdateValidator, error) {
-	if config.Logger == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
-	}
-
-	admitter := &UpdateValidator{
-		logger: config.Logger,
-	}
-
-	return admitter, nil
-}
-
-func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	machinePoolNewCR := &capiexp.MachinePool{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, machinePoolNewCR); err != nil {
-		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
-	}
-	machinePoolOldCR := &capiexp.MachinePool{}
-	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, machinePoolOldCR); err != nil {
-		return microerror.Maskf(parsingFailedError, "unable to parse machinePool CR: %v", err)
-	}
-
-	if !machinePoolNewCR.GetDeletionTimestamp().IsZero() {
-		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
-		return nil
-	}
-
-	capi, err := generic.IsCAPIRelease(machinePoolNewCR)
+func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+	machinePoolNewCR, err := key.ToMachinePoolPtr(object)
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	if capi {
+	if !machinePoolNewCR.GetDeletionTimestamp().IsZero() {
+		h.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
 		return nil
+	}
+
+	machinePoolOldCR, err := key.ToMachinePoolPtr(oldObject)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
 	err = machinePoolNewCR.ValidateUpdate(machinePoolOldCR)
@@ -74,11 +44,7 @@ func (a *UpdateValidator) Validate(ctx context.Context, request *v1beta1.Admissi
 	return nil
 }
 
-func (a *UpdateValidator) Log(keyVals ...interface{}) {
-	a.logger.Log(keyVals...)
-}
-
-func checkAvailabilityZonesUnchanged(ctx context.Context, oldMP *capiexp.MachinePool, newMP *capiexp.MachinePool) error {
+func checkAvailabilityZonesUnchanged(_ context.Context, oldMP *capiexp.MachinePool, newMP *capiexp.MachinePool) error {
 	if len(oldMP.Spec.FailureDomains) != len(newMP.Spec.FailureDomains) {
 		return microerror.Maskf(failureDomainWasChangedError, "Changing FailureDomains (availability zones) is not allowed.")
 	}

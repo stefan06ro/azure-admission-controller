@@ -6,6 +6,7 @@ import (
 	"github.com/giantswarm/microerror"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 )
@@ -68,6 +69,19 @@ func ToAzureClusterPtr(v interface{}) (*capz.AzureCluster, error) {
 	customObjectPointer, ok := v.(*capz.AzureCluster)
 	if !ok {
 		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capz.AzureCluster{}, v)
+	}
+
+	return customObjectPointer, nil
+}
+
+func ToMachinePoolPtr(v interface{}) (*capiexp.MachinePool, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capiexp.MachinePool{}, v)
+	}
+
+	customObjectPointer, ok := v.(*capiexp.MachinePool)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &capiexp.MachinePool{}, v)
 	}
 
 	return customObjectPointer, nil

@@ -4,69 +4,21 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
-	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
-	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/patches"
-	"github.com/giantswarm/azure-admission-controller/pkg/generic"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 )
 
-type CreateMutator struct {
-	ctrlClient client.Client
-	logger     micrologger.Logger
-}
-
-type CreateMutatorConfig struct {
-	CtrlClient client.Client
-	Logger     micrologger.Logger
-}
-
-func NewCreateMutator(config CreateMutatorConfig) (*CreateMutator, error) {
-	if config.CtrlClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
-	}
-	if config.Logger == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
-	}
-
-	m := &CreateMutator{
-		ctrlClient: config.CtrlClient,
-		logger:     config.Logger,
-	}
-
-	return m, nil
-}
-
-func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRequest) ([]mutator.PatchOperation, error) {
+func (h *WebhookHandler) OnCreateMutate(ctx context.Context, object interface{}) ([]mutator.PatchOperation, error) {
 	var result []mutator.PatchOperation
-
-	if request.DryRun != nil && *request.DryRun {
-		m.logger.LogCtx(ctx, "level", "debug", "message", "Dry run is not supported. Request processing stopped.")
-		return result, nil
-	}
-
-	machinePoolCR := &capiexp.MachinePool{}
-	if _, _, err := mutator.Deserializer.Decode(request.Object.Raw, nil, machinePoolCR); err != nil {
-		return []mutator.PatchOperation{}, microerror.Maskf(parsingFailedError, "unable to parse MachinePool CR: %v", err)
-	}
-
-	capi, err := generic.IsCAPIRelease(machinePoolCR)
+	machinePoolCR, err := key.ToMachinePoolPtr(object)
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
-	if capi {
-		return []mutator.PatchOperation{}, nil
-	}
+	machinePoolCROriginal := machinePoolCR.DeepCopy()
 
-	defaultSpecValues := setDefaultSpecValues(m, machinePoolCR)
-	if defaultSpecValues != nil {
-		result = append(result, defaultSpecValues...)
-	}
-
-	patch, err := mutator.EnsureReleaseVersionLabel(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta())
+	patch, err := mutator.EnsureReleaseVersionLabel(ctx, h.ctrlClient, machinePoolCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -74,7 +26,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, m.ctrlClient, machinePoolCR.GetObjectMeta())
+	patch, err = mutator.CopyAzureOperatorVersionLabelFromAzureClusterCR(ctx, h.ctrlClient, machinePoolCR.GetObjectMeta())
 	if err != nil {
 		return []mutator.PatchOperation{}, microerror.Mask(err)
 	}
@@ -82,7 +34,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 		result = append(result, *patch)
 	}
 
-	autoscalingPatches := ensureAutoscalingAnnotations(m, machinePoolCR)
+	autoscalingPatches := ensureAutoscalingAnnotations(h, machinePoolCR)
 	if autoscalingPatches != nil {
 		result = append(result, autoscalingPatches...)
 	}
@@ -90,7 +42,7 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	machinePoolCR.Default()
 	{
 		var capiPatches []mutator.PatchOperation
-		capiPatches, err = patches.GenerateFrom(request.Object.Raw, machinePoolCR)
+		capiPatches, err = patches.GenerateFromObjectDiff(machinePoolCROriginal, machinePoolCR)
 		if err != nil {
 			return []mutator.PatchOperation{}, microerror.Mask(err)
 		}
@@ -99,12 +51,4 @@ func (m *CreateMutator) Mutate(ctx context.Context, request *v1beta1.AdmissionRe
 	}
 
 	return result, nil
-}
-
-func (m *CreateMutator) Log(keyVals ...interface{}) {
-	m.logger.Log(keyVals...)
-}
-
-func (m *CreateMutator) Resource() string {
-	return "machinepool"
 }

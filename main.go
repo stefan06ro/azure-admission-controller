@@ -321,48 +321,15 @@ func mainError() error {
 		}
 	}
 
-	var machinePoolCreateMutator *machinepool.CreateMutator
+	var machinePoolWebhookHandler *machinepool.WebhookHandler
 	{
-		c := machinepool.CreateMutatorConfig{
+		c := machinepool.WebhookHandlerConfig{
 			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		machinePoolCreateMutator, err = machinepool.NewCreateMutator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolUpdateMutator *machinepool.UpdateMutator
-	{
-		c := machinepool.UpdateMutatorConfig{
-			Logger: newLogger,
-		}
-		machinePoolUpdateMutator, err = machinepool.NewUpdateMutator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolCreateValidator *machinepool.CreateValidator
-	{
-		c := machinepool.CreateValidatorConfig{
-			CtrlClient: ctrlClient,
+			Decoder:    universalDeserializer,
 			Logger:     newLogger,
 			VMcaps:     vmcaps,
 		}
-		machinePoolCreateValidator, err = machinepool.NewCreateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var machinePoolUpdateValidator *machinepool.UpdateValidator
-	{
-		c := machinepool.UpdateValidatorConfig{
-			Logger: newLogger,
-		}
-		machinePoolUpdateValidator, err = machinepool.NewUpdateValidator(c)
+		machinePoolWebhookHandler, err = machinepool.NewWebhookHandler(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -415,8 +382,8 @@ func mainError() error {
 	handler.Handle("/mutate/azurecluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
 	handler.Handle("/mutate/cluster/create", mutatorHttpHandlerFactory.NewCreateHandler(clusterWebhookHandler))
 	handler.Handle("/mutate/cluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/mutate/machinepool/create", mutator.Handler(machinePoolCreateMutator))
-	handler.Handle("/mutate/machinepool/update", mutator.Handler(machinePoolUpdateMutator))
+	handler.Handle("/mutate/machinepool/create", mutatorHttpHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
+	handler.Handle("/mutate/machinepool/update", mutatorHttpHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
 	handler.Handle("/mutate/spark/create", mutator.Handler(sparkCreateMutator))
 
 	// Validators.
@@ -430,8 +397,8 @@ func mainError() error {
 	handler.Handle("/validate/azuremachinepool/update", validator.Handler(azureMachinePoolUpdateValidator))
 	handler.Handle("/validate/cluster/create", validatorHttpHandlerFactory.NewCreateHandler(clusterWebhookHandler))
 	handler.Handle("/validate/cluster/update", validatorHttpHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
-	handler.Handle("/validate/machinepool/create", validator.Handler(machinePoolCreateValidator))
-	handler.Handle("/validate/machinepool/update", validator.Handler(machinePoolUpdateValidator))
+	handler.Handle("/validate/machinepool/create", validatorHttpHandlerFactory.NewCreateHandler(machinePoolWebhookHandler))
+	handler.Handle("/validate/machinepool/update", validatorHttpHandlerFactory.NewUpdateHandler(machinePoolWebhookHandler))
 	handler.HandleFunc("/healthz", healthCheck)
 
 	newLogger.LogCtx(context.Background(), "level", "debug", "message", fmt.Sprintf("Listening on port %s", cfg.Address))

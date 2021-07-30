@@ -5,16 +5,17 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/giantswarm/apiextensions/v3/pkg/annotation"
 	"github.com/giantswarm/apiextensions/v3/pkg/apis/release/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capi "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/machinepool"
+	"github.com/giantswarm/azure-admission-controller/internal/vmcapabilities"
 	"github.com/giantswarm/azure-admission-controller/pkg/mutator"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
 )
@@ -22,7 +23,7 @@ import (
 func TestMachinePoolCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		nodePool     []byte
+		nodePool     *capiexp.MachinePool
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -30,7 +31,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:     "case 0: set default number of replicas",
-			nodePool: builder.BuildMachinePoolAsJson(),
+			nodePool: builder.BuildMachinePool(),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "replace",
@@ -52,7 +53,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 1: set min replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -74,7 +75,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 2: set max replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -96,7 +97,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 3: set min and max replicas annotation when replicas field is set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Replicas(7), builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -123,7 +124,7 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 		},
 		{
 			name:     "case 4: set min and max replicas annotation when replicas field is not set",
-			nodePool: builder.BuildMachinePoolAsJson(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
+			nodePool: builder.BuildMachinePool(builder.Annotation(annotation.NodePoolMinSize, ""), builder.Annotation(annotation.NodePoolMaxSize, "")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -206,16 +207,28 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit, err := NewCreateMutator(CreateMutatorConfig{
-				CtrlClient: ctrlClient,
-				Logger:     newLogger,
+			stubbedSKUs := map[string]compute.ResourceSku{}
+			stubAPI := NewStubAPI(stubbedSKUs)
+			vmcaps, err := vmcapabilities.New(vmcapabilities.Config{
+				Azure:  stubAPI,
+				Logger: newLogger,
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.nodePool))
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Logger:     newLogger,
+				VMcaps:     vmcaps,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Run mutating webhook handler on MachinePool creation.
+			patches, err := handler.OnCreateMutate(ctx, tc.nodePool)
 
 			// Check if the error is the expected one.
 			switch {
@@ -235,20 +248,4 @@ func TestMachinePoolCreateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "machinepool",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

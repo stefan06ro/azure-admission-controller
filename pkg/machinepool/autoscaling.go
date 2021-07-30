@@ -21,7 +21,7 @@ func escapeJSONPatchString(input string) string {
 
 // ensureAutoscalingAnnotations ensures the custom annotations used to determine the min and max replicas for
 // the cluster autoscaler are set in the Machinepool CR.
-func ensureAutoscalingAnnotations(m mutator.Mutator, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
+func ensureAutoscalingAnnotations(h *WebhookHandler, machinePool *capiexp.MachinePool) []mutator.PatchOperation {
 	var patches []mutator.PatchOperation
 
 	// The replicas field could not be set, we default to 1.
@@ -32,14 +32,14 @@ func ensureAutoscalingAnnotations(m mutator.Mutator, machinePool *capiexp.Machin
 
 	currentMin := clusterReplicas
 	if machinePool.Annotations[annotation.NodePoolMinSize] == "" {
-		m.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMinSize, clusterReplicas))
+		h.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMinSize, clusterReplicas))
 		patches = append(patches, *mutator.PatchAdd(fmt.Sprintf("/metadata/annotations/%s", escapeJSONPatchString(annotation.NodePoolMinSize)), fmt.Sprintf("%d", clusterReplicas)))
 	} else {
 		// Parse current value of min Size.
 		min, err := strconv.ParseInt(machinePool.Annotations[annotation.NodePoolMinSize], 10, 32)
 		if err != nil || min < 0 {
 			// Invalid annotation value, set it to the default.
-			m.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMinSize, clusterReplicas))
+			h.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMinSize, clusterReplicas))
 			patches = append(patches, mutator.PatchReplace(fmt.Sprintf("/metadata/annotations/%s", escapeJSONPatchString(annotation.NodePoolMinSize)), fmt.Sprintf("%d", clusterReplicas)))
 			currentMin = clusterReplicas
 		} else {
@@ -49,13 +49,13 @@ func ensureAutoscalingAnnotations(m mutator.Mutator, machinePool *capiexp.Machin
 
 	if machinePool.Annotations[annotation.NodePoolMaxSize] == "" {
 		// By default set the max same value as the min.
-		m.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMaxSize, currentMin))
+		h.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMaxSize, currentMin))
 		patches = append(patches, *mutator.PatchAdd(fmt.Sprintf("/metadata/annotations/%s", escapeJSONPatchString(annotation.NodePoolMaxSize)), fmt.Sprintf("%d", currentMin)))
 	} else {
 		// Check current value is valid.
 		max, err := strconv.ParseInt(machinePool.Annotations[annotation.NodePoolMaxSize], 10, 32)
 		if err != nil || int32(max) < currentMin {
-			m.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMaxSize, currentMin))
+			h.Log("level", "debug", "message", fmt.Sprintf("setting MachinePool Annotation %s to %d", annotation.NodePoolMaxSize, currentMin))
 			patches = append(patches, mutator.PatchReplace(fmt.Sprintf("/metadata/annotations/%s", escapeJSONPatchString(annotation.NodePoolMaxSize)), fmt.Sprintf("%d", currentMin)))
 		}
 	}
