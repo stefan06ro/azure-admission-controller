@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	corev1alpha1v3 "github.com/giantswarm/apiextensions/v3/pkg/apis/core/v1alpha1"
+	"github.com/giantswarm/apiextensions/v3/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capzexp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
@@ -136,6 +137,19 @@ func ToAzureClusterConfigPtr(v interface{}) (*corev1alpha1v3.AzureClusterConfig,
 	customObjectPointer, ok := v.(*corev1alpha1v3.AzureClusterConfig)
 	if !ok {
 		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &corev1alpha1v3.AzureClusterConfig{}, v)
+	}
+
+	return customObjectPointer, nil
+}
+
+func ToAzureConfigPtr(v interface{}) (*v1alpha1.AzureConfig, error) {
+	if v == nil {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &v1alpha1.AzureConfig{}, v)
+	}
+
+	customObjectPointer, ok := v.(*v1alpha1.AzureConfig)
+	if !ok {
+		return nil, microerror.Maskf(errors.WrongTypeError, "expected '%T', got '%T'", &v1alpha1.AzureConfig{}, v)
 	}
 
 	return customObjectPointer, nil

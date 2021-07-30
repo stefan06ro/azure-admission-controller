@@ -8,54 +8,70 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
-	"github.com/giantswarm/azure-admission-controller/pkg/validator"
+	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
 
-type AzureConfigValidator struct {
+type AzureConfigWebhookHandler struct {
 	ctrlClient client.Client
+	decoder    runtime.Decoder
 	logger     micrologger.Logger
 }
 
-type AzureConfigValidatorConfig struct {
+type AzureConfigWebhookHandlerConfig struct {
 	CtrlClient client.Client
+	Decoder    runtime.Decoder
 	Logger     micrologger.Logger
 }
 
-func NewAzureConfigValidator(config AzureConfigValidatorConfig) (*AzureConfigValidator, error) {
+func NewAzureConfigWebhookHandler(config AzureConfigWebhookHandlerConfig) (*AzureConfigWebhookHandler, error) {
 	if config.CtrlClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
+	}
+	if config.Decoder == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.Decoder must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	admitter := &AzureConfigValidator{
+	webhookHandler := &AzureConfigWebhookHandler{
 		ctrlClient: config.CtrlClient,
+		decoder:    config.Decoder,
 		logger:     config.Logger,
 	}
 
-	return admitter, nil
+	return webhookHandler, nil
 }
 
-func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.AdmissionRequest) error {
-	azureConfigNewCR := &v1alpha1.AzureConfig{}
-	azureConfigOldCR := &v1alpha1.AzureConfig{}
-	if _, _, err := validator.Deserializer.Decode(request.Object.Raw, nil, azureConfigNewCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
-	}
-	if _, _, err := validator.Deserializer.Decode(request.OldObject.Raw, nil, azureConfigOldCR); err != nil {
-		return microerror.Maskf(errors.ParsingFailedError, "unable to parse azureConfig CR: %v", err)
+func (h *AzureConfigWebhookHandler) Decode(rawObject runtime.RawExtension) (metav1.ObjectMetaAccessor, error) {
+	cr := &v1alpha1.AzureConfig{}
+	if _, _, err := h.decoder.Decode(rawObject.Raw, nil, cr); err != nil {
+		return nil, microerror.Maskf(errors.ParsingFailedError, "unable to parse AzureConfig CR: %v", err)
 	}
 
+	return cr, nil
+}
+
+func (h *AzureConfigWebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interface{}, object interface{}) error {
+	azureConfigNewCR, err := key.ToAzureConfigPtr(object)
+	if err != nil {
+		return microerror.Mask(err)
+	}
 	if !azureConfigNewCR.GetDeletionTimestamp().IsZero() {
-		a.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
+		h.logger.LogCtx(ctx, "level", "debug", "message", "The object is being deleted so we don't validate it")
 		return nil
+	}
+
+	azureConfigOldCR, err := key.ToAzureConfigPtr(oldObject)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
 	oldVersion, err := semverhelper.GetSemverFromLabels(azureConfigOldCR.Labels)
@@ -68,7 +84,7 @@ func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.Ad
 	}
 
 	if !oldVersion.Equals(newVersion) {
-		return releaseversion.Validate(ctx, a.ctrlClient, oldVersion, newVersion)
+		return releaseversion.Validate(ctx, h.ctrlClient, oldVersion, newVersion)
 	}
 
 	// Don't allow change of Master CIDR.
@@ -86,8 +102,8 @@ func (a *AzureConfigValidator) Validate(ctx context.Context, request *v1beta1.Ad
 	return nil
 }
 
-func (a *AzureConfigValidator) Log(keyVals ...interface{}) {
-	a.logger.Log(keyVals...)
+func (h *AzureConfigWebhookHandler) Log(keyVals ...interface{}) {
+	h.logger.Log(keyVals...)
 }
 
 func validateMasterCIDRUnchanged(old *v1alpha1.AzureConfig, new *v1alpha1.AzureConfig) error {
