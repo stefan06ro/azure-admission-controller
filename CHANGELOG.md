@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MachinePool webhook handler that replaces mutators and validators.
 - AzureMachinePool webhook handler that replaces mutators and validators.
 - AzureMachine webhook handler that replaces mutators and validators.
+- Spark webhook handler that replaces mutator.
 
 ### Changed
 
