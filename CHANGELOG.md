@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for functions from `release` package.
 - `HttpHandlerFactory` for creating HTTP handlers that are using new webhook handlers.
 - Cluster webhook handler that replaces mutators and validators.
+- AzureCluster webhook handler that replaces mutators and validators.
 
 ### Changed
 

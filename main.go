@@ -175,29 +175,17 @@ func mainError() error {
 		}
 	}
 
-	var azureClusterCreateMutator *azurecluster.CreateMutator
+	var azureClusterWebhookHandler *azurecluster.WebhookHandler
 	{
-		conf := azurecluster.CreateMutatorConfig{
+		c := azurecluster.WebhookHandlerConfig{
 			BaseDomain: cfg.BaseDomain,
 			CtrlCache:  ctrlCache,
 			CtrlClient: ctrlClient,
+			Decoder:    universalDeserializer,
 			Location:   cfg.Location,
 			Logger:     newLogger,
 		}
-		azureClusterCreateMutator, err = azurecluster.NewCreateMutator(conf)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterUpdateMutator *azurecluster.UpdateMutator
-	{
-		conf := azurecluster.UpdateMutatorConfig{
-			CtrlCache:  ctrlCache,
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureClusterUpdateMutator, err = azurecluster.NewUpdateMutator(conf)
+		azureClusterWebhookHandler, err = azurecluster.NewWebhookHandler(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -287,32 +275,6 @@ func mainError() error {
 			VMcaps: vmcaps,
 		}
 		azureMachinePoolUpdateValidator, err = azuremachinepool.NewUpdateValidator(updateValidatorConfig)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterCreateValidator *azurecluster.CreateValidator
-	{
-		c := azurecluster.CreateValidatorConfig{
-			BaseDomain: cfg.BaseDomain,
-			CtrlClient: ctrlClient,
-			Location:   cfg.Location,
-			Logger:     newLogger,
-		}
-		azureClusterCreateValidator, err = azurecluster.NewCreateValidator(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	var azureClusterUpdateValidator *azurecluster.UpdateValidator
-	{
-		c := azurecluster.UpdateValidatorConfig{
-			CtrlClient: ctrlClient,
-			Logger:     newLogger,
-		}
-		azureClusterUpdateValidator, err = azurecluster.NewUpdateValidator(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -449,8 +411,8 @@ func mainError() error {
 	handler.Handle("/mutate/azuremachine/update", mutator.Handler(azureMachineUpdateMutator))
 	handler.Handle("/mutate/azuremachinepool/create", mutator.Handler(azureMachinePoolCreateMutator))
 	handler.Handle("/mutate/azuremachinepool/update", mutator.Handler(azureMachinePoolUpdateMutator))
-	handler.Handle("/mutate/azurecluster/create", mutator.Handler(azureClusterCreateMutator))
-	handler.Handle("/mutate/azurecluster/update", mutator.Handler(azureClusterUpdateMutator))
+	handler.Handle("/mutate/azurecluster/create", mutatorHttpHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
+	handler.Handle("/mutate/azurecluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
 	handler.Handle("/mutate/cluster/create", mutatorHttpHandlerFactory.NewCreateHandler(clusterWebhookHandler))
 	handler.Handle("/mutate/cluster/update", mutatorHttpHandlerFactory.NewUpdateHandler(clusterWebhookHandler))
 	handler.Handle("/mutate/machinepool/create", mutator.Handler(machinePoolCreateMutator))
@@ -460,8 +422,8 @@ func mainError() error {
 	// Validators.
 	handler.Handle("/validate/azureconfig/update", validator.Handler(azureConfigValidator))
 	handler.Handle("/validate/azureclusterconfig/update", validator.Handler(azureClusterConfigValidator))
-	handler.Handle("/validate/azurecluster/create", validator.Handler(azureClusterCreateValidator))
-	handler.Handle("/validate/azurecluster/update", validator.Handler(azureClusterUpdateValidator))
+	handler.Handle("/validate/azurecluster/create", validatorHttpHandlerFactory.NewCreateHandler(azureClusterWebhookHandler))
+	handler.Handle("/validate/azurecluster/update", validatorHttpHandlerFactory.NewUpdateHandler(azureClusterWebhookHandler))
 	handler.Handle("/validate/azuremachine/create", validator.Handler(azureMachineCreateValidator))
 	handler.Handle("/validate/azuremachine/update", validator.Handler(azureMachineUpdateValidator))
 	handler.Handle("/validate/azuremachinepool/create", validator.Handler(azureMachinePoolCreateValidator))

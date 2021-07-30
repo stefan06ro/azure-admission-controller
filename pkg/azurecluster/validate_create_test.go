@@ -7,9 +7,8 @@ import (
 	securityv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/security/v1alpha1"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
 	"github.com/giantswarm/azure-admission-controller/pkg/unittest"
@@ -18,34 +17,34 @@ import (
 func TestAzureClusterCreateValidate(t *testing.T) {
 	type testCase struct {
 		name         string
-		azureCluster []byte
+		azureCluster *capz.AzureCluster
 		errorMatcher func(err error) bool
 	}
 
 	testCases := []testCase{
 		{
 			name:         "case 0: empty ControlPlaneEndpoint",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 443)),
+			azureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 443)),
 			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 1: Invalid Port",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
+			azureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 80)),
 			errorMatcher: IsInvalidControlPlaneEndpointPortError,
 		},
 		{
 			name:         "case 2: Invalid Host",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.gigantic.io", 443), builder.Location("westeurope")),
+			azureCluster: builder.BuildAzureCluster(builder.ControlPlaneEndpoint("api.gigantic.io", 443), builder.Location("westeurope")),
 			errorMatcher: IsInvalidControlPlaneEndpointHostError,
 		},
 		{
 			name:         "case 3: Valid values",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443), builder.Location("westeurope")),
+			azureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("api.ab123.k8s.test.westeurope.azure.gigantic.io", 443), builder.Location("westeurope")),
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Invalid region",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("westpoland")),
+			azureCluster: builder.BuildAzureCluster(builder.Location("westpoland")),
 			errorMatcher: IsUnexpectedLocationError,
 		},
 	}
@@ -79,15 +78,20 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateValidator{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlCache:  ctrlClient,
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Location:   "westeurope",
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			err = admit.Validate(ctx, getCreateAdmissionRequest(tc.azureCluster))
+			// Run validating webhook handler on AzureCluster creation.
+			err = handler.OnCreateValidate(ctx, tc.azureCluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -102,20 +106,4 @@ func TestAzureClusterCreateValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azurecluster",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }

@@ -9,9 +9,7 @@ import (
 	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 
 	builder "github.com/giantswarm/azure-admission-controller/internal/test/azurecluster"
@@ -22,7 +20,7 @@ import (
 func TestAzureClusterCreateMutate(t *testing.T) {
 	type testCase struct {
 		name         string
-		azureCluster []byte
+		azureCluster *capz.AzureCluster
 		patches      []mutator.PatchOperation
 		errorMatcher func(err error) bool
 	}
@@ -30,7 +28,7 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:         "case 0: ControlPlaneEndpoint left empty",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 0)),
+			azureCluster: builder.BuildAzureCluster(builder.Name("ab123"), builder.ControlPlaneEndpoint("", 0)),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -47,13 +45,13 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         "case 1: ControlPlaneEndpoint has a value",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.ControlPlaneEndpoint("api.giantswarm.io", 123)),
+			azureCluster: builder.BuildAzureCluster(builder.ControlPlaneEndpoint("api.giantswarm.io", 123)),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 2: Location empty",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Location("")),
+			azureCluster: builder.BuildAzureCluster(builder.Location("")),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -65,13 +63,13 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 		},
 		{
 			name:         "case 3: Location has value",
-			azureCluster: builder.BuildAzureClusterAsJson(),
+			azureCluster: builder.BuildAzureCluster(),
 			patches:      []mutator.PatchOperation{},
 			errorMatcher: nil,
 		},
 		{
 			name:         "case 4: Azure operator label missing",
-			azureCluster: builder.BuildAzureClusterAsJson(builder.Labels(map[string]string{label.AzureOperatorVersion: ""})),
+			azureCluster: builder.BuildAzureCluster(builder.Labels(map[string]string{label.AzureOperatorVersion: ""})),
 			patches: []mutator.PatchOperation{
 				{
 					Operation: "add",
@@ -133,16 +131,20 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			admit := &CreateMutator{
-				baseDomain: "k8s.test.westeurope.azure.gigantic.io",
-				ctrlCache:  ctrlClient,
-				ctrlClient: ctrlClient,
-				location:   "westeurope",
-				logger:     newLogger,
+			handler, err := NewWebhookHandler(WebhookHandlerConfig{
+				BaseDomain: "k8s.test.westeurope.azure.gigantic.io",
+				CtrlCache:  ctrlClient,
+				CtrlClient: ctrlClient,
+				Decoder:    unittest.NewFakeDecoder(),
+				Location:   "westeurope",
+				Logger:     newLogger,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			// Run admission request to validate AzureConfig updates.
-			patches, err := admit.Mutate(context.Background(), getCreateMutateAdmissionRequest(tc.azureCluster))
+			// Run mutating webhook handler on AzureCluster creation.
+			patches, err := handler.OnCreateMutate(ctx, tc.azureCluster)
 
 			// Check if the error is the expected one.
 			switch {
@@ -164,20 +166,4 @@ func TestAzureClusterCreateMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getCreateMutateAdmissionRequest(newMP []byte) *v1beta1.AdmissionRequest {
-	req := &v1beta1.AdmissionRequest{
-		Resource: metav1.GroupVersionResource{
-			Version:  "infrastructure.cluster.x-k8s.io/v1alpha3",
-			Resource: "azurecluster",
-		},
-		Operation: v1beta1.Create,
-		Object: runtime.RawExtension{
-			Raw:    newMP,
-			Object: nil,
-		},
-	}
-
-	return req
 }
