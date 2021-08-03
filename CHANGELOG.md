@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spark webhook handler that replaces mutator.
 - AzureClusterConfig webhook handler that replaces validator.
 - AzureConfig webhook handler that replaces validator.
+- CR filtering and webhook handler tests that use real CRs from real management clusters as test cases.
 
 ### Changed
 
