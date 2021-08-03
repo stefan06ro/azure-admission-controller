@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2021-08-03
+
 ### Added
 
 - New `pkg/filter` package with function which checks if the CR belongs to a cluster from a legacy non-CAPI release.
@@ -331,7 +333,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.7.0...v3.0.0
 [2.7.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.4.1...v2.5.0
