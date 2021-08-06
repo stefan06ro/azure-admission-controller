@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use right `Location` parameter coming from `config` mechanism.
+
 ## [3.0.0] - 2021-08-03
 
 ### Added

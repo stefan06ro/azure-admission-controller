@@ -11,7 +11,7 @@ workloadCluster:
     api:
       endpointBase: k8s.test.westeurope.azure.gigantic.io
 
-provider:
+azure:
   location: westeurope
 
 registry:
