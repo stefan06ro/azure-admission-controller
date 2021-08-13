@@ -11,7 +11,7 @@ require (
 	github.com/dyson/certman v0.2.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/ghodss/yaml v1.0.0
-	github.com/giantswarm/apiextensions/v3 v3.31.0
+	github.com/giantswarm/apiextensions/v3 v3.32.0
 	github.com/giantswarm/apptest v0.10.3
 	github.com/giantswarm/backoff v0.2.0
 	github.com/giantswarm/k8sclient/v5 v5.11.0
