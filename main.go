@@ -126,6 +126,19 @@ func mainError() error {
 
 	var resourceSkusClient compute.ResourceSkusClient
 	{
+		// Azure sdk does not fail initializing the client if the environment variables are empty.
+		// We need to ensure ENV variables are set.
+		envVarNames := []string{
+			auth.ClientID,
+			auth.ClientSecret,
+			auth.SubscriptionID,
+			auth.TenantID,
+		}
+		for _, envVarName := range envVarNames {
+			if v := os.Getenv(envVarName); v == "" {
+				return microerror.Mask(fmt.Errorf("empty value or missing required env variable %q", envVarName))
+			}
+		}
 		settings, err := auth.GetSettingsFromEnvironment()
 		if err != nil {
 			return microerror.Mask(err)

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Check for azure ENV variables to be set at startup.
+
 ## [3.0.1] - 2021-08-06
 
 ### Fixed
