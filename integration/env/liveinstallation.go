@@ -1,4 +1,4 @@
-// +build liveinstallation
+//go:build liveinstallation
 
 package env
 
