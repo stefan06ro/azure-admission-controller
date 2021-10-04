@@ -5,6 +5,7 @@ import (
 
 	"github.com/giantswarm/microerror"
 
+	"github.com/giantswarm/azure-admission-controller/internal/scheduledupgrades"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
 )
@@ -31,6 +32,16 @@ func (h *WebhookHandler) OnCreateValidate(ctx context.Context, object interface{
 	}
 
 	err = validateControlPlaneEndpoint(*clusterCR, h.baseDomain)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = scheduledupgrades.ValidateClusterAnnotationUpgradeTime(nil, clusterCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = scheduledupgrades.ValidateClusterAnnotationUpgradeRelease(ctx, h.ctrlClient, clusterCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

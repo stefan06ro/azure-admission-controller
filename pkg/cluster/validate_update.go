@@ -12,6 +12,7 @@ import (
 	"github.com/giantswarm/azure-admission-controller/internal/conditions"
 	"github.com/giantswarm/azure-admission-controller/internal/errors"
 	"github.com/giantswarm/azure-admission-controller/internal/releaseversion"
+	"github.com/giantswarm/azure-admission-controller/internal/scheduledupgrades"
 	"github.com/giantswarm/azure-admission-controller/internal/semverhelper"
 	"github.com/giantswarm/azure-admission-controller/pkg/generic"
 	"github.com/giantswarm/azure-admission-controller/pkg/key"
@@ -53,6 +54,16 @@ func (h *WebhookHandler) OnUpdateValidate(ctx context.Context, oldObject interfa
 	}
 
 	err = conditions.ValidateClusterConditions(clusterOldCR, clusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = scheduledupgrades.ValidateClusterAnnotationUpgradeTime(clusterOldCR, clusterNewCR)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = scheduledupgrades.ValidateClusterAnnotationUpgradeRelease(ctx, h.ctrlClient, clusterNewCR)
 	if err != nil {
 		return microerror.Mask(err)
 	}

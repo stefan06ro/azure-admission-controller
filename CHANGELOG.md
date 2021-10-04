@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added validation for `alpha.giantswarm.io/update-schedule-target-release` annotation on `Cluster` CRs.
+- Added validation for `alpha.giantswarm.io/update-schedule-target-time` annotation on `Cluster` CRs.
+
 ## [3.1.0] - 2021-08-24
 
 ### Added
