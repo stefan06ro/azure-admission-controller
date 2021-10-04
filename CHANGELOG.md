@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2021-10-04
+
 ### Added
 - Added validation for `alpha.giantswarm.io/update-schedule-target-release` annotation on `Cluster` CRs.
 - Added validation for `alpha.giantswarm.io/update-schedule-target-time` annotation on `Cluster` CRs.
@@ -348,7 +350,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release.
 
-[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-admission-controller/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/giantswarm/azure-admission-controller/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/giantswarm/azure-admission-controller/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/giantswarm/azure-admission-controller/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/giantswarm/azure-admission-controller/compare/v2.7.0...v3.0.0
