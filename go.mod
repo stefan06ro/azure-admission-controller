@@ -3,13 +3,13 @@ module github.com/giantswarm/azure-admission-controller
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v48.2.2+incompatible
+	github.com/Azure/azure-sdk-for-go/v58 v58.2.0
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/blang/semver v3.5.1+incompatible
+	github.com/blang/semver/v4 v4.0.0
 	github.com/dyson/certman v0.2.1
-	github.com/evanphx/json-patch v4.9.0+incompatible
+	github.com/evanphx/json-patch/v5 v5.5.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/giantswarm/apiextensions/v3 v3.33.0
 	github.com/giantswarm/apptest v0.10.3
@@ -19,7 +19,7 @@ require (
 	github.com/giantswarm/micrologger v0.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/stretchr/testify v1.7.0
-	gomodules.xyz/jsonpatch/v2 v2.2.0
+	gomodules.xyz/jsonpatch/v2/v3 v3.0.1
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	k8s.io/api v0.18.19
 	k8s.io/apiextensions-apiserver v0.18.19
